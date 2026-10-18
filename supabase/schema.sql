@@ -13,6 +13,7 @@ create table if not exists public.nmm_tasks (
   execution_date date,
   area text not null default 'vida' check (area in ('vida', 'trabalho', 'outros')),
   tag_id text not null,
+  sort_order integer not null default 0,
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
   planner_version smallint not null check (planner_version = 1),
@@ -59,7 +60,9 @@ create table if not exists public.nmm_notes (
   id text primary key,
   owner_id uuid not null references auth.users(id) on delete cascade,
   title text not null default '',
-  content text not null,
+  content text not null default '',
+  tag_ids text[] not null default '{}'::text[],
+  sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
@@ -68,8 +71,10 @@ create table if not exists public.nmm_notes (
 
 create index if not exists nmm_tasks_owner_status_idx on public.nmm_tasks(owner_id, status);
 create index if not exists nmm_tasks_owner_tag_idx on public.nmm_tasks(owner_id, tag_id);
+create index if not exists nmm_tasks_owner_execution_sort_idx on public.nmm_tasks(owner_id, execution_date, sort_order);
 create index if not exists nmm_tags_owner_name_idx on public.nmm_tags(owner_id, name);
 create index if not exists nmm_notes_owner_updated_idx on public.nmm_notes(owner_id, updated_at desc);
+create index if not exists nmm_notes_owner_sort_idx on public.nmm_notes(owner_id, sort_order);
 create index if not exists nmm_comments_task_created_idx on public.nmm_task_comments(task_id, created_at);
 create index if not exists nmm_links_task_created_idx on public.nmm_task_links(task_id, created_at);
 

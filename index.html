@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#111827">
-  <meta name="description" content="Planner semanal simples do Ta Na Mão.">
+  <meta name="description" content="Seu planner semanal, Tá na mão!">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Tá na mão!">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <title>TA NA MÃO | Planner</title>
+  <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <title>Tá na mão! | Planner semanal</title>
   <style>
     :root { color-scheme:dark; --bg:#0b1020; --panel:#141b2d; --panel2:#1b2439; --line:#2b3650; --text:#f4f6fb; --muted:#aab4c8; --accent:#8bafff; --green:#73d6a2; --red:#ff8b8b; }
     * { box-sizing:border-box; }
@@ -153,39 +156,160 @@
       .note-list { grid-template-columns:1fr; }
       .panel { padding:13px; }
     }
+    /* Compact full-screen home and weekly overview. Full task lists open in dialogs. */
+    body { overflow:hidden; }
+    body[data-page="notes"],body[data-page="settings"] { overflow-y:auto; }
+    .wrap { display:flex; flex-direction:column; height:100dvh; min-height:0; overflow:hidden; padding:10px 14px calc(76px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="tasks"] .wrap { padding-bottom:calc(132px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="notes"] .wrap,body[data-page="settings"] .wrap { display:block; height:auto; min-height:100dvh; overflow:visible; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+    .app-header { flex:none; gap:8px; margin:0 0 10px; }
+    .brand { gap:9px; }
+    .brand-icon { width:42px; height:42px; flex:none; object-fit:cover; border-radius:12px; }
+    h1 { font-size:1.15rem; }
+    .brand p { font-size:.76rem; }
+    .header-actions { display:flex; flex:none; gap:6px; }
+    .header-actions .btn { min-height:36px; padding:6px 9px; font-size:.78rem; white-space:nowrap; }
+    #homePage.active,#tasksPage.active { display:flex; flex:1; flex-direction:column; min-height:0; overflow:hidden; }
+    #notesPage.active,#settingsPage.active { display:block; }
+    #homePage .home-stats { order:1; flex:none; gap:7px; margin:0; }
+    #homePage .home-stat { min-width:0; padding:8px 9px; }
+    #homePage .home-stat span { font-size:.68rem; white-space:nowrap; }
+    #homePage .home-stat strong { margin-top:1px; font-size:1.28rem; }
+    #homePage .home-preview { order:2; display:flex; flex:1; flex-direction:column; min-height:0; margin:8px 0 0; }
+    #homePage .home-preview .page-heading { flex:none; margin:0 0 3px; }
+    #homePage .home-preview .page-heading h2 { font-size:1rem; }
+    #homePage .home-preview-list { display:grid; flex:none; gap:4px; margin:0; align-content:start; }
+    #homePage .home-item { min-width:0; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:8px; padding:6px 9px; }
+    #homePage .home-item-date { white-space:nowrap; font-size:.65rem; }
+    #homePage .home-item-open { min-width:0; align-items:center; overflow:hidden; font-size:.75rem; text-overflow:ellipsis; white-space:nowrap; }
+    #homePage .home-item-open .tag-dot { width:8px; height:8px; }
+    #homePage .home-item-open span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #homePage .home-preview .empty { padding:7px; font-size:.72rem; }
+    #homePage .home-hero { order:3; flex:none; gap:5px; margin-top:8px; padding:10px 13px; }
+    #homePage .home-hero .eyebrow { margin:0; }
+    #homePage .home-hero h2 { font-size:1.05rem; }
+    #homePage .home-hero p { margin:0; font-size:.72rem; line-height:1.25; }
+    #homePage .home-hero .btn { min-height:32px; padding:5px 9px; font-size:.75rem; }
+    #tasksPage .page-heading { flex:none; min-height:34px; margin:0 0 6px; }
+    #tasksPage .page-heading h2 { font-size:.98rem; letter-spacing:.04em; }
+    #tasksPage .eyebrow { display:none; }
+    .week-grid { display:grid; flex:1; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(4,minmax(0,1fr)); grid-auto-rows:auto; gap:5px; min-height:0; }
+    .day-column { min-height:0; padding:5px 7px; cursor:pointer; overflow:visible; }
+    .day-heading { min-height:20px; gap:3px; margin:0 0 3px; padding:0 0 3px; }
+    .day-head-row { display:flex; align-items:center; gap:3px; min-width:0; }
+    .day-heading-button { display:flex; align-items:center; justify-content:space-between; gap:4px; width:100%; min-width:0; padding:0; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
+    .day-heading-button strong { overflow:hidden; font-size:.68rem; text-overflow:ellipsis; white-space:nowrap; }
+    .day-heading-button time,.day-heading-button .day-count { flex:none; color:var(--muted); font-size:.62rem; }
+    .day-column[data-kind="overdue"] .day-heading-button strong { color:#ff9ca5; } 
+    .day-task-preview { display:flex; flex:none; align-items:center; gap:4px; min-width:0; padding:0; border:0; background:transparent; color:var(--text); text-align:left; cursor:pointer; }
+    .day-task-preview span:last-child { min-width:0; overflow:hidden; font-size:.68rem; line-height:1.15; text-overflow:ellipsis; white-space:nowrap; }
+    .day-task-preview .tag-dot { width:7px; height:7px; }
+    .day-extra-count { color:var(--muted); font-size:.6rem; line-height:1.1; }
+    .day-empty { display:block; flex:none; min-height:0; padding:3px 0; font-size:.66rem; text-align:left; }
+    .day-add { width:20px; height:20px; margin-left:auto; }
+    .planner-section-btn { display:flex; flex:none; align-items:center; justify-content:space-between; width:100%; min-height:34px; margin:4px 0 0; padding:6px 10px; border:1px solid var(--line); border-radius:10px; background:#171e2c; color:var(--text); font-size:.76rem; font-weight:800; text-align:left; }
+    .planner-section-btn span { margin-left:auto; color:inherit; }
+    #planningBtn { border-color:#8a6a2e; background:linear-gradient(145deg,#33291b,#1e2028); color:#ffd166; }
+    #completedBtn { border-color:#505866; background:linear-gradient(145deg,#292d35,#1b1f28); color:#b9c0ca; }
+    .week-dock { position:fixed; z-index:19; left:50%; bottom:calc(70px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:flex; align-items:center; justify-content:center; gap:6px; width:min(520px,calc(100% - 24px)); min-height:42px; padding:4px 7px; border:1px solid #394663; border-radius:13px; background:#111827ed; backdrop-filter:blur(12px); box-shadow:0 8px 24px #0007; }
+    body:not([data-page="tasks"]) .week-dock { display:none; }
+    .week-dock .btn { min-height:32px; padding:4px 8px; font-size:.72rem; }
+    #weekLabel { flex:1; min-width:0; font-size:.72rem; }
+    #todayBtn { border-color:#789cf0; color:#dce6ff; }
+    .day-dialog-list,.modal-task-list { display:grid; gap:7px; max-height:60dvh; overflow-y:auto; overscroll-behavior:contain; }
+    .task-divider { display:flex; align-items:center; gap:8px; margin:5px 0; color:#b9c0ca; font-size:.7rem; font-weight:850; letter-spacing:.08em; }
+    .task-divider::before,.task-divider::after { content:''; flex:1; height:1px; background:#566071; }
+    .task-completion-meta { display:block; margin-top:4px; color:#aeb7c7; font-size:.67rem; }
+    .task-menu { position:relative; align-self:start; }
+    .field-label { font-size:.82rem; font-weight:700; }
+    .task-menu > summary,.note-menu > summary { display:grid; place-items:center; width:29px; height:29px; border-radius:8px; color:var(--muted); cursor:pointer; list-style:none; font-size:1.15rem; font-weight:900; line-height:1; }
+    .task-menu > summary::-webkit-details-marker,.note-menu > summary::-webkit-details-marker { display:none; }
+    .task-menu[open] > summary,.note-menu[open] > summary { background:#283650; color:var(--text); }
+    .task-menu-popover,.note-menu-popover { position:absolute; z-index:30; top:31px; right:0; display:grid; min-width:142px; gap:3px; padding:5px; border:1px solid #52617b; border-radius:10px; background:#101729; box-shadow:0 8px 24px #0009; }
+    .menu-action { min-height:32px; padding:6px 9px; border:0; border-radius:7px; background:transparent; text-align:left; font-size:.7rem; font-weight:850; }
+    .menu-edit { color:#ffd166; }
+    .menu-delete { color:#ff8b8b; }
+    .menu-move { color:#cbd5ea; }
+    .menu-action:hover { background:#26334c; }
+    .task-card .task-title { font-size:.75rem; line-height:1.2; }
+    .task-card.completed .task-open { opacity:.72; text-decoration:line-through; }
+    .task-card .task-title-row { gap:6px; }
+    .task-card .task-open { font-size:.75rem; line-height:1.2; }
+    #notesPage .page-heading { margin-bottom:7px; }
+    #notesPage .page-heading h2 { font-size:1.15rem; }
+    #notesPage .eyebrow { display:none; }
+    .note-list { display:block; columns:4 220px; column-gap:10px; margin-top:0; }
+    .note-card { position:relative; display:inline-block; width:100%; margin:0 0 10px; padding:12px; break-inside:avoid; cursor:pointer; }
+    .note-card:hover { border-color:#657ba7; background:#172239; }
+    .note-card-top { display:flex; justify-content:flex-end; min-height:26px; margin:-3px -3px 3px; }
+    .note-card h3 { margin:0 0 6px; font-size:.95rem; }
+    .note-card p { margin:0; font-size:.82rem; }
+    .note-card-content--titleless { color:#f4f6fb !important; font-size:.98rem !important; font-weight:700; line-height:1.35; }
+    .note-tag-list { display:flex; flex-wrap:wrap; gap:6px; }
+    .note-tag-choice { display:flex; align-items:center; gap:7px; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:#101729; font-size:.76rem; }
+    .note-tag-choice input { width:16px; min-height:16px; height:16px; margin:0; padding:0; accent-color:var(--accent); }
+    .note-tags-preview { display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
+    .note-tag-pill { padding:3px 6px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:.6rem; font-weight:750; }
+    #noteContent { min-height:105px; }
+    .filter-tag-option[aria-pressed="true"] { border-color:var(--accent); background:#243452; }
+    .filter-tag-option[aria-pressed="true"]::after { content:'✓'; margin-left:auto; color:var(--accent); font-weight:900; }
+    #autoBackupStatus { margin:8px 0 0; font-size:.75rem; }
+    @media(max-width:600px) { .note-list { columns:2 150px; } }
+    @media(max-width:370px) {
+      .wrap { padding-right:8px; padding-left:8px; }
+      .brand { gap:6px; }
+      .brand-icon { width:36px; height:36px; }
+      h1 { font-size:1rem; }
+      .brand p { font-size:.68rem; }
+      .header-actions { gap:4px; }
+      .header-actions .btn { min-height:32px; padding:5px 6px; font-size:.7rem; }
+      #tasksPage .page-heading h2 { font-size:.82rem; }
+      .filter-summary { max-width:50px; }
+      .filter-open { padding:5px 6px; font-size:.68rem; }
+      .home-item-date { font-size:.58rem !important; }
+      #todayBtn { padding:4px 6px; }
+      .week-dock { gap:3px; }
+      .week-dock .btn { padding:4px 6px; }
+      .note-list { columns:2 140px; }
+    }
+    @media(max-height:650px) {
+      .app-header { margin-bottom:6px; }
+      #homePage .home-stat { padding:5px 7px; }
+      #homePage .home-preview { margin-top:5px; }
+      #homePage .home-item { padding:4px 7px; }
+      #homePage .home-hero { gap:3px; margin-top:5px; padding:7px 10px; }
+      #homePage .home-hero h2 { font-size:.92rem; }
+      #homePage .home-hero p { display:none; }
+      #homePage .home-preview .page-heading { margin-bottom:2px; }
+      #tasksPage .page-heading { min-height:29px; margin-bottom:3px; }
+      .planner-section-btn { min-height:30px; margin-top:3px; }
+      .day-column { padding:3px 5px; }
+      .day-heading { min-height:17px; margin-bottom:2px; padding-bottom:2px; }
+    }
   </style>
 </head>
 <body>
   <main class="wrap">
     <header class="app-header">
-      <div class="brand"><span class="brand-mark" aria-hidden="true">TNM</span><div><h1>TA NA MÃO</h1><p>Seu planner da semana</p></div></div>
-      <button class="btn primary small" id="quickAddBtn" type="button">＋ Tarefa</button>
+      <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div><h1>Tá na mão!</h1><p>Seu planner semanal</p></div></div>
+      <div class="header-actions"><button class="btn" id="quickAddNoteBtn" type="button">＋ Nota</button><button class="btn primary" id="quickAddBtn" type="button">＋ Tarefa</button></div>
     </header>
 
     <section id="homePage" class="page active" aria-label="Início">
-      <div class="home-hero"><p class="eyebrow">SEMANA</p><h2>Organize o que importa.</h2><p>Organize suas tarefas por data de execução e use tags para filtrar. O que tiver execução antes de hoje aparece em ATRASADO.</p><div><button class="btn primary" data-open-tasks type="button">Abrir tarefas</button></div></div>
       <div class="home-stats" aria-label="Resumo"><div class="home-stat"><span>ATRASADO</span><strong id="homeOverdueCount">0</strong></div><div class="home-stat"><span>HOJE</span><strong id="homeTodayCount">0</strong></div><div class="home-stat"><span>SEM DATA</span><strong id="homeUnplannedCount">0</strong></div></div>
       <section class="home-preview"><div class="page-heading"><div><p class="eyebrow">PRÓXIMOS</p><h2>Da semana</h2></div><button class="btn ghost small" data-open-tasks type="button">Ver planner</button></div><div class="home-preview-list" id="homePreview"></div></section>
+      <div class="home-hero"><p class="eyebrow">SEMANA</p><h2>Organize o que importa.</h2><p>Seu planner semanal, simples e sempre à mão.</p><div><button class="btn primary" data-open-tasks type="button">Abrir tarefas</button></div></div>
     </section>
 
-    <section id="tasksPage" class="page" aria-label="Tarefas">
-      <div class="page-heading"><div><p class="eyebrow">PLANNER SEMANAL</p><h2>Tarefas</h2></div><div class="filter-action"><span class="filter-summary" id="activeFilterSummary">TODAS</span><button class="btn" id="filterBtn" type="button" aria-haspopup="dialog">FILTRO</button></div></div>
-      <div class="week-controls" aria-label="Navegar entre semanas">
-        <button class="btn ghost small" id="prevWeekBtn" type="button" aria-label="Semana anterior">‹</button>
-        <button class="btn ghost small" id="todayBtn" type="button">Hoje</button>
-        <strong id="weekLabel" aria-live="polite"></strong>
-        <button class="btn ghost small" id="nextWeekBtn" type="button" aria-label="Próxima semana">›</button>
-      </div>
-      <details class="planning-box" id="planningBox">
-        <summary>Planejar <span id="unplannedCount">0</span></summary>
-        <div class="planning-content"><p class="planning-hint">Sem data de execução. Arraste uma tarefa para um dia ou defina a data ao editar.</p><div class="task-list" id="unplannedList"></div></div>
-      </details>
+    <section id="tasksPage" class="page" aria-label="Planner de tarefas">
+      <div class="page-heading"><div><h2>PLANNER DE TAREFAS</h2></div><div class="filter-action"><span class="filter-summary" id="activeFilterSummaryTasks" data-active-filter-summary>TODAS</span><button class="btn filter-open" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button></div></div>
       <div class="week-grid" id="weekGrid" aria-label="Semana"></div>
-      <details class="completed-box" id="completedBox"><summary>Concluídas <span id="completedCount">0</span></summary><div class="task-list" id="completedList"></div></details>
+      <button class="planner-section-btn planning-box" id="planningBtn" type="button">Planejar <span id="unplannedCount">0</span></button>
+      <button class="planner-section-btn completed-box" id="completedBtn" type="button">Concluídas <span id="completedCount">0</span></button>
     </section>
 
     <section id="notesPage" class="page" aria-label="Notas">
-      <div class="page-heading"><div><p class="eyebrow">ANOTAÇÕES</p><h2>Notas</h2></div><button class="btn primary" id="newNoteBtn" type="button">＋ Nova nota</button></div>
+      <div class="page-heading"><div><h2>Notas</h2></div><div class="filter-action"><span class="filter-summary" id="activeFilterSummaryNotes" data-active-filter-summary>TODAS</span><button class="btn filter-open" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button></div></div>
       <div class="note-list" id="notesList"></div>
     </section>
 
@@ -196,10 +320,12 @@
           <div id="authFields"><div class="field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Mínimo de 8 caracteres"></div></div>
           <div class="form-actions"><button class="btn primary" id="loginBtn" type="button">Entrar</button><button class="btn" id="signupBtn" type="button">Criar conta</button><button class="btn hidden" id="syncNowBtn" type="button">Sincronizar</button><button class="btn hidden" id="logoutBtn" type="button">Sair</button></div><p class="status-text" id="authMessage" aria-live="polite"></p>
         </section>
-        <section class="panel" aria-label="Backup"><h3>Backup</h3><p class="muted">Exporte suas tarefas e notas para um arquivo JSON.</p><div class="form-actions"><button class="btn" id="exportBtn" type="button">Exportar backup</button></div><p class="status-text" id="backupMessage" aria-live="polite"></p></section>
+        <section class="panel" aria-label="Backup"><h3>Backup</h3><p class="muted">O app salva um snapshot automático neste aparelho a cada 5 minutos enquanto estiver aberto. Para guardar uma cópia fora do navegador, exporte o arquivo JSON.</p><p class="status-text" id="autoBackupStatus" aria-live="polite">Preparando backup automático…</p><div class="form-actions"><button class="btn" id="exportBtn" type="button">Exportar backup</button></div><p class="status-text" id="backupMessage" aria-live="polite"></p></section>
       </div>
     </section>
   </main>
+
+  <nav class="week-dock" id="weekDock" aria-label="Navegar entre semanas"><button class="btn ghost" id="prevWeekBtn" type="button" aria-label="Semana anterior">‹</button><strong id="weekLabel" aria-live="polite"></strong><button class="btn ghost" id="todayBtn" type="button">HOJE</button><button class="btn ghost" id="nextWeekBtn" type="button" aria-label="Próxima semana">›</button></nav>
 
   <nav class="main-nav" aria-label="Navegação principal">
     <button class="nav-btn" type="button" data-page="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span>Home</span></button>
@@ -208,15 +334,19 @@
     <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>Configs</span></button>
   </nav>
 
-  <dialog id="taskDialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><p class="dialog-hint">Sem data, fica em Planejar. Uma data anterior a hoje envia para ATRASADO.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar</button><button class="btn" id="deleteTaskBtn" type="button">Excluir</button></div></form></dialog>
+  <dialog id="taskDialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><p class="dialog-hint">Sem data, fica em Planejar. Uma tarefa entra em ATRASADO quando a semana seguinte começa.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar</button><button class="btn" id="deleteTaskBtn" type="button">Excluir</button></div></form></dialog>
 
-  <dialog id="filterDialog"><div class="dialog-head"><h2>Filtrar por tag</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Escolha uma tag para filtrar o planner. “Todas” mostra tudo.</p><div class="filter-tag-list" id="filterTagList"></div><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
+  <dialog id="filterDialog"><div class="dialog-head"><h2>Filtros</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione uma ou mais tags. Aparecem tarefas e notas que tenham qualquer tag selecionada.</p><div class="filter-tag-list" id="filterTagList"></div><button class="btn small" id="clearFiltersBtn" type="button">Limpar seleção</button><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
 
-  <dialog id="noteDialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><label for="noteContent">Conteúdo</label><textarea id="noteContent" maxlength="20000" required placeholder="Escreva sua nota…"></textarea></div><div class="form-actions"><button class="btn primary" type="submit">Salvar nota</button><button class="btn" id="deleteNoteBtn" type="button">Excluir</button></div></form></dialog>
+  <dialog id="dayDialog"><div class="dialog-head"><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><div class="form-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
+  <dialog id="planningDialog"><div class="dialog-head"><h2>Planejar</h2><button class="btn ghost small" id="closePlanningDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Tarefas sem data de execução. Use o menu para editar, excluir ou ordenar.</p><div class="modal-task-list" id="planningList"></div></dialog>
+  <dialog id="completedDialog"><div class="dialog-head"><h2>Concluídas</h2><button class="btn ghost small" id="closeCompletedDialog" type="button" aria-label="Fechar">✕</button></div><div class="modal-task-list" id="completedList"></div></dialog>
+
+  <dialog id="noteDialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título (opcional)</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><label for="noteContent">Conteúdo (opcional)</label><textarea id="noteContent" maxlength="20000" placeholder="Escreva sua nota…"></textarea></div><div class="field"><span class="field-label">Tags</span><div class="note-tag-list" id="noteTagChoices"></div></div><p class="dialog-hint">Preencha o título, o conteúdo ou os dois.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar nota</button></div></form></dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=52" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=52',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=53" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=53',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
