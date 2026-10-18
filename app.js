@@ -1,2191 +1,582 @@
 (() => {
   'use strict';
-  const STORAGE_KEY = 'naMinhaMao.tasks.v1';
-  const NOTES_STORAGE_KEY = 'naMinhaMao.notes.v1';
-  const NOTES_SEARCH_HISTORY_KEY = 'naMinhaMao.notesSearchHistory.v1';
-  const TIMER_KEY = 'naMinhaMao.timer.v1';
-  const TASK_ORDER_KEY = 'naMinhaMao.taskOrder.v1';
-  const TASK_ORDER_UPDATED_KEY = 'naMinhaMao.taskOrderUpdatedAt.v1';
-  const USER_TASK_ORDER_KEY = 'naMinhaMao_task_order';
-  const USER_TASK_ORDER_UPDATED_KEY = 'naMinhaMao_task_order_updated_at';
-  const USER_TASK_CATEGORIES_KEY = 'naMinhaMao_task_categories';
-  const TASK_AREA_STORAGE_KEY = 'naMinhaMao.taskArea.v1';
-  const TASK_CATEGORY_STORAGE_KEY = 'naMinhaMao.taskCategory.v1';
-  const PLANNER_WEEK_STORAGE_KEY = 'naMinhaMao.plannerWeek.v1';
-  const PLAN_TRAY_STORAGE_KEY = 'naMinhaMao.planTrayOpen.v1';
-  const TASK_AREA_CATEGORIES = { inbox:[], life:['finance','home','personal'], work:['released','quote','approval'] };
-  const TASK_VIEW_ORDER_KEYS = ['inbox','life_finance','life_home','life_personal','life_done','work_released','work_quote','work_approval','work_done'];
-  const ZOOM_KEY = 'naMinhaMao.zoom.v1';
-  const SESSION_KEY = 'naMinhaMao.supabase.session.v1';
-  const SYNC_KEY = 'naMinhaMao.supabase.sync.v1';
-  const HISTORY_PREFIX = '[HISTÓRICO] ';
+
   const CLOUD = window.NMM_SUPABASE || {};
   const CLOUD_READY = Boolean(CLOUD.url && CLOUD.publishableKey);
-  const $ = (id) => document.getElementById(id);
-  let tasks = load(STORAGE_KEY, []);
-  if (!Array.isArray(tasks)) tasks = [];
-  const tasksBeforeCategoryMigration = JSON.stringify(tasks);
-  tasks = tasks.map(normalizeTaskClassification);
-  if (JSON.stringify(tasks) !== tasksBeforeCategoryMigration) localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  let notes = load(NOTES_STORAGE_KEY, []);
-  if (!Array.isArray(notes)) notes = [];
-  let notesSearchHistory = load(NOTES_SEARCH_HISTORY_KEY, []);
-  if (!Array.isArray(notesSearchHistory)) notesSearchHistory = [];
-  let notesSearchManuallyEdited = false;
-  let remoteNotesEnabled = false;
-  let timer = load(TIMER_KEY, null);
-  let taskOrder = load(TASK_ORDER_KEY, {});
-  if (!taskOrder || typeof taskOrder !== 'object' || Array.isArray(taskOrder)) taskOrder = {};
-  let taskOrderUpdatedAt = localStorage.getItem(TASK_ORDER_UPDATED_KEY) || null;
-  let currentZoom = 1;
-  let draggedTaskId = null;
-  let draggedOrderList = null;
-  let draggedDropPosition = null;
-  let session = consumeAuthCallback() || load(SESSION_KEY, null);
-  let syncEnabled = localStorage.getItem(SYNC_KEY) === 'true';
-  let releaseTarget = null;
-  let categoryTaskId = null;
-  let detailTaskId = null;
-  let historyExpanded = false;
-  let plannerWeekStart = startOfWeekKey(localStorage.getItem(PLANNER_WEEK_STORAGE_KEY) || todayKey());
-  let plannerMonthCursor = `${addDaysKey(plannerWeekStart,3).slice(0,7)}-01`;
-  let planTrayOpen = localStorage.getItem(PLAN_TRAY_STORAGE_KEY) === 'true';
-  let plannerDraggedTaskId = null;
-  let plannerSwipeOrigin = null;
-  localStorage.removeItem('naMinhaMao.view');
-  const storedPage = localStorage.getItem('naMinhaMao.page');
-  let currentPage = ['home','tasks','notes','settings'].includes(storedPage) ? storedPage : 'home';
-  let currentTaskArea = ['life','work'].includes(localStorage.getItem(TASK_AREA_STORAGE_KEY)) ? localStorage.getItem(TASK_AREA_STORAGE_KEY) : 'life';
-  let currentTaskCategory = localStorage.getItem(TASK_CATEGORY_STORAGE_KEY) || (currentTaskArea === 'life' ? 'finance' : currentTaskArea === 'work' ? 'released' : '');
-  if (currentTaskArea === 'inbox') currentTaskCategory = '';
-  else if (currentTaskCategory !== 'done' && !TASK_AREA_CATEGORIES[currentTaskArea].includes(currentTaskCategory)) currentTaskCategory = TASK_AREA_CATEGORIES[currentTaskArea][0];
-  let toastTimeout;
-  let syncTimeout;
+  const TASKS_KEY = 'tnm.weekly.tasks.v1';
+  const NOTES_KEY = 'tnm.weekly.notes.v1';
+  const SESSION_KEY = 'naMinhaMao.supabase.session.v1';
+  const RESET_KEY = 'tnm.weekly.reset.v1';
+  const AREA_KEY = 'tnm.weekly.area.v1';
+  const WEEK_KEY = 'tnm.weekly.week.v1';
+  const PAGE_KEY = 'tnm.weekly.page.v1';
+  const RESET_CUTOFF = '2026-10-18T14:27:00.000Z';
+  const AREAS = ['vida','trabalho','outros'];
+  const AREA_LABELS = { vida:'VIDA', trabalho:'TRABALHO', outros:'OUTROS' };
+  const DAY_LABELS = ['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+  const LEGACY_KEYS = [
+    'naMinhaMao.tasks.v1','naMinhaMao.notes.v1','naMinhaMao.notesSearchHistory.v1','naMinhaMao.timer.v1',
+    'naMinhaMao.taskOrder.v1','naMinhaMao.taskOrderUpdatedAt.v1','naMinhaMao_task_order','naMinhaMao_task_order_updated_at',
+    'naMinhaMao_task_categories','naMinhaMao.taskArea.v1','naMinhaMao.taskCategory.v1','naMinhaMao.plannerWeek.v1',
+    'naMinhaMao.planTrayOpen.v1','naMinhaMao.zoom.v1','naMinhaMao.view','naMinhaMao.page','naMinhaMao.supabase.sync.v1'
+  ];
+  const $ = id => document.getElementById(id);
+  const nowISO = () => new Date().toISOString();
+  const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  let tasks = [];
+  let notes = [];
+  let session = readStored(SESSION_KEY,null);
+  let currentArea = AREAS.includes(localStorage.getItem(AREA_KEY)) ? localStorage.getItem(AREA_KEY) : 'vida';
+  let currentPage = ['home','tasks','notes','settings'].includes(localStorage.getItem(PAGE_KEY)) ? localStorage.getItem(PAGE_KEY) : 'home';
+  let weekStart = startOfWeek(localStorage.getItem(WEEK_KEY) || todayKey());
+  let dragTaskId = '';
+  let authBusy = false;
+  let authMessage = '';
+  let syncStatus = '';
+  let syncTimer = null;
   let syncInFlight = false;
   let syncQueued = false;
-  let authBusy = false;
-  let authMessageText = '';
-  let syncStatusText = '';
-  const remoteTaskIds = new Set();
-  const remoteCommentIds = new Set();
-  const remoteLinkIds = new Set();
-  const remoteNoteIds = new Set();
+  let toastTimer = null;
 
-  function load(key, fallback) {
-    try { const value = localStorage.getItem(key); return value ? JSON.parse(value) : fallback; }
+  function readStored(key,fallback) {
+    try { const value=localStorage.getItem(key); return value ? JSON.parse(value) : fallback; }
     catch { return fallback; }
   }
-  function clone(value) { return JSON.parse(JSON.stringify(value)); }
-  function normalizeTaskClassification(task) {
-    if (!task || typeof task !== 'object') return task;
-    const hadArea = ['inbox','life','work'].includes(task.area);
-    const area = hadArea ? task.area : 'inbox';
-    const options = TASK_AREA_CATEGORIES[area] || [];
-    const category = area === 'inbox' ? null : (options.includes(task.category) ? task.category : options[0]);
-    return { ...task, executionDate:task.executionDate || null, area, category, categoryUpdatedAt:task.categoryUpdatedAt || null };
+  function resetOldBrowserData() {
+    if (localStorage.getItem(RESET_KEY) === 'done') return;
+    for (const key of LEGACY_KEYS) localStorage.removeItem(key);
+    localStorage.setItem(RESET_KEY,'done');
   }
-  function taskCategoryKey(task) {
-    const normalized = normalizeTaskClassification(task);
-    if (normalized.area === 'inbox') return 'inbox';
-    if (normalized.completedAt) return `${normalized.area}_done`;
-    return `${normalized.area}_${normalized.category}`;
+  function loadLocalData() {
+    const storedTasks=readStored(TASKS_KEY,[]), storedNotes=readStored(NOTES_KEY,[]);
+    tasks=Array.isArray(storedTasks) ? storedTasks.map(normalizeTask).filter(Boolean) : [];
+    notes=Array.isArray(storedNotes) ? storedNotes.map(normalizeNote).filter(Boolean) : [];
   }
-  function taskCategoryRecord(task) {
-    const normalized = normalizeTaskClassification(task);
-    return { area:normalized.area, category:normalized.category, updatedAt:normalized.categoryUpdatedAt || new Date().toISOString() };
+  function normalizeTask(value) {
+    if (!value || typeof value !== 'object' || !String(value.title || '').trim()) return null;
+    return {
+      id:String(value.id || makeId()), title:String(value.title).trim().slice(0,180),
+      area:AREAS.includes(value.area) ? value.area : 'vida',
+      executionDate:isDateKey(value.executionDate) ? value.executionDate : null,
+      createdAt:String(value.createdAt || nowISO()), updatedAt:String(value.updatedAt || value.createdAt || nowISO()),
+      completedAt:value.completedAt ? String(value.completedAt) : null,
+      deletedAt:value.deletedAt ? String(value.deletedAt) : null
+    };
   }
-  function validTaskCategoryRecord(value) {
-    if (!value || typeof value !== 'object' || !['inbox','life','work'].includes(value.area)) return null;
-    const categories = TASK_AREA_CATEGORIES[value.area] || [];
-    const category = value.area === 'inbox' ? null : (categories.includes(value.category) ? value.category : categories[0]);
-    return { area:value.area, category, updatedAt:String(value.updatedAt || '') };
+  function normalizeNote(value) {
+    if (!value || typeof value !== 'object' || !String(value.content || '').trim()) return null;
+    return {
+      id:String(value.id || makeId()), title:String(value.title || '').trim().slice(0,140), content:String(value.content).slice(0,20000),
+      createdAt:String(value.createdAt || nowISO()), updatedAt:String(value.updatedAt || value.createdAt || nowISO()),
+      deletedAt:value.deletedAt ? String(value.deletedAt) : null
+    };
   }
-  function normalizeTaskCategoryMap(value) {
-    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-    return Object.fromEntries(Object.entries(source).map(([taskId,record]) => [String(taskId),validTaskCategoryRecord(record)]).filter(([,record]) => Boolean(record)));
+  function saveTasks(schedule=true) {
+    localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
+    renderAll();
+    if (schedule) scheduleSync();
   }
-  function applyTaskCategoryRecord(task, record) {
-    const valid = validTaskCategoryRecord(record);
-    if (!task || !valid) return false;
-    task.area = valid.area; task.category = valid.category; task.categoryUpdatedAt = valid.updatedAt || null;
-    return true;
+  function saveNotes(schedule=true) {
+    localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
+    renderNotes();
+    if (schedule) scheduleSync();
   }
-  function taskCategoryRevision(task) {
-    const value = Date.parse(task?.categoryUpdatedAt || '');
-    return Number.isFinite(value) ? value : 0;
-  }
-  function consumeAuthCallback() {
-    const hash = location.hash.startsWith('#') ? new URLSearchParams(location.hash.slice(1)) : null;
-    const accessToken = hash?.get('access_token');
-    const refreshToken = hash?.get('refresh_token');
-    if (!accessToken || !refreshToken) return null;
-    const expiresIn = Number(hash.get('expires_in')) || 3600;
-    const found = { access_token:accessToken, refresh_token:refreshToken, expires_at:Date.now() + expiresIn * 1000 };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(found));
-    history.replaceState(null, '', `${location.pathname}${location.search}`);
-    return found;
-  }
-  function save(schedule = true) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    localStorage.setItem(TIMER_KEY, JSON.stringify(timer));
-    if (schedule) scheduleCloudSync();
-  }
-  function saveNotes(schedule = true) {
-    localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
-    if (schedule) scheduleCloudSync();
-  }
-  function id() { return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
   function escapeHTML(value) {
-    return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+    return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }
-  function todayKey() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  function isDateKey(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return false;
+    const [y,m,d]=String(value).split('-').map(Number);
+    const date=new Date(y,m-1,d,12);
+    return date.getFullYear()===y && date.getMonth()===m-1 && date.getDate()===d;
   }
   function dateAtNoon(key) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(key || ''))) return null;
-    const [y,m,d] = key.split('-').map(Number);
-    const date = new Date(y, m-1, d, 12, 0, 0);
-    return date.getFullYear() === y && date.getMonth() === m-1 && date.getDate() === d ? date : null;
+    if (!isDateKey(key)) return null;
+    const [y,m,d]=key.split('-').map(Number);
+    return new Date(y,m-1,d,12,0,0,0);
   }
-  function daysSince(key) {
-    if (!key) return 0;
-    const [y,m,d] = key.split('-').map(Number);
-    const [ty,tm,td] = todayKey().split('-').map(Number);
-    return Math.max(0, Math.floor((Date.UTC(ty,tm-1,td)-Date.UTC(y,m-1,d))/86400000));
-  }
-  function formatDate(key) {
-    const d = dateAtNoon(key);
-    return d ? d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' }) : '';
-  }
-  function dateKeyFromDate(date) {
+  function dateKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   }
-  function addDaysKey(key, amount) {
-    const date = dateAtNoon(key) || dateAtNoon(todayKey());
-    date.setDate(date.getDate() + Number(amount || 0));
-    return dateKeyFromDate(date);
+  function todayKey() { return dateKey(new Date()); }
+  function addDays(key,amount) {
+    const date=dateAtNoon(key);
+    if (!date) return todayKey();
+    date.setDate(date.getDate()+Number(amount || 0));
+    return dateKey(date);
   }
-  function startOfWeekKey(key) {
-    const date = dateAtNoon(key) || dateAtNoon(todayKey());
-    date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-    return dateKeyFromDate(date);
+  function startOfWeek(key) {
+    const date=dateAtNoon(key) || new Date();
+    const offset=(date.getDay()+6)%7;
+    date.setDate(date.getDate()-offset);
+    return dateKey(date);
   }
-  function shiftMonthKey(key, amount) {
-    const date = dateAtNoon(key) || dateAtNoon(todayKey());
-    date.setDate(1);
-    date.setMonth(date.getMonth() + Number(amount || 0));
-    return dateKeyFromDate(date);
+  function formatDate(key,options={weekday:'short',day:'2-digit',month:'2-digit'}) {
+    const date=dateAtNoon(key);
+    return date ? date.toLocaleDateString('pt-BR',options) : '';
   }
-  function formatPlannerDayName(key) {
-    return (dateAtNoon(key)?.toLocaleDateString('pt-BR', { weekday:'short' }) || '').replace(/\./g,'').toUpperCase();
+  function formatWeekRange(start) {
+    const end=addDays(start,6);
+    const a=dateAtNoon(start), b=dateAtNoon(end);
+    if (!a || !b) return '';
+    const sameMonth=a.getMonth()===b.getMonth() && a.getFullYear()===b.getFullYear();
+    return sameMonth
+      ? `${a.getDate()}–${b.getDate()} ${b.toLocaleDateString('pt-BR',{month:'short',year:'numeric'})}`
+      : `${a.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} – ${b.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}`;
   }
-  function formatPlannerDayMonth(key) {
-    const date = dateAtNoon(key);
-    return date ? `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}` : '';
-  }
-  function plannerMonthWeeks(monthKey) {
-    const firstKey = `${String(monthKey || todayKey()).slice(0,7)}-01`;
-    const first = dateAtNoon(firstKey);
-    if (!first) return [];
-    const year = first.getFullYear(), month = first.getMonth();
-    const last = dateAtNoon(`${year}-${String(month+1).padStart(2,'0')}-${new Date(year,month+1,0).getDate()}`);
-    let cursor = dateAtNoon(startOfWeekKey(firstKey));
-    const weeks = [];
-    for (let index=0; index<6 && cursor <= last; index++) {
-      const startKey = dateKeyFromDate(cursor);
-      const endKey = addDaysKey(startKey,6);
-      if (dateAtNoon(endKey) >= first) weeks.push(startKey);
-      cursor = dateAtNoon(addDaysKey(startKey,7));
-    }
-    return weeks;
-  }
-  function plannerWeekLabel() {
-    const midweekKey = addDaysKey(plannerWeekStart,3);
-    const midweek = dateAtNoon(midweekKey);
-    const monthName = (midweek?.toLocaleDateString('pt-BR', { month:'short' }) || '').replace(/\./g,'').toUpperCase();
-    if (!midweek) return '';
-    const firstWeek = startOfWeekKey(`${midweek.getFullYear()}-${String(midweek.getMonth()+1).padStart(2,'0')}-01`);
-    const [year,month,day] = plannerWeekStart.split('-').map(Number);
-    const [firstYear,firstMonth,firstDay] = firstWeek.split('-').map(Number);
-    const weekNumber = Math.round((Date.UTC(year,month-1,day) - Date.UTC(firstYear,firstMonth-1,firstDay)) / 604800000) + 1;
-    return `${monthName} · Semana ${weekNumber}`;
-  }
-  function formatPlannerWeekRange(startKey) {
-    const endKey = addDaysKey(startKey,6);
-    return `${formatPlannerDayMonth(startKey)}–${formatPlannerDayMonth(endKey)}`;
-  }
-  function formatMinutes(minutes) {
-    const n = Number(minutes) || 0;
-    const h = Math.floor(n/60), m = n%60;
-    if (h && m) return `${h} h ${m} min`;
-    if (h) return `${h} h`;
-    return `${m} min`;
-  }
-  function elapsedSeconds(task) {
-    let elapsed = Number(task.timeSpentSeconds) || 0;
-    if (timer?.taskId === task.id && timer.startedAt) elapsed += Math.max(0, Math.floor((Date.now()-timer.startedAt)/1000));
-    return elapsed;
-  }
-  function clock(seconds) {
-    const s = Math.max(0, Math.floor(seconds));
-    return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-  }
-  function remainingLabel(task) {
-    const remaining = (Number(task.estimateMinutes)||0)*60 - elapsedSeconds(task);
-    return remaining >= 0 ? `Foco ${clock(remaining)}` : `+${clock(Math.abs(remaining))} além da estimativa`;
-  }
-  function dueStatus(task) {
-    if (!task.dueDate) return '';
-    if (task.dueDate < todayKey()) return 'late';
-    return '';
+  function setWeek(key) {
+    weekStart=startOfWeek(key);
+    localStorage.setItem(WEEK_KEY,weekStart);
+    renderTasks();
   }
   function showToast(message) {
-    const node = $('toast');
-    node.textContent = message;
+    const node=$('toast');
+    node.textContent=String(message || '');
     node.classList.remove('hidden');
-    clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => node.classList.add('hidden'), 4200);
-  }
-  function recordHistory(task, action, createdAt = new Date().toISOString()) {
-    if (!task || !action) return;
-    task.comments ||= [];
-    task.comments.push({ id:id(), text:`${HISTORY_PREFIX}${action}`, source:'Manual', createdAt });
-  }
-  function setAuthMessage(message, isError = false) {
-    authMessageText = message;
-    const node = $('authMessage');
-    if (!node) return;
-    node.textContent = message;
-    node.classList.toggle('error-text', isError);
-  }
-  function updateAuthUI() {
-    if (!CLOUD_READY) {
-      $('authStatus').textContent = 'Sincronização indisponível';
-      $('authFields').classList.remove('hidden');
-      $('loginBtn').disabled = true;
-      $('signupBtn').disabled = true;
-      $('logoutBtn').classList.add('hidden');
-      setAuthMessage('A configuração segura do banco ainda não está disponível.');
-      return;
-    }
-    const connected = Boolean(session?.user?.id && syncEnabled);
-    $('authStatus').textContent = connected ? (syncStatusText || `Sincronizado como ${session.user.email || 'sua conta'}`) : 'Modo local';
-    $('authFields').classList.toggle('hidden', connected);
-    $('loginBtn').classList.toggle('hidden', connected);
-    $('signupBtn').classList.toggle('hidden', connected);
-    $('logoutBtn').classList.toggle('hidden', !connected);
-    $('syncNowBtn').classList.toggle('hidden', !connected);
-    $('loginBtn').disabled = authBusy;
-    $('signupBtn').disabled = authBusy;
-    $('syncNowBtn').disabled = authBusy;
-    if (!authMessageText && !authBusy) setAuthMessage(connected ? 'Seus dados sincronizam entre aparelhos e ficam privados na sua conta.' : 'Entre ou crie sua conta para sincronizar. Os dados atuais continuam salvos neste navegador.');
-  }
-  function setAuthBusy(busy, message = '') {
-    authBusy = busy;
-    if (message) setAuthMessage(message);
-    updateAuthUI();
-  }
-  function setFormMode() {
-    const ready = document.querySelector('input[name="ready"]:checked')?.value === 'yes';
-    $('dueField').classList.toggle('hidden', !ready);
-    $('rewardField').classList.toggle('hidden', !ready);
-    $('blockerField').classList.toggle('hidden', ready);
-  }
-  function openNewForm() {
-    $('taskForm').reset();
-    $('taskId').value = '';
-    $('details').value = '';
-    $('estimate').value = 60;
-    document.querySelector('input[name="ready"][value="yes"]').checked = true;
-    document.querySelectorAll('input[name="ready"]').forEach(input => input.disabled = false);
-    $('formTitle').textContent = 'Nova tarefa';
-    $('formPanel').classList.remove('hidden');
-    updateTaskScreenMode();
-    setFormMode();
-    $('title').focus();
-    $('formPanel').scrollIntoView({ behavior:'smooth', block:'start' });
-  }
-  function openEditForm(taskId) {
-    const task = tasks.find(item => item.id === taskId);
-    if (!task) return;
-    $('taskForm').reset();
-    $('taskId').value = task.id;
-    $('title').value = task.title;
-    $('details').value = task.details || '';
-    $('estimate').value = task.estimateMinutes || 60;
-    $('dueDate').value = task.dueDate || '';
-    $('reward').value = task.reward || '';
-    $('blocker').value = task.blocker || '';
-    document.querySelector(`input[name="ready"][value="${task.status === 'waiting' ? 'no' : 'yes'}"]`).checked = true;
-    document.querySelectorAll('input[name="ready"]').forEach(input => input.disabled = task.status !== 'waiting');
-    $('formTitle').textContent = 'Editar tarefa';
-    $('formPanel').classList.remove('hidden');
-    updateTaskScreenMode();
-    setFormMode();
-    $('title').focus();
-    $('formPanel').scrollIntoView({ behavior:'smooth', block:'start' });
-  }
-  function closeForm() { $('formPanel').classList.add('hidden'); updateTaskScreenMode(); }
-  const ORDER_LIST_IDS = { active:'activeList', review:'reviewList', waiting:'waitingList', done:'doneList' };
-  const LEGACY_TASK_ORDER_KEYS = Object.keys(ORDER_LIST_IDS);
-  const TASK_ORDER_KEYS = [...new Set([...LEGACY_TASK_ORDER_KEYS, ...TASK_VIEW_ORDER_KEYS])];
-  function normalizeTaskOrder(value) {
-    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-    return Object.fromEntries(TASK_ORDER_KEYS.map(key => [key, Array.isArray(source[key]) ? source[key].map(String) : []]));
-  }
-  taskOrder = normalizeTaskOrder(taskOrder);
-  if (!taskOrder.inbox.length) {
-    const inboxIds = tasks.filter(task => task?.area === 'inbox').map(task => String(task.id));
-    const legacyIds = LEGACY_TASK_ORDER_KEYS.flatMap(key => taskOrder[key]);
-    const inboxSet = new Set(inboxIds);
-    taskOrder.inbox = [...new Set([...legacyIds, ...inboxIds])].filter(taskId => inboxSet.has(taskId));
-    if (inboxIds.length) persistTaskOrder(taskOrder, nextTaskOrderTimestamp());
-    else localStorage.setItem(TASK_ORDER_KEY, JSON.stringify(taskOrder));
-  }
-  function hasSavedTaskOrder(value = taskOrder) {
-    return Object.values(normalizeTaskOrder(value)).some(ids => ids.length > 0);
-  }
-  function persistTaskOrder(value, updatedAt) {
-    taskOrder = normalizeTaskOrder(value);
-    localStorage.setItem(TASK_ORDER_KEY, JSON.stringify(taskOrder));
-    taskOrderUpdatedAt = updatedAt || null;
-    if (taskOrderUpdatedAt) localStorage.setItem(TASK_ORDER_UPDATED_KEY, taskOrderUpdatedAt);
-    else localStorage.removeItem(TASK_ORDER_UPDATED_KEY);
-  }
-  function nextTaskOrderTimestamp() {
-    const previous = Date.parse(taskOrderUpdatedAt || '') || 0;
-    return new Date(Math.max(Date.now(), previous + 1)).toISOString();
-  }
-  function setRemoteUser(user) {
-    if (!user || typeof user !== 'object') return;
-    session.user = user;
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  }
-  const TASK_STATUS_OPTIONS = [
-    { id:'active', orderKey:'active', label:'Liberado' },
-    { id:'client_review', orderKey:'review', label:'Aprovando' },
-    { id:'waiting', orderKey:'waiting', label:'Aguardando' }
-  ];
-  function orderKeyForStatus(status) {
-    return TASK_STATUS_OPTIONS.find(option => option.id === status)?.orderKey || null;
-  }
-  function statusForOrderKey(orderKey) {
-    return TASK_STATUS_OPTIONS.find(option => option.orderKey === orderKey)?.id || null;
-  }
-  function applyManualOrder(items, listKey) {
-    const saved = Array.isArray(taskOrder[listKey]) ? taskOrder[listKey].map(String) : [];
-    if (!saved.length) return items;
-    const byId = new Map(items.map(item => [String(item.id), item]));
-    const ordered = [];
-    saved.forEach(taskId => {
-      const item = byId.get(taskId);
-      if (item) { ordered.push(item); byId.delete(taskId); }
-    });
-    items.forEach(item => {
-      const taskId = String(item.id);
-      if (byId.has(taskId)) { ordered.push(item); byId.delete(taskId); }
-    });
-    return ordered;
-  }
-  function saveManualOrder(listKey, ids) {
-    if (!TASK_ORDER_KEYS.includes(listKey)) return;
-    const nextOrder = normalizeTaskOrder(taskOrder);
-    nextOrder[listKey] = ids.map(String);
-    persistTaskOrder(nextOrder, nextTaskOrderTimestamp());
-    scheduleCloudSync();
-  }
-  function manualOrderToast() {
-    return session?.user?.id && syncEnabled
-      ? 'Ordem atualizada; sincronizando com sua conta…'
-      : 'Ordem salva neste navegador. Entre na conta para sincronizar.';
-  }
-  function taskIdsInList(listKey) {
-    const list = $('taskList');
-    if (TASK_VIEW_ORDER_KEYS.includes(listKey) && list?.dataset.orderKey === listKey) return Array.from(list.querySelectorAll('.task[data-task]'), card => String(card.dataset.task));
-    return normalizeTaskOrder(taskOrder)[listKey] || [];
-  }
-  function moveTaskOrderEntry(taskId, sourceKey, targetKey) {
-    const idValue = String(taskId);
-    if (!TASK_ORDER_KEYS.includes(sourceKey) || !TASK_ORDER_KEYS.includes(targetKey) || sourceKey === targetKey) return;
-    saveManualOrder(sourceKey, taskIdsInList(sourceKey).filter(id => id !== idValue));
-    saveManualOrder(targetKey, [...taskIdsInList(targetKey).filter(id => id !== idValue), idValue]);
-  }
-  function removeTaskFromOrder(taskId) {
-    const idValue = String(taskId);
-    const nextOrder = normalizeTaskOrder(taskOrder);
-    let changed = false;
-    TASK_ORDER_KEYS.forEach(key => {
-      const nextIds = nextOrder[key].filter(id => id !== idValue);
-      if (nextIds.length !== nextOrder[key].length) changed = true;
-      nextOrder[key] = nextIds;
-    });
-    if (changed) {
-      persistTaskOrder(nextOrder, nextTaskOrderTimestamp());
-      scheduleCloudSync();
-    }
-  }
-  function orderListForId(listId) {
-    if (listId === 'taskList') return $('taskList')?.dataset.orderKey || null;
-    return Object.keys(ORDER_LIST_IDS).find(key => ORDER_LIST_IDS[key] === listId) || null;
-  }
-  function insertDraggedTaskId(ids, taskId, targetTaskId, after) {
-    const ordered = ids.map(String).filter(id => id !== String(taskId));
-    const targetIndex = targetTaskId ? ordered.indexOf(String(targetTaskId)) : -1;
-    const insertAt = targetIndex < 0 ? ordered.length : targetIndex + (after ? 1 : 0);
-    ordered.splice(insertAt, 0, String(taskId));
-    return ordered;
-  }
-  function moveTaskInList(taskId, listKey, direction) {
-    const list = $('taskList');
-    if (!list || list.dataset.orderKey !== listKey) return;
-    const ids = Array.from(list.querySelectorAll('.task[data-task]'), card => card.dataset.task);
-    const from = ids.indexOf(String(taskId));
-    const to = from + direction;
-    if (from < 0 || to < 0 || to >= ids.length) return;
-    [ids[from],ids[to]] = [ids[to],ids[from]];
-    saveManualOrder(listKey, ids);
-    render();
-    showToast(manualOrderToast());
-  }
-  function moveTaskToStatus(taskId, targetStatus) {
-    const task = tasks.find(item => String(item.id) === String(taskId));
-    const targetOption = TASK_STATUS_OPTIONS.find(option => option.id === targetStatus);
-    if (!task || task.completedAt || !targetOption || task.status === targetStatus) return;
-    const oldCategoryKey = taskCategoryKey(task);
-    const oldArea = task.area;
-    const removedExecutionDate = task.area === 'work' && targetStatus === 'waiting' && Boolean(task.executionDate);
-    if (removedExecutionDate && !window.confirm('Ao deixar a tarefa sem área, o Dia de execução será removido e ela voltará para Planejar. Continuar?')) return;
-    task.status = targetStatus;
-    if (task.area === 'work') {
-      if (targetStatus === 'waiting') { task.area = 'inbox'; task.category = null; task.executionDate = null; }
-      else task.category = targetStatus === 'client_review' ? 'approval' : 'released';
-      task.categoryUpdatedAt = new Date().toISOString();
-    }
-    if (targetStatus !== 'waiting' && !task.releaseDate) task.releaseDate = todayKey();
-    moveTaskOrderEntry(task.id, oldCategoryKey, taskCategoryKey(task));
-    recordHistory(task,removedExecutionDate ? `Movida manualmente para ${targetOption.label}; Dia de execução removido` : `Movida manualmente para ${targetOption.label}`);
-    save(); render();
-    if (task.area === 'inbox') setPlanTrayOpen(true);
-    else if (task.area !== oldArea || task.area === 'work') setTaskView(task.area,task.completedAt ? 'done' : task.category);
-    if ($('detailsDialog').open && String(detailTaskId) === String(taskId)) renderDetails();
-    showToast(`Movida para ${targetOption.label}.`);
-  }
-  function taskListFromDragEvent(event) {
-    const target = event.target;
-    const directList = target.closest('.list[id]');
-    if (directList && directList.closest('#listView')) return directList;
-    const section = target.closest('#listView > .task-section, #listView > .done-section');
-    return section?.querySelector('.list[id]') || null;
-  }
-  function applyPageZoom(value) {
-    currentZoom = Math.min(1.5, Math.max(.8, Math.round(Number(value) * 10) / 10));
-    document.documentElement.style.zoom = String(currentZoom);
-    $('zoomValue').textContent = `${Math.round(currentZoom * 100)}%`;
-    $('zoomOutBtn').disabled = currentZoom <= .8;
-    $('zoomInBtn').disabled = currentZoom >= 1.5;
-    localStorage.setItem(ZOOM_KEY, JSON.stringify(currentZoom));
-  }
-  function handleTaskDragStart(event) {
-    if (!event.target.closest('[data-drag-handle]')) { event.preventDefault(); return; }
-    const card = event.target.closest('.task[data-task]');
-    const listKey = orderListForId(event.currentTarget.id);
-    if (!card || !listKey) { event.preventDefault(); return; }
-    draggedTaskId = card.dataset.task;
-    draggedOrderList = listKey;
-    draggedDropPosition = null;
-    if (event.dataTransfer) { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', draggedTaskId); }
-    card.classList.add('is-dragging');
-  }
-  function handleTaskDragOver(event) {
-    if (!draggedTaskId) return;
-    const list = taskListFromDragEvent(event);
-    const listKey = list ? orderListForId(list.id) : null;
-    if (!list || !listKey || draggedOrderList !== listKey) return;
-    const card = Array.from(document.querySelectorAll('#listView .task[data-task]')).find(item => item.dataset.task === draggedTaskId);
-    if (!card) return;
-    event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-    document.querySelectorAll('#listView .task.drop-before,#listView .task.drop-after').forEach(item => item.classList.remove('drop-before','drop-after'));
-    const target = event.target.closest('.task[data-task]');
-    if (target && list.contains(target) && target !== card) {
-      const rect = target.getBoundingClientRect();
-      const after = event.clientY > rect.top + rect.height / 2;
-      target.classList.add(after ? 'drop-after' : 'drop-before');
-      draggedDropPosition = { listKey, targetTaskId:target.dataset.task, after };
-    } else if (target === card) {
-      draggedDropPosition = { listKey, targetTaskId:draggedTaskId, after:false };
-    } else {
-      draggedDropPosition = { listKey, targetTaskId:null, after:true };
-    }
-  }
-  function handleTaskDrop(event) {
-    if (!draggedTaskId) return;
-    const list = taskListFromDragEvent(event);
-    const listKey = list ? orderListForId(list.id) : null;
-    const position = draggedDropPosition;
-    if (!list || !listKey || listKey !== draggedOrderList || !position || position.listKey !== listKey) return;
-    event.preventDefault();
-    const sourceIds = Array.from(list.querySelectorAll('.task[data-task]'), item => item.dataset.task);
-    if (position.targetTaskId !== draggedTaskId) saveManualOrder(listKey, insertDraggedTaskId(sourceIds, draggedTaskId, position.targetTaskId, position.after));
-    draggedTaskId = null; draggedOrderList = null; draggedDropPosition = null;
-    render();
-    showToast(manualOrderToast());
-  }
-  function handleTaskDragEnd() {
-    if (!draggedTaskId) return;
-    draggedTaskId = null; draggedOrderList = null; draggedDropPosition = null;
-    render();
-  }
-  function renderTask(task, completed = false, listKey = 'active', position = 0, itemCount = 1, options = {}) {
-    const age = daysSince(task.releaseDate);
-    const isPlanner = Boolean(options.planner);
-    const inTray = Boolean(options.tray);
-    const unassigned = task.area === 'inbox';
-    const releaseLabel = task.status === 'waiting'
-      ? 'Aguardando liberação'
-      : (task.releaseDate ? (age === 0 ? 'Liberada hoje' : `Liberada há ${age} ${age === 1 ? 'dia' : 'dias'}`) : 'Data de liberação não registrada');
-    const displayReleaseLabel = !completed && task.area === 'work' && task.category === 'quote' ? 'Enviar orçamento' : !completed && task.area === 'work' && task.category === 'approval' ? 'Aprovação' : releaseLabel;
-    const releaseDate = task.status !== 'waiting' && task.releaseDate ? `<span class="task-release-date">· ${escapeHTML(formatDate(task.releaseDate))}</span>` : '';
-    const taskId = escapeHTML(task.id);
-    const completeButton = completed ? '' : `<button class="btn small good" data-action="complete" data-id="${taskId}" type="button" aria-label="Concluir tarefa" title="Concluir tarefa">CONCLUIR</button>`;
-    const moveUp = inTray ? '' : `<button type="button" data-action="move-up" data-id="${taskId}" data-order-list="${listKey}"${position === 0 ? ' disabled' : ''}>↑ Mover para cima</button>`;
-    const moveDown = inTray ? '' : `<button type="button" data-action="move-down" data-id="${taskId}" data-order-list="${listKey}"${position >= itemCount - 1 ? ' disabled' : ''}>↓ Mover para baixo</button>`;
-    const moveStatus = completed ? '' : TASK_STATUS_OPTIONS.filter(option => option.id !== task.status).map(option => `<button type="button" data-action="move-status" data-id="${taskId}" data-status="${option.id}">Mover para: ${escapeHTML(option.label)}</button>`).join('');
-    const menu = `<details class="task-menu"><summary aria-label="Mais opções" title="Mais opções">⋮</summary><div class="task-menu-popover">${moveUp}${moveDown}${moveStatus ? '<div class="task-menu-divider"></div>' + moveStatus : ''}<div class="task-menu-divider"></div><button type="button" data-action="organize" data-id="${taskId}">Organizar em…</button><button type="button" data-action="move-to-note" data-id="${taskId}">Mover para nota…</button><div class="task-menu-divider"></div><button type="button" data-action="delete" data-id="${taskId}">EXCLUIR</button></div></details>`;
-    const canDragToPlan = isPlanner && !completed && !unassigned;
-    const dragLabel = isPlanner ? (canDragToPlan ? 'Arrastar para outro dia' : 'Classifique em VIDA ou TRABALHO antes de agendar') : 'Arrastar para reordenar';
-    const dragHandle = `<button class="task-drag-handle" type="button" draggable="${isPlanner ? canDragToPlan : true}" data-drag-handle${isPlanner ? ' data-planner-drag' : ''}${isPlanner && !canDragToPlan ? ' disabled' : ''} aria-label="${escapeHTML(dragLabel)}" title="${escapeHTML(dragLabel)}">⠿</button>`;
-    const actions = completeButton ? `<div class="task-actions">${completeButton}</div>` : '';
-    const plannerArea = isPlanner ? `<span class="planner-task-area">${escapeHTML(unassigned ? 'Sem área · classifique para agendar' : taskCategoryLabel(task.area,completed ? 'done' : task.category))}</span>` : '';
-    const trayControl = !inTray ? '' : completed
-      ? '<p class="plan-unassigned-note">Concluída · sem Dia de execução.</p>'
-      : unassigned
-        ? '<p class="plan-unassigned-note">Escolha VIDA ou TRABALHO em “Organizar em…” antes de agendar.</p>'
-        : `<label class="plan-date-control"><span>Dia de execução</span><input type="date" data-plan-date data-id="${taskId}" aria-label="Escolher Dia de execução para ${escapeHTML(task.title)}"></label>`;
-    return `<article class="task task-clickable${isPlanner ? ' planner-task' : ''}" data-task="${taskId}" data-open-task="${taskId}"${isPlanner ? ' data-planner-task' : ''} tabindex="0" aria-label="Abrir tarefa: ${escapeHTML(task.title)}" aria-keyshortcuts="Enter Space">
-      <div class="task-top">${dragHandle}<div class="task-main"><div class="task-title">${escapeHTML(task.title)}</div><div class="task-summary"><span class="task-release"><strong class="task-release-label${task.status !== 'waiting' && task.releaseDate ? '' : ' is-pending'}">${escapeHTML(displayReleaseLabel)}</strong>${releaseDate}</span>${plannerArea}</div></div>${menu}</div>
-      ${trayControl}${actions}
-    </article>`;
-  }
-  function renderPlannerWeekOptions() {
-    const monthDate = dateAtNoon(`${plannerMonthCursor.slice(0,7)}-01`);
-    if (!monthDate) return;
-    $('plannerMonthLabel').textContent = monthDate.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
-    const weeks = plannerMonthWeeks(plannerMonthCursor);
-    $('plannerWeekOptions').innerHTML = weeks.map((startKey,index) => `<button class="planner-week-option" type="button" data-week-start="${startKey}" aria-pressed="${String(startKey === plannerWeekStart)}"><strong>Semana ${index+1}</strong><span>${formatPlannerWeekRange(startKey)}</span></button>`).join('');
-  }
-  function plannerTasksForCurrentView() {
-    return tasks.filter(task => task.area === currentTaskArea && (currentTaskCategory === 'done' ? Boolean(task.completedAt) : !task.completedAt && task.category === currentTaskCategory));
-  }
-  function plannerTrayTasks() {
-    return tasks.filter(task => !task.executionDate).sort((a,b) => {
-      if (Boolean(a.completedAt) !== Boolean(b.completedAt)) return a.completedAt ? 1 : -1;
-      if ((a.area === 'inbox') !== (b.area === 'inbox')) return a.area === 'inbox' ? -1 : 1;
-      if (a.dueDate && b.dueDate) return String(a.dueDate).localeCompare(String(b.dueDate));
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
-    });
-  }
-  function renderPlanner() {
-    const grid = $('plannerWeekGrid');
-    if (!grid) return;
-    $('plannerWeekPickerBtn').textContent = plannerWeekLabel();
-    const viewKey = currentTaskViewKey();
-    const orderedTasks = applyManualOrder(plannerTasksForCurrentView().sort((a,b) => {
-      if (a.dueDate && b.dueDate) return String(a.dueDate).localeCompare(String(b.dueDate));
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
-    }), viewKey);
-    const today = todayKey();
-    grid.innerHTML = Array.from({ length:7 }, (_,index) => {
-      const dayKey = addDaysKey(plannerWeekStart,index);
-      const dayTasks = orderedTasks.filter(task => task.executionDate === dayKey);
-      const cards = dayTasks.length
-        ? dayTasks.map(task => renderTask(task,Boolean(task.completedAt),viewKey,orderedTasks.indexOf(task),orderedTasks.length,{ planner:true })).join('')
-        : '<div class="planner-day-empty">Arraste uma tarefa para este dia</div>';
-      return `<section class="planner-day${dayKey === today ? ' is-today' : ''}" data-week-day="${dayKey}" aria-label="${escapeHTML(formatDate(dayKey))}"><div class="planner-day-header"><span class="planner-day-name">${escapeHTML(formatPlannerDayName(dayKey))}</span><strong class="planner-day-date">${escapeHTML(formatPlannerDayMonth(dayKey))}</strong></div><div class="planner-day-tasks">${cards}</div></section>`;
-    }).join('');
-    const trayTasks = plannerTrayTasks();
-    const openTrayTasks = trayTasks.filter(task => !task.completedAt);
-    const completedTrayTasks = trayTasks.filter(task => Boolean(task.completedAt));
-    $('planTrayCount').textContent = String(openTrayTasks.length);
-    const openTrayCards = openTrayTasks.map((task,index) => renderTask(task,false,'tray',index,openTrayTasks.length,{ planner:true, tray:true })).join('');
-    const completedTrayCards = completedTrayTasks.map((task,index) => renderTask(task,true,'tray-done',index,completedTrayTasks.length,{ planner:true, tray:true })).join('');
-    const completedTraySection = completedTrayTasks.length
-      ? `<details class="planner-completed-tray"><summary>Concluídas sem Dia de execução (${completedTrayTasks.length})</summary><div class="planner-completed-list">${completedTrayCards}</div></details>`
-      : '';
-    $('planTrayList').innerHTML = `${openTrayCards || '<div class="empty">Não há tarefas em aberto para planejar.</div>'}${completedTraySection}`;
-    $('planTray').classList.toggle('hidden',!planTrayOpen);
-    $('planTray').setAttribute('aria-hidden',String(!planTrayOpen));
-    $('planTrayToggle').setAttribute('aria-expanded',String(planTrayOpen));
-    document.body.classList.toggle('planner-tray-open',planTrayOpen);
-    renderPlannerWeekOptions();
-  }
-  function setPlannerWeek(startKey) {
-    plannerWeekStart = startOfWeekKey(startKey);
-    plannerMonthCursor = `${addDaysKey(plannerWeekStart,3).slice(0,7)}-01`;
-    localStorage.setItem(PLANNER_WEEK_STORAGE_KEY,plannerWeekStart);
-    renderPlanner();
-  }
-  function shiftPlannerWeek(amount) { setPlannerWeek(addDaysKey(plannerWeekStart,Number(amount || 0) * 7)); }
-  function shiftPlannerMonth(amount) {
-    plannerMonthCursor = shiftMonthKey(plannerMonthCursor,amount);
-    renderPlannerWeekOptions();
-  }
-  function setPlanTrayOpen(open) {
-    planTrayOpen = Boolean(open);
-    localStorage.setItem(PLAN_TRAY_STORAGE_KEY,String(planTrayOpen));
-    renderPlanner();
-  }
-  function setTaskExecutionDate(taskId,dateKey) {
-    const task = tasks.find(item => String(item.id) === String(taskId));
-    if (!task || task.completedAt) return false;
-    if (!['life','work'].includes(task.area)) {
-      showToast('Escolha VIDA ou TRABALHO em “Organizar em…” antes de agendar.');
-      return false;
-    }
-    const nextDate = String(dateKey || '').trim();
-    if (nextDate && !dateAtNoon(nextDate)) return false;
-    if ((task.executionDate || '') === nextDate) return false;
-    task.executionDate = nextDate || null;
-    recordHistory(task,nextDate ? `Dia de execução definido para ${formatDate(nextDate)}` : 'Dia de execução removido; tarefa voltou para Planejar');
-    if (nextDate) {
-      currentTaskArea = task.area; currentTaskCategory = task.category;
-      localStorage.setItem(TASK_AREA_STORAGE_KEY,currentTaskArea);
-      localStorage.setItem(TASK_CATEGORY_STORAGE_KEY,currentTaskCategory);
-      setPlannerWeek(nextDate);
-    }
-    save();
-    render();
-    if ($('detailsDialog').open && String(detailTaskId) === String(taskId)) renderDetails();
-    showToast(nextDate ? 'Dia de execução definido.' : 'Tarefa voltou para Planejar.');
-    return true;
-  }
-  function handlePlanDateChange(event) {
-    const input = event.target.closest('input[data-plan-date]');
-    if (input && input.value) setTaskExecutionDate(input.dataset.id,input.value);
-  }
-  function handlePlannerDragStart(event) {
-    const handle = event.target.closest('[data-planner-drag]');
-    if (!handle) { event.preventDefault(); return; }
-    const card = handle.closest('.planner-task[data-task]');
-    const task = card && tasks.find(item => String(item.id) === String(card.dataset.task));
-    if (!task || task.completedAt || !['life','work'].includes(task.area)) { event.preventDefault(); return; }
-    plannerDraggedTaskId = String(task.id);
-    if (event.dataTransfer) { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain',plannerDraggedTaskId); }
-    card.classList.add('is-dragging');
-  }
-  function handlePlannerDragOver(event) {
-    if (!plannerDraggedTaskId) return;
-    const day = event.target.closest('.planner-day[data-week-day]');
-    const tray = event.target.closest('#planTrayList');
-    if (!day && !tray) return;
-    event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-    day?.classList.add('is-drop-target');
-    tray?.classList.add('is-drop-target');
-  }
-  function handlePlannerDrop(event) {
-    if (!plannerDraggedTaskId) return;
-    const day = event.target.closest('.planner-day[data-week-day]');
-    const tray = event.target.closest('#planTrayList');
-    if (!day && !tray) return;
-    event.preventDefault();
-    const taskId = plannerDraggedTaskId;
-    plannerDraggedTaskId = null;
-    document.querySelectorAll('.planner-day.is-drop-target,#planTrayList.is-drop-target').forEach(node => node.classList.remove('is-drop-target'));
-    if (day) setTaskExecutionDate(taskId,day.dataset.weekDay);
-    else setTaskExecutionDate(taskId,'');
-  }
-  function handlePlannerDragEnd() {
-    plannerDraggedTaskId = null;
-    document.querySelectorAll('.planner-task.is-dragging,.planner-day.is-drop-target,#planTrayList.is-drop-target').forEach(node => node.classList.remove('is-dragging','is-drop-target'));
-  }
-  function render() {
-    const active = applyManualOrder(tasks.filter(t => t.status === 'active' && !t.completedAt).sort((a,b) => {
-      const ageDiff = daysSince(b.releaseDate)-daysSince(a.releaseDate);
-      if (ageDiff) return ageDiff;
-      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      return a.createdAt.localeCompare(b.createdAt);
-    }), 'active');
-    const review = applyManualOrder(tasks.filter(t => t.status === 'client_review' && !t.completedAt).sort((a,b) => {
-      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
-    }), 'review');
-    const waiting = applyManualOrder(tasks.filter(t => t.status === 'waiting' && !t.completedAt).sort((a,b) => a.createdAt.localeCompare(b.createdAt)), 'waiting');
-    const done = applyManualOrder(tasks.filter(t => Boolean(t.completedAt)).sort((a,b) => b.completedAt.localeCompare(a.completedAt)), 'done');
-    const total = tasks.length;
-    const nextTask = active[0] || null;
-    if (nextTask) {
-      const meta = [
-        nextTask.dueDate ? `Entrega: ${formatDate(nextTask.dueDate)}` : '',
-        nextTask.estimateMinutes ? `Estimativa: ${formatMinutes(nextTask.estimateMinutes)}` : ''
-      ].filter(Boolean).join(' · ');
-      $('nextTaskContent').innerHTML = `<button class="next-task-card" type="button" data-open-task="${escapeHTML(nextTask.id)}" aria-label="Abrir tarefa: ${escapeHTML(nextTask.title)}"><span class="next-task-copy"><span class="next-task-kicker">PRÓXIMA TAREFA</span><strong class="next-task-title">${escapeHTML(nextTask.title)}</strong><span class="next-task-meta">${escapeHTML(meta)}</span></span><span class="next-task-cta">Abrir tarefa <span aria-hidden="true">↗</span></span></button>`;
-    } else {
-      $('nextTaskContent').innerHTML = '<div class="next-task-empty"><span class="next-task-kicker">PRÓXIMA TAREFA</span><p>Nenhuma tarefa liberada para começar.</p></div>';
-    }
-    $('activeCount').textContent = active.length;
-    $('reviewCount').textContent = review.length;
-    $('waitingCount').textContent = waiting.length;
-    $('lifeAreaCount').textContent = countTaskCategory('life');
-    $('workAreaCount').textContent = countTaskCategory('work');
-    $('lifeFinanceCount').textContent = countTaskCategory('life','finance');
-    $('lifeHomeCount').textContent = countTaskCategory('life','home');
-    $('lifePersonalCount').textContent = countTaskCategory('life','personal');
-    $('lifeDoneCount').textContent = countTaskCategory('life','done');
-    $('workReleasedCount').textContent = countTaskCategory('work','released');
-    $('workQuoteCount').textContent = countTaskCategory('work','quote');
-    $('workApprovalCount').textContent = countTaskCategory('work','approval');
-    $('workDoneCount').textContent = countTaskCategory('work','done');
-    $('clearCompletedBtn').disabled = currentTaskArea === 'inbox' || countTaskCategory(currentTaskArea,'done') === 0;
-    $('homeDoneCount').textContent = done.length;
-    $('homeTotalText').textContent = `${total} tarefa${total === 1 ? '' : 's'}`;
-    const metrics = [
-      { count:active.length, bar:'homeActiveBar', progress:'homeActiveProgress', share:'homeActiveShare' },
-      { count:review.length, bar:'homeReviewBar', progress:'homeReviewProgress', share:'homeReviewShare' },
-      { count:waiting.length, bar:'homeWaitingBar', progress:'homeWaitingProgress', share:'homeWaitingShare' },
-      { count:done.length, bar:'homeDoneBar', progress:'homeDoneProgress', share:'homeDoneShare' }
-    ];
-    metrics.forEach(metric => {
-      const percent = total ? Math.round(metric.count / total * 100) : 0;
-      $(metric.bar).style.width = `${percent}%`;
-      $(metric.progress).setAttribute('aria-valuenow', String(percent));
-      $(metric.share).textContent = `${percent}% do total`;
-    });
-    $('estimateTotal').textContent = formatMinutes(active.reduce((sum,t) => sum + (Number(t.estimateMinutes)||0), 0));
-    const viewKey = currentTaskViewKey();
-    const viewTasks = applyManualOrder(tasksForCurrentView().sort((a,b) => {
-      if (a.completedAt && b.completedAt) return String(b.completedAt).localeCompare(String(a.completedAt));
-      if (a.completedAt) return 1;
-      if (b.completedAt) return -1;
-      if (a.dueDate && b.dueDate) return String(a.dueDate).localeCompare(String(b.dueDate));
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
-    }), viewKey);
-    $('taskList').dataset.orderKey = viewKey;
-    const emptyMessage = currentTaskArea === 'inbox'
-      ? 'Sem área por enquanto.'
-      : currentTaskCategory === 'done'
-        ? 'As tarefas concluídas desta área aparecem aqui.'
-        : `Nenhuma tarefa em ${escapeHTML(taskCategoryLabel(currentTaskArea,currentTaskCategory))} por enquanto.`;
-    $('taskList').innerHTML = viewTasks.length
-      ? viewTasks.map((task,index) => renderTask(task,Boolean(task.completedAt),viewKey,index,viewTasks.length)).join('')
-      : `<div class="empty">${emptyMessage}</div>`;
-    renderHistory();
-    applyPageMode();
-    renderPlanner();
-    updateTimerDisplays();
-  }
-  function renderHistory() {
-    const entries = [];
-    const pushEntry = (task, action, createdAt, detail = '', targetSection = 'comments', targetId = '') => {
-      if (!createdAt) return;
-      entries.push({ taskId:String(task.id), taskTitle:task.title, action, createdAt, detail, targetSection, targetId:String(targetId || '') });
-    };
-    for (const task of tasks) {
-      const comments = Array.isArray(task.comments) ? task.comments : [];
-      const systemActions = comments
-        .filter(comment => String(comment.text || '').startsWith(HISTORY_PREFIX))
-        .map(comment => String(comment.text || '').slice(HISTORY_PREFIX.length));
-      for (const comment of comments) {
-        const rawText = String(comment.text || '');
-        const isSystem = rawText.startsWith(HISTORY_PREFIX);
-        const preview = isSystem ? '' : rawText.replace(/\s+/g, ' ').trim();
-        const detail = preview.length > 110 ? `${preview.slice(0,107).trim()}…` : preview;
-        const action = isSystem ? rawText.slice(HISTORY_PREFIX.length) : `Registro adicionado · ${comment.source || 'Manual'}`;
-        pushEntry(task, action, comment.createdAt || task.createdAt, detail, 'comments', comment.id);
-      }
-      if (task.createdAt && !systemActions.includes('Tarefa criada')) pushEntry(task, 'Tarefa criada', task.createdAt);
-      if (task.completedAt && !systemActions.includes('Tarefa concluída')) pushEntry(task, 'Tarefa concluída', task.completedAt);
-      for (const link of (Array.isArray(task.links) ? task.links : [])) {
-        pushEntry(task, `Link anexado: ${link.label || link.url || 'Link'}`, link.createdAt, '', 'links', link.id);
-      }
-      for (const item of (Array.isArray(task.subtasks) ? task.subtasks : [])) {
-        if (!item) continue;
-        const text = String(item.text || 'Subtarefa');
-        if (item.createdAt) pushEntry(task, `Subtarefa adicionada: ${text}`, item.createdAt, '', 'subtasks', item.id);
-        if (item.completedAt && !systemActions.includes(`Subtarefa concluída: ${text}`)) pushEntry(task, `Subtarefa concluída: ${text}`, item.completedAt, '', 'subtasks', item.id);
-        if (item.deletedAt) pushEntry(task, `Subtarefa removida: ${text}`, item.deletedAt, '', 'subtasks', item.id);
-      }
-    }
-    const timestamp = value => {
-      const parsed = Date.parse(value || '');
-      return Number.isFinite(parsed) ? parsed : 0;
-    };
-    entries.sort((a,b) => timestamp(b.createdAt) - timestamp(a.createdAt));
-    const list = $('homeHistoryList');
-    const button = $('historyMoreBtn');
-    if (!list || !button) return;
-    if (!entries.length) {
-      list.innerHTML = '<div class="empty">As alterações recentes aparecerão aqui.</div>';
-      button.classList.add('hidden');
-      button.textContent = 'Ver mais';
-      button.setAttribute('aria-expanded', 'false');
-      historyExpanded = false;
-      return;
-    }
-    const visible = historyExpanded ? entries : entries.slice(0,3);
-    list.innerHTML = visible.map(entry => `<button class="history-item" type="button" data-history-open="${escapeHTML(entry.taskId)}" data-history-section="${escapeHTML(entry.targetSection)}" data-history-target="${escapeHTML(entry.targetId)}" aria-label="Abrir ${escapeHTML(entry.action)} na tarefa ${escapeHTML(entry.taskTitle)}"><span class="history-main"><span class="history-action">${escapeHTML(entry.action)}</span><span class="history-task">${escapeHTML(entry.taskTitle)}</span>${entry.detail ? `<span class="history-detail">${escapeHTML(entry.detail)}</span>` : ''}</span><span class="history-side"><time class="history-time" datetime="${escapeHTML(entry.createdAt)}">${escapeHTML(formatTimestamp(entry.createdAt))}</time><span class="history-arrow" aria-hidden="true">↗</span></span></button>`).join('');
-    button.classList.toggle('hidden', entries.length <= 3);
-    button.textContent = historyExpanded ? 'Ver menos' : 'Ver mais';
-    button.setAttribute('aria-expanded', String(historyExpanded));
-  }
-  function noteRevision(note) {
-    const value = Date.parse(note?.updatedAt || note?.createdAt || '');
-    return Number.isFinite(value) ? value : 0;
-  }
-  function nextNoteTimestamp(note) {
-    return new Date(Math.max(Date.now(), noteRevision(note) + 1)).toISOString();
-  }
-  function updateNotesSyncStatus() {
-    const status = $('notesSyncStatus');
-    if (!status) return;
-    if (session?.user?.id && syncEnabled) {
-      status.textContent = remoteNotesEnabled
-        ? 'Sincronização privada de notas ativa na sua conta.'
-        : 'Notas salvas neste navegador; sincronização da conta ainda não foi ativada.';
-    } else {
-      status.textContent = 'Sem login, as notas ficam salvas neste navegador.';
-    }
-  }
-  function renderRecentSearches() {
-    const container = $('notesRecentSearches');
-    if (!container) return;
-    const history = notesSearchHistory.filter(query => typeof query === 'string' && query.trim()).slice(0,8);
-    container.classList.toggle('hidden', !history.length);
-    if (!history.length) { container.innerHTML = ''; return; }
-    container.innerHTML = `<span class="recent-search-label">Buscas recentes</span>${history.map(query => `<button class="btn ghost small recent-search-btn" type="button" data-search-query="${escapeHTML(query)}">${escapeHTML(query)}</button>`).join('')}<button class="btn ghost small recent-search-clear" type="button" data-clear-search-history>Limpar</button>`;
-  }
-  function saveRecentSearch() {
-    const query = String($('notesSearch').value || '').trim();
-    if (!notesSearchManuallyEdited || !query) { notesSearchManuallyEdited = false; return; }
-    notesSearchHistory = [query, ...notesSearchHistory.filter(item => item !== query)].slice(0,8);
-    localStorage.setItem(NOTES_SEARCH_HISTORY_KEY, JSON.stringify(notesSearchHistory));
-    notesSearchManuallyEdited = false;
-    renderRecentSearches();
-  }
-  function handleRecentSearchClick(event) {
-    const button = event.target.closest('button[data-search-query],button[data-clear-search-history]');
-    if (!button) return;
-    if (button.hasAttribute('data-clear-search-history')) {
-      notesSearchHistory = [];
-      localStorage.removeItem(NOTES_SEARCH_HISTORY_KEY);
-      renderRecentSearches();
-      return;
-    }
-    $('notesSearch').value = button.dataset.searchQuery || '';
-    notesSearchManuallyEdited = false;
-    renderNotes();
-  }
-  function renderNotes() {
-    const list = $('notesList');
-    if (!list) return;
-    updateNotesSyncStatus();
-    renderRecentSearches();
-    const query = String($('notesSearch')?.value || '').trim().toLocaleLowerCase('pt-BR');
-    const visibleNotes = notes
-      .filter(note => note && typeof note === 'object' && !note.deletedAt)
-      .filter(note => !query || `${note.title || ''} ${note.content || ''}`.toLocaleLowerCase('pt-BR').includes(query))
-      .sort((a,b) => noteRevision(b) - noteRevision(a));
-    $('notesCount').textContent = `${visibleNotes.length} nota${visibleNotes.length === 1 ? '' : 's'}`;
-    if (!visibleNotes.length) {
-      list.innerHTML = query
-        ? '<div class="empty">Nenhuma nota encontrada.</div>'
-        : '<div class="empty">Ainda não há notas. Crie uma para guardar uma ideia ou informação.</div>';
-      return;
-    }
-    list.innerHTML = visibleNotes.map(note => `<article class="panel note-card"><div class="note-card-head"><div class="note-heading"><h3>${escapeHTML(note.title || 'Nota sem título')}</h3><time class="hint" datetime="${escapeHTML(note.updatedAt || note.createdAt || '')}">Atualizada ${escapeHTML(formatTimestamp(note.updatedAt || note.createdAt))}</time></div><details class="task-menu note-menu"><summary aria-label="Ações da nota" title="Ações da nota">⋮</summary><div class="task-menu-popover"><button type="button" data-note-action="move-to-task" data-id="${escapeHTML(note.id)}">Mover para tarefa…</button><div class="task-menu-divider"></div><button type="button" data-note-action="edit" data-id="${escapeHTML(note.id)}">Editar</button><button type="button" data-note-action="delete" data-id="${escapeHTML(note.id)}">Excluir</button></div></details></div><p class="note-content">${escapeHTML(note.content || '')}</p></article>`).join('');
-  }
-  function openNewNote() {
-    $('noteForm').reset();
-    $('noteId').value = '';
-    $('noteFormHeading').textContent = 'Nova nota';
-    $('noteFormPanel').classList.remove('hidden');
-    $('noteContent').focus();
-  }
-  function openEditNote(noteId) {
-    const note = notes.find(item => String(item.id) === String(noteId) && !item.deletedAt);
-    if (!note) return;
-    $('noteId').value = String(note.id);
-    $('noteTitle').value = note.title || '';
-    $('noteContent').value = note.content || '';
-    $('noteFormHeading').textContent = 'Editar nota';
-    $('noteFormPanel').classList.remove('hidden');
-    $('noteTitle').focus();
-    $('noteFormPanel').scrollIntoView({ behavior:'smooth', block:'start' });
-  }
-  function closeNoteForm() {
-    $('noteFormPanel').classList.add('hidden');
-    $('noteForm').reset();
-    $('noteId').value = '';
-  }
-  function onSubmitNote(event) {
-    event.preventDefault();
-    const title = $('noteTitle').value.trim();
-    const content = $('noteContent').value.trim();
-    if (!content) { $('noteContent').focus(); showToast('Escreva o conteúdo da nota.'); return; }
-    const noteId = String($('noteId').value || '');
-    const existing = noteId ? notes.find(note => String(note.id) === noteId && !note.deletedAt) : null;
-    const now = existing ? nextNoteTimestamp(existing) : new Date().toISOString();
-    if (existing) {
-      existing.title = title;
-      existing.content = content;
-      existing.updatedAt = now;
-    } else {
-      notes.unshift({ id:id(), title, content, createdAt:now, updatedAt:now, deletedAt:null });
-    }
-    saveNotes();
-    renderNotes();
-    closeNoteForm();
-    showToast(existing ? 'Nota atualizada.' : 'Nota salva.');
-  }
-  function handleNotesListClick(event) {
-    const button = event.target.closest('button[data-note-action]');
-    if (!button) return;
-    const note = notes.find(item => String(item.id) === String(button.dataset.id) && !item.deletedAt);
-    if (!note) return;
-    if (button.dataset.noteAction === 'edit') { openEditNote(note.id); return; }
-    if (button.dataset.noteAction === 'move-to-task') { moveNoteToTask(note.id); return; }
-    if (button.dataset.noteAction === 'delete') {
-      if (!window.confirm(`Excluir a nota “${note.title || 'Nota sem título'}”?`)) return;
-      const now = nextNoteTimestamp(note);
-      note.deletedAt = now;
-      note.updatedAt = now;
-      saveNotes(); renderNotes(); showToast('Nota excluída.');
-    }
-  }
-  function canConvertBetweenTasksAndNotes() {
-    if (syncEnabled && !remoteNotesEnabled) {
-      showToast('A sincronização de notas está indisponível; não movi nada para evitar divergência entre aparelhos.');
-      return false;
-    }
-    return true;
-  }
-  function taskToNoteContent(task) {
-    const sections = [];
-    const details = String(task.details || '').trim();
-    if (details) sections.push(details);
-    const status = task.completedAt ? 'Concluído' : (TASK_STATUS_OPTIONS.find(option => option.id === task.status)?.label || 'Status não informado');
-    const metadata = [`Status: ${status}`, `Organização: ${taskCategoryLabel(task.area,task.completedAt ? 'done' : task.category)}`];
-    if (task.createdAt) metadata.push(`Criada: ${formatTimestamp(task.createdAt)}`);
-    if (task.releaseDate) metadata.push(`Liberada: ${formatDate(task.releaseDate)}`);
-    if (task.executionDate) metadata.push(`Dia de execução: ${formatDate(task.executionDate)}`);
-    if (task.dueDate) metadata.push(`Prazo: ${formatDate(task.dueDate)}`);
-    metadata.push(`Estimativa: ${formatMinutes(task.estimateMinutes)}`);
-    const spent = elapsedSeconds(task);
-    if (spent > 0) metadata.push(`Tempo registrado: ${clock(spent)}`);
-    if (task.completedAt) metadata.push(`Concluída: ${formatTimestamp(task.completedAt)}`);
-    if (task.reward) metadata.push(`Recompensa: ${String(task.reward)}`);
-    if (task.blocker) metadata.push(`Bloqueio: ${String(task.blocker)}`);
-    sections.push(`Dados da tarefa\n${metadata.join('\n')}`);
-    const subtasks = (Array.isArray(task.subtasks) ? task.subtasks : []).filter(item => item && !item.deletedAt);
-    if (subtasks.length) sections.push(`Checklist\n${subtasks.map(item => `- [${item.completedAt ? 'x' : ' '}] ${String(item.text || 'Subtarefa')}`).join('\n')}`);
-    const links = (Array.isArray(task.links) ? task.links : []).filter(link => link && (link.url || link.label));
-    if (links.length) sections.push(`Links\n${links.map(link => `- ${String(link.label || link.url || 'Link')}${link.url && link.label ? `: ${String(link.url)}` : ''}`).join('\n')}`);
-    const comments = (Array.isArray(task.comments) ? task.comments : []).filter(comment => comment && String(comment.text || '').trim());
-    if (comments.length) sections.push(`Comentários e histórico\n${comments.map(comment => {
-      const raw = String(comment.text || '').trim();
-      const text = raw.startsWith(HISTORY_PREFIX) ? `Histórico: ${raw.slice(HISTORY_PREFIX.length)}` : `${String(comment.source || 'Manual')}: ${raw}`;
-      const date = comment.createdAt ? `${formatTimestamp(comment.createdAt)} — ` : '';
-      return `- ${date}${text}`;
-    }).join('\n')}`);
-    return sections.join('\n\n').trim();
-  }
-  function moveNoteToTask(noteId) {
-    const note = notes.find(item => String(item.id) === String(noteId) && !item.deletedAt);
-    if (!note || !canConvertBetweenTasksAndNotes()) return;
-    const noteTitle = String(note.title || '').trim();
-    const firstLine = String(note.content || '').split(/\r?\n/).map(line => line.trim()).find(Boolean) || '';
-    const sourceTitle = noteTitle || firstLine || 'Nota sem título';
-    const title = sourceTitle.length > 140 ? `${sourceTitle.slice(0,139).trimEnd()}…` : sourceTitle;
-    const details = noteTitle.length > 140 ? `Título original da nota: ${noteTitle}\n\n${String(note.content || '')}` : String(note.content || '');
-    if (details.length > 20200) { showToast('O conteúdo desta nota ultrapassa o limite dos detalhes de uma tarefa; não movi nada.'); return; }
-    if (!window.confirm(`Mover “${note.title || title}” para uma tarefa liberada hoje? O texto irá para os detalhes e a nota será removida.`)) return;
-    const now = new Date().toISOString();
-    const task = {
-      id:id(), title, details, comments:[], links:[], status:'active', area:'inbox', category:null, categoryUpdatedAt:now, releaseDate:todayKey(), dueDate:null, executionDate:null,
-      estimateMinutes:60, reward:'', blocker:'', timeSpentSeconds:0, createdAt:now, completedAt:null, completedDate:null, subtasks:[]
-    };
-    recordHistory(task, 'Convertida de nota em tarefa', now);
-    note.deletedAt = nextNoteTimestamp(note);
-    note.updatedAt = note.deletedAt;
-    tasks.push(task);
-    save(false); saveNotes(false); scheduleCloudSync(); render(); renderNotes();
-    setPage('tasks'); setPlanTrayOpen(true);
-    showToast('Nota movida para tarefa e liberada hoje.');
-  }
-  function moveTaskToNote(taskId) {
-    const task = tasks.find(item => String(item.id) === String(taskId));
-    if (!task || !canConvertBetweenTasksAndNotes()) return;
-    if (taskToNoteContent(task).length > 20000) { showToast('O conteúdo completo ultrapassa o limite de uma nota; não movi a tarefa.'); return; }
-    if (!window.confirm(`Mover “${task.title}” para nota? Detalhes, checklist, datas, links e comentários serão incluídos; a tarefa será removida.`)) return;
-    if (timer?.taskId === task.id) { if (timer.startedAt) pauseTimer(); timer = null; }
-    const now = new Date().toISOString();
-    const note = { id:id(), title:String(task.title || ''), content:taskToNoteContent(task), createdAt:now, updatedAt:now, deletedAt:null };
-    if (note.content.length > 20000) { save(false); render(); showToast('O conteúdo completo ultrapassa o limite de uma nota; a tarefa foi mantida.'); return; }
-    notes.unshift(note);
-    removeTaskFromOrder(task.id);
-    tasks = tasks.filter(item => String(item.id) !== String(task.id));
-    if ($('detailsDialog').open && String(detailTaskId) === String(task.id)) $('detailsDialog').close();
-    save(false); saveNotes(false); scheduleCloudSync(); render(); renderNotes();
-    setPage('notes');
-    showToast('Tarefa movida para nota.');
-  }
-  function currentTaskViewKey(area = currentTaskArea, category = currentTaskCategory) {
-    if (area === 'inbox') return 'inbox';
-    return `${area}_${category || (area === 'life' ? 'finance' : 'released')}`;
-  }
-  function taskCategoryLabel(area, category) {
-    const labels = { inbox:'Sem área · Planejar', finance:'Finanças', home:'Casa', personal:'Pessoal', released:'Liberado', quote:'Enviar orçamento', approval:'Aprovação', done:'Concluído' };
-    return area === 'inbox' ? 'Sem área · Planejar' : `${area === 'life' ? 'Vida' : 'Trabalho'} · ${labels[category] || category}`;
-  }
-  function tasksForCurrentView() {
-    if (currentTaskArea === 'inbox') return tasks.filter(task => task.area === 'inbox');
-    if (currentTaskCategory === 'done') return tasks.filter(task => task.area === currentTaskArea && Boolean(task.completedAt));
-    return tasks.filter(task => task.area === currentTaskArea && task.category === currentTaskCategory && !task.completedAt);
-  }
-  function countTaskCategory(area, category = '') {
-    if (area === 'inbox' || !category) return tasks.filter(task => task.area === area).length;
-    return category === 'done'
-      ? tasks.filter(task => task.area === area && Boolean(task.completedAt)).length
-      : tasks.filter(task => task.area === area && task.category === category && !task.completedAt).length;
-  }
-  function updateTaskNavigation() {
-    document.body.classList.toggle('page-tasks', currentPage === 'tasks');
-    document.body.classList.toggle('task-area-inbox', currentTaskArea === 'inbox');
-    document.querySelectorAll('[data-task-area]:not([data-task-category])').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.taskArea === currentTaskArea)));
-    const categoryNav = $('taskCategoryNav');
-    if (categoryNav) {
-      categoryNav.classList.toggle('hidden', currentTaskArea === 'inbox');
-      categoryNav.setAttribute('aria-hidden', String(currentTaskArea === 'inbox'));
-      categoryNav.querySelectorAll('[data-task-category]').forEach(button => {
-        const visible = button.dataset.taskArea === currentTaskArea;
-        button.hidden = !visible;
-        button.setAttribute('aria-pressed', String(visible && button.dataset.taskCategory === currentTaskCategory));
-      });
-    }
-    const showClear = currentTaskArea !== 'inbox' && currentTaskCategory === 'done';
-    $('taskListToolbar')?.classList.toggle('hidden', !showClear);
-    $('clearCompletedBtn')?.setAttribute('aria-label', `Limpar todas as tarefas concluídas de ${currentTaskArea === 'life' ? 'VIDA' : 'TRABALHO'}`);
-  }
-  function setTaskView(area, category, resetScroll = true) {
-    if (!['life','work'].includes(area)) return;
-    const categories = TASK_AREA_CATEGORIES[area] || [];
-    const nextCategory = area === 'inbox' ? '' : (category === 'done' || categories.includes(category) ? category : categories[0]);
-    currentTaskArea = area; currentTaskCategory = nextCategory;
-    localStorage.setItem(TASK_AREA_STORAGE_KEY, currentTaskArea);
-    localStorage.setItem(TASK_CATEGORY_STORAGE_KEY, currentTaskCategory);
-    updateTaskNavigation();
-    render();
-    if (resetScroll) $('taskList').scrollTop = 0;
-  }
-  function setTaskArea(area) { setTaskView(area, area === 'life' ? 'finance' : area === 'work' ? 'released' : '', true); }
-  function setTaskCategory(category) { setTaskView(currentTaskArea, category, true); }
-  function setTaskTab(tab, resetScroll = true) {
-    if (tab === 'waiting') { setPage('tasks'); setPlanTrayOpen(true); return; }
-    const aliases = { active:['work','released'], review:['work','approval'], done:[currentTaskArea,'done'] };
-    if (aliases[tab]) { setTaskView(...aliases[tab], resetScroll); return; }
-    if (TASK_VIEW_ORDER_KEYS.includes(tab)) {
-      const [area,category] = tab.split('_',2);
-      setTaskView(area, category, resetScroll);
-    }
-  }
-  function updateTaskScreenMode() {
-    const compact = currentPage === 'tasks' && $('formPanel').classList.contains('hidden');
-    document.body.classList.toggle('tasks-screen', compact);
-    document.body.classList.toggle('task-area-inbox', currentTaskArea === 'inbox');
-  }
-  function applyPageMode() {
-    const views = { home:'homePage', tasks:'tasksPage', notes:'notesPage', settings:'settingsPage' };
-    Object.entries(views).forEach(([page, id]) => $(id).classList.toggle('hidden', currentPage !== page));
-    document.querySelectorAll('.nav-btn[data-page]').forEach(button => {
-      if (button.dataset.page === currentPage) button.setAttribute('aria-current', 'page');
-      else button.removeAttribute('aria-current');
-    });
-    updateTaskScreenMode();
-    updateTaskNavigation();
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>node.classList.add('hidden'),2600);
   }
   function setPage(page) {
     if (!['home','tasks','notes','settings'].includes(page)) return;
-    currentPage = page;
-    localStorage.setItem('naMinhaMao.page', currentPage);
-    applyPageMode();
-    if (currentPage === 'tasks') updateTaskNavigation();
-    if (currentPage === 'notes') renderNotes();
-  }
-  function openDashboardStatus(status) {
-    if (!Object.hasOwn(ORDER_LIST_IDS, status)) return;
-    const matches = task => status === 'done' ? Boolean(task.completedAt) : !task.completedAt && task.status === ({ active:'active', review:'client_review', waiting:'waiting' }[status]);
-    const matchingTask = tasks.find(matches);
-    setPage('tasks');
-    if (status === 'waiting' || status === 'done' || matchingTask?.area === 'inbox') {
-      if (status === 'done') setTaskView(['life','work'].includes(matchingTask?.area) ? matchingTask.area : currentTaskArea,'done');
-      setPlanTrayOpen(true);
-      requestAnimationFrame(() => {
-        const target = matchingTask && Array.from(document.querySelectorAll('#planTrayList .task[data-task]')).find(node => node.dataset.task === String(matchingTask.id));
-        target?.scrollIntoView({ behavior:'smooth', block:'center' });
-      });
-      return;
-    }
-    const fallback = { active:['work','released'], review:['work','approval'], done:[currentTaskArea,'done'] }[status];
-    const destination = matchingTask ? [matchingTask.area,matchingTask.completedAt ? 'done' : matchingTask.category] : fallback;
-    setTaskView(destination[0],destination[1]);
-  }
-  function openTaskInList(taskId) {
-    const task = tasks.find(item => String(item.id) === String(taskId) && !item.completedAt);
-    if (!task) { showToast('Essa tarefa não está mais disponível para abrir.'); return; }
-    setPage('tasks');
-    if (!['life','work'].includes(task.area)) {
-      setPlanTrayOpen(true);
-      requestAnimationFrame(() => {
-        const target = Array.from(document.querySelectorAll('#planTrayList .task[data-task]')).find(node => node.dataset.task === String(taskId));
-        target?.scrollIntoView({ behavior:'smooth', block:'center' });
-      });
-      return;
-    }
-    setTaskView(task.area,task.category);
-    if (task.executionDate) setPlannerWeek(task.executionDate);
-    if (!task.executionDate) setPlanTrayOpen(true);
-    requestAnimationFrame(() => {
-      const selector = task.executionDate ? '#plannerWeekGrid .task[data-task]' : '#planTrayList .task[data-task]';
-      const target = Array.from(document.querySelectorAll(selector)).find(node => node.dataset.task === String(taskId));
-      if (!target) return;
-      target.focus({ preventScroll:true });
-      target.scrollIntoView({ behavior:'smooth', block:'center' });
-      target.classList.add('task-target-highlight');
-      window.setTimeout(() => target.classList.remove('task-target-highlight'), 2100);
+    currentPage=page;
+    localStorage.setItem(PAGE_KEY,page);
+    document.querySelectorAll('.page').forEach(node=>node.classList.toggle('active',node.id===`${page}Page`));
+    document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{
+      if (button.dataset.page===page) button.setAttribute('aria-current','page');
+      else button.removeAttribute('aria-current');
     });
+    if (page==='home') renderHome();
+    if (page==='tasks') renderTasks();
+    if (page==='notes') renderNotes();
+    if (page==='settings') updateAuthUI();
   }
-  function safeHttpUrl(raw) {
-    try {
-      const url = new URL(raw);
-      return url.protocol === 'http:' || url.protocol === 'https:' ? url : null;
-    } catch { return null; }
+  function visibleTasks(area=currentArea) { return tasks.filter(task=>!task.deletedAt && task.area===area); }
+  function openTasks(area=currentArea) { return visibleTasks(area).filter(task=>!task.completedAt); }
+  function taskOrder(a,b) {
+    const dateDiff=String(a.executionDate || '9999-12-31').localeCompare(String(b.executionDate || '9999-12-31'));
+    return dateDiff || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.title).localeCompare(String(b.title),'pt-BR');
   }
-  function formatTimestamp(value) {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? 'Data não disponível' : date.toLocaleString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  function taskCard(task,options={}) {
+    const complete=Boolean(task.completedAt);
+    const scheduled=Boolean(task.executionDate);
+    const subline=options.overdue ? `Execução: ${formatDate(task.executionDate,{day:'2-digit',month:'2-digit',year:'numeric'})}` : (scheduled ? formatDate(task.executionDate) : '');
+    return `<article class="task-card${complete?' completed':''}" draggable="${complete?'false':'true'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
+      <input class="task-check" type="checkbox" data-complete-task="${escapeHTML(task.id)}" ${complete?'checked':''} aria-label="${complete?'Reabrir':'Concluir'}: ${escapeHTML(task.title)}">
+      <div class="task-main"><button class="task-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button>${subline?`<span class="task-date">${escapeHTML(subline)}</span>`:''}</div>
+      <div class="task-actions"><button class="icon-btn" type="button" data-edit-task="${escapeHTML(task.id)}" aria-label="Editar tarefa" title="Editar">✎</button></div>
+    </article>`;
   }
-  function openDetails(taskId) {
-    detailTaskId = taskId;
-    renderDetails();
-    const dialog = $('detailsDialog');
-    if (!dialog.open) dialog.showModal();
-    dialog.scrollTo({ top:0, left:0 });
+  function renderTasks() {
+    const areaTasks=visibleTasks();
+    const open=areaTasks.filter(task=>!task.completedAt);
+    const overdue=open.filter(task=>task.executionDate && task.executionDate<todayKey()).sort(taskOrder);
+    const unscheduled=open.filter(task=>!task.executionDate).sort(taskOrder);
+    $('countVida').textContent=String(visibleTasks('vida').filter(task=>!task.completedAt).length);
+    $('countTrabalho').textContent=String(visibleTasks('trabalho').filter(task=>!task.completedAt).length);
+    $('countOutros').textContent=String(visibleTasks('outros').filter(task=>!task.completedAt).length);
+    $('unplannedCount').textContent=String(unscheduled.length);
+    $('unplannedList').innerHTML=unscheduled.length ? unscheduled.map(task=>taskCard(task)).join('') : '<div class="empty">Sem tarefas sem data.</div>';
+    const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
+    for (let i=0;i<7;i++) {
+      const date=addDays(weekStart,i);
+      cells.push({kind:'day',title:DAY_LABELS[i],date,tasks:open.filter(task=>task.executionDate===date && task.executionDate>=todayKey()).sort(taskOrder)});
+    }
+    $('weekLabel').textContent=formatWeekRange(weekStart);
+    $('weekGrid').innerHTML=cells.map(cell=>{
+      const today=cell.date===todayKey();
+      const heading=cell.kind==='overdue'
+        ? `<div class="day-heading"><strong>${cell.title}</strong><time>${cell.tasks.length}</time></div>`
+        : `<div class="day-heading"><strong>${cell.title}</strong><time>${formatDate(cell.date,{day:'2-digit',month:'2-digit'})}</time><button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${formatDate(cell.date)}">＋</button></div>`;
+      const body=cell.tasks.length ? cell.tasks.map(task=>taskCard(task,{overdue:cell.kind==='overdue'})).join('') : `<div class="day-empty">${cell.kind==='overdue'?'Nada atrasado':'—'}</div>`;
+      return `<section class="day-column${today?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${cell.title}${cell.date?` ${formatDate(cell.date)}`:''}">${heading}<div class="day-task-list">${body}</div></section>`;
+    }).join('');
+    const completed=areaTasks.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    $('completedCount').textContent=String(completed.length);
+    $('completedList').innerHTML=completed.length ? completed.map(task=>taskCard(task)).join('') : '<div class="empty">Nenhuma concluída.</div>';
+    document.querySelectorAll('.area-tab').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.area===currentArea)));
   }
-  function openHistoryEntry(taskId, targetSection = 'comments', targetId = '') {
-    const task = tasks.find(item => String(item.id) === String(taskId));
-    if (!task) { showToast('Essa tarefa não está mais disponível.'); return; }
-    openDetails(task.id);
-    requestAnimationFrame(() => {
-      let target = null;
-      if (targetId && targetSection === 'comments') {
-        target = Array.from($('commentTimeline').querySelectorAll('[data-comment-id]')).find(node => node.dataset.commentId === String(targetId));
-      } else if (targetId && targetSection === 'links') {
-        target = Array.from($('linksList').querySelectorAll('[data-link-id]')).find(node => node.dataset.linkId === String(targetId));
-      } else if (targetId && targetSection === 'subtasks') {
-        target = Array.from($('subtasksList').querySelectorAll('[data-subtask-row]')).find(node => node.dataset.subtaskRow === String(targetId));
-      }
-      if (!target) target = $(targetSection === 'links' ? 'linksSection' : targetSection === 'subtasks' ? 'subtasksSection' : 'commentSection');
-      if (!target) return;
-      const dialog = $('detailsDialog');
-      const dialogRect = dialog.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const targetTop = dialog.scrollTop + targetRect.top - dialogRect.top - dialog.clientTop;
-      const centeredTop = Math.max(0, targetTop - Math.max(0, (dialog.clientHeight - targetRect.height) / 2));
-      dialog.scrollTo({ top:centeredTop, left:0, behavior:'smooth' });
-      target.classList.add('history-target-highlight');
-      window.setTimeout(() => target.classList.remove('history-target-highlight'), 2200);
-    });
+  function renderAll() {
+    renderTasks();
+    renderHome();
+    renderNotes();
   }
-  function renderDetails() {
-    const task = tasks.find(item => item.id === detailTaskId);
-    if (!task) return;
-    $('detailTitle').textContent = task.title;
-    $('detailDescription').textContent = task.details || 'Nenhum detalhe adicional cadastrado.';
-    renderSubtasks(task);
-    const age = daysSince(task.releaseDate);
-    const statusLabel = task.completedAt ? 'Concluído' : ({ active:'Liberado', client_review:'Aprovando', waiting:'Aguardando' }[task.status] || 'Status não informado');
-    const releaseLabel = task.status === 'waiting'
-      ? 'Ainda não liberada'
-      : (task.releaseDate ? `${age === 0 ? 'Liberada hoje' : `Liberada há ${age} ${age === 1 ? 'dia' : 'dias'}`} · ${formatDate(task.releaseDate)}` : 'Data de liberação não registrada');
-    const metaItems = [
-      { label:'Organização', value:taskCategoryLabel(task.area,task.completedAt ? 'done' : task.category) },
-      { label:'Status', value:statusLabel },
-      { label:'Liberação', value:releaseLabel },
-      { label:'Dia de execução', value:task.executionDate ? formatDate(task.executionDate) : 'Ainda não planejado' },
-      { label:'Entrega', value:task.dueDate ? formatDate(task.dueDate) : 'Sem data de entrega', className:task.dueDate ? 'due' : '' },
-      { label:'Estimativa', value:formatMinutes(task.estimateMinutes) },
-      { label:'Tempo registrado', value:formatMinutes(Math.floor(elapsedSeconds(task)/60)) },
-      task.blocker ? { label:'Falta para liberar', value:task.blocker } : null,
-      task.reward ? { label:'Recompensa', value:task.reward } : null,
-      task.completedAt ? { label:'Concluída em', value:formatDate(task.completedDate || task.completedAt.slice(0,10)) } : null,
-      timer?.taskId === task.id && timer.startedAt ? { label:'Foco atual', value:remainingLabel(task) } : null
-    ].filter(Boolean);
-    $('detailMeta').innerHTML = metaItems.map(item => `<div class="detail-meta-item ${item.className || ''}"><span class="detail-meta-label">${escapeHTML(item.label)}</span><strong class="detail-meta-value">${escapeHTML(item.value)}</strong></div>`).join('');
-    const detailActions = [];
-    if (task.completedAt) {
-      detailActions.push(`<button class="btn small" data-action="reopen" data-id="${escapeHTML(task.id)}" type="button">Reabrir</button>`);
+  function renderHome() {
+    const open=tasks.filter(task=>!task.deletedAt && !task.completedAt);
+    const overdue=open.filter(task=>task.executionDate && task.executionDate<todayKey());
+    const today=open.filter(task=>task.executionDate===todayKey());
+    const unplanned=open.filter(task=>!task.executionDate);
+    $('homeOverdueCount').textContent=String(overdue.length);
+    $('homeTodayCount').textContent=String(today.length);
+    $('homeUnplannedCount').textContent=String(unplanned.length);
+    const next=open.filter(task=>task.executionDate && task.executionDate>=todayKey()).sort(taskOrder).slice(0,5);
+    const items=next.map(task=>`<article class="home-item"><span class="home-item-date">${escapeHTML(formatDate(task.executionDate))} · ${AREA_LABELS[task.area]}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></article>`).join('');
+    $('homePreview').innerHTML=items || '<div class="empty">Ainda não há tarefas agendadas para hoje ou depois.</div>';
+  }
+  function renderNotes() {
+    const active=notes.filter(note=>!note.deletedAt).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    $('notesList').innerHTML=active.length ? active.map(note=>`<article class="note-card"><h3>${escapeHTML(note.title || 'Nota sem título')}</h3><p>${escapeHTML(note.content)}</p><div class="note-actions"><button class="btn small" type="button" data-edit-note="${escapeHTML(note.id)}">Editar</button><button class="btn small" type="button" data-delete-note="${escapeHTML(note.id)}">Excluir</button></div></article>`).join('') : '<div class="empty">Ainda não há notas.</div>';
+  }
+  function openTaskDialog(taskId='',suggestedDate='') {
+    const task=taskId ? tasks.find(item=>item.id===String(taskId) && !item.deletedAt) : null;
+    $('taskForm').reset();
+    $('taskId').value=task ? task.id : '';
+    $('taskDialogTitle').textContent=task ? 'Editar tarefa' : 'Nova tarefa';
+    $('taskTitle').value=task?.title || '';
+    $('taskArea').value=task?.area || currentArea;
+    $('executionDate').value=task?.executionDate || suggestedDate || '';
+    $('deleteTaskBtn').classList.toggle('hidden',!task);
+    $('taskDialog').showModal();
+    $('taskTitle').focus();
+  }
+  function closeTaskDialog() { if ($('taskDialog').open) $('taskDialog').close(); }
+  function saveTaskFromForm(event) {
+    event.preventDefault();
+    const title=$('taskTitle').value.trim();
+    const area=$('taskArea').value;
+    const date=$('executionDate').value || null;
+    if (!title || !AREAS.includes(area) || (date && !isDateKey(date))) return;
+    const id=$('taskId').value;
+    const existing=id ? tasks.find(task=>task.id===id && !task.deletedAt) : null;
+    const now=nowISO();
+    if (existing) {
+      existing.title=title; existing.area=area; existing.executionDate=date; existing.updatedAt=now;
     } else {
-      if (task.status === 'active') detailActions.push(`<button class="btn small ${timer?.taskId === task.id && timer.startedAt ? 'warn' : 'good'}" data-action="timer" data-id="${escapeHTML(task.id)}" type="button">${timer?.taskId === task.id && timer.startedAt ? 'Pausar foco' : 'Começar foco'}</button>`);
-      if (task.status === 'waiting') detailActions.push(`<button class="btn small primary" data-action="release" data-id="${escapeHTML(task.id)}" type="button">Liberar para começar</button>`);
-      detailActions.push(`<button class="btn small" data-action="edit" data-id="${escapeHTML(task.id)}" type="button">Editar</button>`);
+      tasks.push({id:makeId(),title,area,executionDate:date,createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
     }
-    $('detailTaskActions').innerHTML = detailActions.join('');
-    const comments = (task.comments || []).slice().sort((a,b) => a.createdAt.localeCompare(b.createdAt));
-    $('commentTimeline').innerHTML = comments.length ? comments.map(comment => {
-      const text = String(comment.text || '');
-      const isHistory = text.startsWith(HISTORY_PREFIX);
-      const source = isHistory ? 'Sistema' : (comment.source || 'Manual');
-      const displayText = isHistory ? text.slice(HISTORY_PREFIX.length) : text;
-      return `<article class="timeline-item" data-comment-id="${escapeHTML(comment.id || '')}"><div class="timeline-meta"><span>${escapeHTML(source)}</span><time datetime="${escapeHTML(comment.createdAt || '')}">${escapeHTML(formatTimestamp(comment.createdAt))}</time></div><div class="timeline-text">${escapeHTML(displayText)}</div></article>`;
-    }).join('') : '<div class="empty">Ainda não há pedidos ou comentários registrados.</div>';
-    const links = task.links || [];
-    $('linksList').innerHTML = links.length ? links.map(link => {
-      const url = safeHttpUrl(link.url);
-      const label = escapeHTML(link.label || link.url);
-      const target = url ? `<a href="${escapeHTML(url.href)}" target="_blank" rel="noopener noreferrer">${label}</a><div class="hint">${escapeHTML(url.href)}</div>` : `<span>${label} — link inválido</span>`;
-      return `<div class="link-item" data-link-id="${escapeHTML(link.id || '')}"><div>${target}</div><button class="btn small ghost" type="button" data-link-action="remove" data-id="${escapeHTML(link.id)}">Remover</button></div>`;
-    }).join('') : '<div class="empty">Nenhum link anexado.</div>';
+    currentArea=area; localStorage.setItem(AREA_KEY,currentArea);
+    if (date && date>=todayKey()) setWeek(date);
+    else if (!date) $('planningBox').open=true;
+    closeTaskDialog(); saveTasks();
+    showToast(existing?'Tarefa atualizada.':'Tarefa adicionada.');
   }
-  function renderSubtasks(task) {
-    const subtasks = (Array.isArray(task.subtasks) ? task.subtasks : [])
-      .filter(item => item && !item.deletedAt)
-      .sort((a,b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
-    const completed = subtasks.filter(item => Boolean(item.completedAt)).length;
-    $('subtaskProgress').textContent = `${completed}/${subtasks.length}`;
-    $('subtasksList').innerHTML = subtasks.length ? subtasks.map(item => {
-      const checked = item.completedAt ? 'checked' : '';
-      const rowClass = item.completedAt ? ' is-complete' : '';
-      const label = escapeHTML(item.text || 'Subtarefa');
-      const itemId = escapeHTML(item.id);
-      return `<div class="subtask-row${rowClass}" data-subtask-row="${itemId}"><label class="subtask-main"><input type="checkbox" data-subtask-id="${itemId}" aria-label="Concluir subtarefa: ${label}" ${checked}><span class="subtask-text">${label}</span></label><button class="btn small ghost subtask-delete" type="button" data-subtask-delete="${itemId}" aria-label="Remover subtarefa: ${label}">Remover</button></div>`;
-    }).join('') : '<div class="empty">Nenhuma subtarefa por enquanto.</div>';
+  function softDeleteTask() {
+    const id=$('taskId').value;
+    const task=tasks.find(item=>item.id===id && !item.deletedAt);
+    if (!task || !window.confirm(`Excluir “${task.title}”?`)) return;
+    task.deletedAt=nowISO(); task.updatedAt=task.deletedAt;
+    closeTaskDialog(); saveTasks(); showToast('Tarefa excluída.');
   }
-  function onSubtaskSubmit(event) {
-    event.preventDefault();
-    const task = tasks.find(item => String(item.id) === String(detailTaskId));
-    const text = $('subtaskText').value.trim();
-    if (!task || !text) return;
-    const now = new Date().toISOString();
-    task.subtasks ||= [];
-    task.subtasks.push({ id:id(), text, completedAt:null, deletedAt:null, createdAt:now, updatedAt:now });
-    save(); render(); renderDetails(); event.currentTarget.reset(); $('subtaskText').focus();
-    showToast('Subtarefa adicionada.');
-  }
-  function handleSubtaskChange(event) {
-    const checkbox = event.target.closest('input[data-subtask-id]');
-    if (!checkbox) return;
-    const task = tasks.find(item => String(item.id) === String(detailTaskId));
-    const item = task?.subtasks?.find(subtask => String(subtask.id) === checkbox.dataset.subtaskId && !subtask.deletedAt);
-    if (!item) return;
-    const now = new Date().toISOString();
-    item.completedAt = checkbox.checked ? now : null;
-    item.updatedAt = now;
-    recordHistory(task, `${checkbox.checked ? 'Subtarefa concluída' : 'Subtarefa reaberta'}: ${item.text}`, now);
-    save(); render(); renderDetails();
-    showToast(checkbox.checked ? 'Subtarefa concluída.' : 'Subtarefa reaberta.');
-  }
-  function handleSubtaskDelete(event) {
-    const button = event.target.closest('button[data-subtask-delete]');
-    if (!button) return;
-    const task = tasks.find(item => String(item.id) === String(detailTaskId));
-    const item = task?.subtasks?.find(subtask => String(subtask.id) === button.dataset.subtaskDelete && !subtask.deletedAt);
-    if (!item || !window.confirm(`Remover a subtarefa “${item.text}”?`)) return;
-    const now = new Date().toISOString();
-    item.deletedAt = now;
-    item.updatedAt = now;
-    save(); render(); renderDetails(); showToast('Subtarefa removida.');
-  }
-  function onCommentSubmit(event) {
-    event.preventDefault();
-    const task = tasks.find(item => item.id === detailTaskId);
-    const text = $('commentText').value.trim();
-    if (!task || !text) return;
-    task.comments ||= [];
-    task.comments.push({ id:id(), text, source:$('commentSource').value, createdAt:new Date().toISOString() });
-    save(); render(); renderDetails(); $('commentForm').reset();
-    showToast('Pedido/comentário adicionado à timeline.');
-  }
-  function onLinkSubmit(event) {
-    event.preventDefault();
-    const task = tasks.find(item => item.id === detailTaskId);
-    const url = safeHttpUrl($('linkUrl').value.trim());
+  function toggleComplete(taskId,complete) {
+    const task=tasks.find(item=>item.id===String(taskId) && !item.deletedAt);
     if (!task) return;
-    if (!url) { showToast('Use um endereço começando com http:// ou https://.'); $('linkUrl').focus(); return; }
-    task.links ||= [];
-    task.links.push({ id:id(), label:$('linkLabel').value.trim() || url.hostname, url:url.href, createdAt:new Date().toISOString() });
-    save(); render(); renderDetails(); $('linkForm').reset();
-    showToast('Link anexado à tarefa.');
+    task.completedAt=complete ? nowISO() : null;
+    task.updatedAt=nowISO();
+    saveTasks();
   }
-  function handleLinkAction(event) {
-    const button = event.target.closest('button[data-link-action="remove"]');
-    if (!button) return;
-    const task = tasks.find(item => item.id === detailTaskId);
-    if (!task || !window.confirm('Remover este link da tarefa?')) return;
-    const removedLink = (task.links || []).find(link => link.id === button.dataset.id);
-    task.links = (task.links || []).filter(link => link.id !== button.dataset.id);
-    recordHistory(task, `Link removido: ${removedLink?.label || removedLink?.url || 'Link'}`);
-    save(); render(); renderDetails(); showToast('Link removido.');
+  function setTaskDate(taskId,date) {
+    const task=tasks.find(item=>item.id===String(taskId) && !item.deletedAt && !item.completedAt);
+    if (!task || (date && !isDateKey(date))) return;
+    task.executionDate=date || null; task.updatedAt=nowISO();
+    if (date && date>=todayKey()) setWeek(date);
+    else if (!date) $('planningBox').open=true;
+    saveTasks();
+    showToast(date && date<todayKey()?'Foi para ATRASADO.':date?'Data de execução atualizada.':'Voltou para Planejar.');
   }
-  function updateTimerDisplays() {
-    document.querySelectorAll('.timer-readout[data-id]').forEach(node => {
-      const task = tasks.find(t => t.id === node.dataset.id);
-      if (task) node.textContent = remainingLabel(task);
-    });
+  function handleTaskClick(event) {
+    const edit=event.target.closest('[data-edit-task]');
+    if (edit) { openTaskDialog(edit.dataset.editTask); return; }
+    const add=event.target.closest('[data-add-date]');
+    if (add) { openTaskDialog('',add.dataset.addDate); return; }
+    const remove=event.target.closest('[data-delete-note]');
+    if (remove) { deleteNote(remove.dataset.deleteNote); return; }
+    const editNote=event.target.closest('[data-edit-note]');
+    if (editNote) { openNoteDialog(editNote.dataset.editNote); return; }
   }
-  function pauseTimer() {
-    if (!timer?.taskId || !timer.startedAt) return;
-    const task = tasks.find(t => t.id === timer.taskId);
-    if (task) task.timeSpentSeconds = (Number(task.timeSpentSeconds)||0) + Math.max(0, Math.floor((Date.now()-timer.startedAt)/1000));
-    timer = { taskId: task?.id || timer.taskId, startedAt: null };
+  function handleTaskChange(event) {
+    const check=event.target.closest('input[data-complete-task]');
+    if (check) toggleComplete(check.dataset.completeTask,check.checked);
   }
-  function toggleTimer(taskId) {
-    if (timer?.taskId === taskId && timer.startedAt) {
-      pauseTimer();
-      showToast('Foco pausado. Seu tempo foi salvo.');
-    } else {
-      if (timer?.startedAt) pauseTimer();
-      timer = { taskId, startedAt: Date.now() };
-      const task = tasks.find(t => t.id === taskId);
-      showToast(`Foco iniciado: ${task?.title || 'tarefa'}`);
-    }
-    save(); render();
-    if ($('detailsDialog').open) renderDetails();
+  function handleDragStart(event) {
+    const card=event.target.closest('.task-card[data-task-id]');
+    if (!card || event.target.closest('input[data-complete-task]')) { event.preventDefault(); return; }
+    const task=tasks.find(item=>item.id===card.dataset.taskId && !item.completedAt && !item.deletedAt);
+    if (!task) { event.preventDefault(); return; }
+    dragTaskId=task.id; card.classList.add('is-dragging');
+    if (event.dataTransfer) { event.dataTransfer.effectAllowed='move'; event.dataTransfer.setData('text/plain',dragTaskId); }
   }
-  function openRelease(taskId) {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-    releaseTarget = taskId;
-    $('releaseTaskName').textContent = task.title;
-    $('releaseDue').value = '';
-    $('releaseEstimate').value = task.estimateMinutes || 60;
-    $('releaseReward').value = task.reward || '';
-    $('releaseDialog').showModal();
-  }
-  function openTaskCategoryDialog(taskId) {
-    const task = tasks.find(item => String(item.id) === String(taskId));
-    if (!task) return;
-    categoryTaskId = String(task.id);
-    $('categoryTaskName').textContent = task.title;
-    $('categoryDestination').value = task.area === 'inbox' ? 'inbox' : `${task.area}:${task.category}`;
-    document.querySelectorAll('.task-menu[open]').forEach(menu => menu.removeAttribute('open'));
-    $('categoryDialog').showModal();
-  }
-  function onTaskCategorySubmit(event) {
+  function clearDropStyles() { document.querySelectorAll('.drop-active,.is-dragging').forEach(node=>node.classList.remove('drop-active','is-dragging')); }
+  function handleDragOver(event) {
+    if (!dragTaskId) return;
+    const day=event.target.closest('.day-column[data-date]');
+    const planner=event.target.closest('#planningBox');
+    if (!day && !planner) return;
     event.preventDefault();
-    const task = tasks.find(item => String(item.id) === String(categoryTaskId));
-    if (!task) { $('categoryDialog').close(); return; }
-    const destination = String($('categoryDestination').value || 'inbox');
-    const [area,category] = destination === 'inbox' ? ['inbox',null] : destination.split(':');
-    if (!Object.hasOwn(TASK_AREA_CATEGORIES,area) || (area !== 'inbox' && !TASK_AREA_CATEGORIES[area].includes(category))) return;
-    const removedExecutionDate = area === 'inbox' && Boolean(task.executionDate);
-    if (removedExecutionDate && !window.confirm('A tarefa ficará sem área e voltará para Planejar; o Dia de execução será removido. Continuar?')) return;
-    const oldKey = taskCategoryKey(task);
-    task.area = area; task.category = category; task.categoryUpdatedAt = new Date().toISOString();
-    if (area === 'inbox') task.executionDate = null;
-    moveTaskOrderEntry(task.id,oldKey,taskCategoryKey(task));
-    recordHistory(task,removedExecutionDate ? `Organizada em ${taskCategoryLabel(area,category)}; Dia de execução removido` : `Organizada em ${taskCategoryLabel(area,category)}`);
-    save(); render(); $('categoryDialog').close(); categoryTaskId = null;
-    if ($('detailsDialog').open && String(detailTaskId) === String(task.id)) renderDetails();
-    showToast(`Tarefa organizada em ${taskCategoryLabel(area,category)}.`);
+    day?.classList.add('drop-active');
+    planner?.classList.add('drop-active');
   }
-  function handleTaskCardClick(event) {
-    if (event.target.closest('button,a,input,select,textarea,summary,.task-menu')) return;
-    const card = event.target.closest('.task[data-open-task]');
-    if (card) openDetails(card.dataset.openTask);
-  }
-  function handleTaskCardKeydown(event) {
-    if (!['Enter',' '].includes(event.key) || event.target.closest('button,a,input,select,textarea,summary,.task-menu')) return;
-    const card = event.target.closest('.task[data-open-task]');
-    if (!card || event.target !== card) return;
+  function handleDrop(event) {
+    if (!dragTaskId) return;
+    const day=event.target.closest('.day-column[data-date]');
+    const planner=event.target.closest('#planningBox');
+    if (!day && !planner) return;
     event.preventDefault();
-    openDetails(card.dataset.openTask);
+    const id=dragTaskId; dragTaskId=''; clearDropStyles();
+    if (day) setTaskDate(id,day.dataset.date);
+    else setTaskDate(id,'');
   }
-  function handleListAction(event) {
-    const button = event.target.closest('button[data-action]');
-    if (!button) return;
-    const taskId = button.dataset.id;
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-    switch (button.dataset.action) {
-      case 'release':
-        if ($('detailsDialog').open) $('detailsDialog').close();
-        openRelease(taskId); break;
-      case 'edit':
-        if ($('detailsDialog').open) $('detailsDialog').close();
-        openEditForm(taskId); break;
-      case 'details': openDetails(taskId); break;
-      case 'timer': toggleTimer(taskId); break;
-      case 'complete': {
-        const pendingSubtasks = (Array.isArray(task.subtasks) ? task.subtasks : []).filter(item => item && !item.deletedAt && !item.completedAt).length;
-        const confirmMessage = pendingSubtasks
-          ? `Concluir “${task.title}” mesmo com ${pendingSubtasks} ${pendingSubtasks === 1 ? 'subtarefa pendente' : 'subtarefas pendentes'}?`
-          : `Concluir “${task.title}”?`;
-        if (!window.confirm(confirmMessage)) return;
-        if (timer?.taskId === taskId && timer.startedAt) pauseTimer();
-        const previousCategoryKey = taskCategoryKey(task);
-        const completedAt = new Date().toISOString();
-        task.completedAt = completedAt;
-        moveTaskOrderEntry(task.id, previousCategoryKey, taskCategoryKey(task));
-        task.completedDate = todayKey();
-        recordHistory(task, 'Tarefa concluída', completedAt);
-        save(); render();
-        showToast(task.reward ? `Concluída! Recompensa combinada: ${task.reward}` : 'Tarefa concluída. Boa — mais uma etapa feita.');
-        break;
-      }
-      case 'reopen': {
-        const previousCategoryKey = taskCategoryKey(task);
-        task.completedAt = null; task.completedDate = null;
-        moveTaskOrderEntry(task.id, previousCategoryKey, taskCategoryKey(task));
-        recordHistory(task, 'Tarefa reaberta'); save(); render();
-        if ($('detailsDialog').open) renderDetails();
-        showToast('Tarefa reaberta.'); break;
-      }
-      case 'move-up':
-        moveTaskInList(taskId, button.dataset.orderList, -1); break;
-      case 'move-down':
-        moveTaskInList(taskId, button.dataset.orderList, 1); break;
-      case 'move-status':
-        moveTaskToStatus(taskId, button.dataset.status); break;
-      case 'organize': openTaskCategoryDialog(taskId); break;
-      case 'move-to-note': moveTaskToNote(taskId); break;
-      case 'delete':
-        if (!window.confirm(`Excluir “${task.title}”? Essa ação não pode ser desfeita.`)) return;
-        if (timer?.taskId === taskId) timer = null;
-        removeTaskFromOrder(taskId);
-        tasks = tasks.filter(t => t.id !== taskId); save(); render(); showToast('Tarefa excluída.'); break;
-    }
+  function handleDragEnd() { dragTaskId=''; clearDropStyles(); }
+  function openNoteDialog(noteId='') {
+    const note=noteId ? notes.find(item=>item.id===String(noteId) && !item.deletedAt) : null;
+    $('noteForm').reset(); $('noteId').value=note?.id || '';
+    $('noteDialogTitle').textContent=note?'Editar nota':'Nova nota';
+    $('noteTitle').value=note?.title || ''; $('noteContent').value=note?.content || '';
+    $('deleteNoteBtn').classList.toggle('hidden',!note);
+    $('noteDialog').showModal(); $('noteContent').focus();
   }
-  function clearCompletedTasks() {
-    if (currentTaskArea === 'inbox' || currentTaskCategory !== 'done') return;
-    const completed = tasks.filter(task => Boolean(task.completedAt) && task.area === currentTaskArea);
-    if (!completed.length) return;
-    const count = completed.length;
-    const noun = count === 1 ? 'tarefa concluída' : 'tarefas concluídas';
-    const areaLabel = currentTaskArea === 'life' ? 'VIDA' : 'TRABALHO';
-    if (!window.confirm(`Apagar definitivamente ${count} ${noun} de ${areaLabel}? Essa ação não pode ser desfeita.`)) return;
-    const completedIds = new Set(completed.map(task => String(task.id)));
-    if (timer?.taskId && completedIds.has(String(timer.taskId))) { if (timer.startedAt) pauseTimer(); timer = null; }
-    const nextOrder = normalizeTaskOrder(taskOrder);
-    let orderChanged = false;
-    TASK_ORDER_KEYS.forEach(key => {
-      const remaining = nextOrder[key].filter(taskId => !completedIds.has(String(taskId)));
-      if (remaining.length !== nextOrder[key].length) orderChanged = true;
-      nextOrder[key] = remaining;
-    });
-    if (orderChanged) persistTaskOrder(nextOrder, nextTaskOrderTimestamp());
-    tasks = tasks.filter(task => !completedIds.has(String(task.id)));
-    save(); render();
-    showToast(count === 1 ? '1 tarefa concluída removida.' : `${count} tarefas concluídas removidas.`);
-  }
-  function onSubmitTask(event) {
+  function saveNote(event) {
     event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const ready = data.get('ready') === 'yes';
-    const estimate = Number(data.get('estimate'));
-    const title = String(data.get('title')||'').trim();
-    if (!Number.isFinite(estimate) || estimate < 5) { $('estimate').focus(); return; }
-    if (!title) { $('title').focus(); return; }
-    const editId = String(data.get('taskId')||'');
-    if (editId) {
-      const task = tasks.find(item => item.id === editId);
-      if (!task) return;
-      const wasWaiting = task.status === 'waiting';
-      const before = {
-        title:task.title, details:task.details || '', estimateMinutes:Number(task.estimateMinutes) || 60,
-        status:task.status, releaseDate:task.releaseDate || null, dueDate:task.dueDate || null,
-        reward:task.reward || '', blocker:task.blocker || ''
-      };
-      task.title = title;
-      task.details = String(data.get('details')||'').trim();
-      task.estimateMinutes = estimate;
-      if (wasWaiting && ready) {
-        const previousCategoryKey = taskCategoryKey(task);
-        task.status = 'active'; task.releaseDate = todayKey();
-        if (task.area === 'work') { task.category = 'released'; task.categoryUpdatedAt = new Date().toISOString(); }
-        moveTaskOrderEntry(task.id, previousCategoryKey, taskCategoryKey(task));
-        task.dueDate = String(data.get('dueDate')||'') || null;
-        task.reward = String(data.get('reward')||'').trim(); task.blocker = '';
-      } else if (wasWaiting) {
-        task.blocker = String(data.get('blocker')||'').trim();
-      } else {
-        task.dueDate = String(data.get('dueDate')||'') || null;
-        task.reward = String(data.get('reward')||'').trim();
-      }
-      const changed = before.title !== task.title || before.details !== task.details || before.estimateMinutes !== task.estimateMinutes || before.status !== task.status || before.releaseDate !== (task.releaseDate || null) || before.dueDate !== (task.dueDate || null) || before.reward !== (task.reward || '') || before.blocker !== (task.blocker || '');
-      if (changed) recordHistory(task, wasWaiting && ready ? 'Tarefa liberada para começar' : 'Tarefa atualizada');
-      save(); render(); closeForm();
-      if (wasWaiting && ready && task.area === 'work') setTaskView('work','released');
-      showToast(wasWaiting && ready ? 'Liberada hoje. A contagem começa agora.' : 'Tarefa atualizada.');
-      return;
-    }
-    const task = {
-      id:id(), title, details: String(data.get('details')||'').trim(), comments: [], links: [], status: ready ? 'active' : 'waiting', area:'inbox', category:null, categoryUpdatedAt:new Date().toISOString(),
-      releaseDate: ready ? todayKey() : null, dueDate: ready ? (String(data.get('dueDate')||'') || null) : null, executionDate:null,
-      estimateMinutes: estimate, reward: ready ? String(data.get('reward')||'').trim() : '',
-      blocker: ready ? '' : String(data.get('blocker')||'').trim(), timeSpentSeconds: 0,
-      createdAt: new Date().toISOString(), completedAt: null, subtasks: []
-    };
-    tasks.push(task); save(); render(); form.reset(); $('taskId').value = ''; $('estimate').value = 60; closeForm(); setPlanTrayOpen(true);
-    showToast(ready ? 'Tarefa liberada e registrada a partir de hoje.' : 'Tarefa adicionada a Planejar.');
+    const content=$('noteContent').value.trim();
+    if (!content) return;
+    const id=$('noteId').value, title=$('noteTitle').value.trim(), now=nowISO();
+    const note=id ? notes.find(item=>item.id===id && !item.deletedAt) : null;
+    if (note) { note.title=title; note.content=content; note.updatedAt=now; }
+    else notes.unshift({id:makeId(),title,content,createdAt:now,updatedAt:now,deletedAt:null});
+    $('noteDialog').close(); saveNotes(); showToast(note?'Nota atualizada.':'Nota salva.');
   }
-  function onReleaseSubmit(event) {
-    event.preventDefault();
-    const task = tasks.find(t => t.id === releaseTarget);
-    if (!task) return;
-    const estimate = Number($('releaseEstimate').value);
-    if (!Number.isFinite(estimate) || estimate < 5) { $('releaseEstimate').focus(); return; }
-    const previousCategoryKey = taskCategoryKey(task);
-    task.status = 'active'; task.releaseDate = todayKey();
-    if (task.area === 'work') { task.category = 'released'; task.categoryUpdatedAt = new Date().toISOString(); }
-    moveTaskOrderEntry(task.id, previousCategoryKey, taskCategoryKey(task));
-    task.dueDate = $('releaseDue').value || null;
-    task.estimateMinutes = estimate; task.reward = $('releaseReward').value.trim(); task.blocker = '';
-    recordHistory(task, 'Tarefa liberada para começar');
-    releaseTarget = null; save(); $('releaseDialog').close(); render();
-    if (task.area === 'work') setTaskView('work','released');
-    showToast('Liberada hoje. A contagem de dias começa agora.');
+  function deleteNote(noteId) {
+    const note=notes.find(item=>item.id===String(noteId) && !item.deletedAt);
+    if (!note || !window.confirm(`Excluir a nota “${note.title || 'Nota sem título'}”?`)) return;
+    note.deletedAt=nowISO(); note.updatedAt=note.deletedAt; saveNotes(); showToast('Nota excluída.');
   }
-  function exportBackup() {
-    const blob = new Blob([JSON.stringify({ exportedAt:new Date().toISOString(), tasks, notes:notes.filter(note => !note.deletedAt), taskOrder }, null, 2)], { type:'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url; link.download = `na-minha-mao-backup-${todayKey()}.json`; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000); showToast('Backup baixado. Guarde o arquivo em local seguro.');
+  function softDeleteNoteFromDialog() {
+    const id=$('noteId').value;
+    const note=notes.find(item=>item.id===id && !item.deletedAt);
+    if (!note || !window.confirm(`Excluir a nota “${note.title || 'Nota sem título'}”?`)) return;
+    note.deletedAt=nowISO(); note.updatedAt=note.deletedAt; $('noteDialog').close(); saveNotes(); showToast('Nota excluída.');
   }
-
-  function authHeaders(extra = {}) {
-    return { apikey:CLOUD.publishableKey, 'Content-Type':'application/json', ...extra };
+  function setAuthMessage(message,isError=false) {
+    authMessage=String(message || '');
+    $('authMessage').textContent=authMessage;
+    $('authMessage').classList.toggle('error',isError);
   }
-  async function responseBody(response) {
-    const text = await response.text();
-    let body = null;
-    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+  function updateAuthUI() {
+    const connected=Boolean(session?.access_token && session?.user?.id);
+    $('authStatus').textContent=connected ? (syncStatus || `Conectado como ${session.user.email || 'sua conta'}`) : 'Modo local';
+    $('authFields').classList.toggle('hidden',connected);
+    $('loginBtn').classList.toggle('hidden',connected);
+    $('signupBtn').classList.toggle('hidden',connected);
+    $('logoutBtn').classList.toggle('hidden',!connected);
+    $('syncNowBtn').classList.toggle('hidden',!connected);
+    $('loginBtn').disabled=authBusy || !CLOUD_READY;
+    $('signupBtn').disabled=authBusy || !CLOUD_READY;
+    $('syncNowBtn').disabled=authBusy || !connected;
+    $('logoutBtn').disabled=authBusy || !connected;
+    if (!CLOUD_READY) setAuthMessage('Login indisponível: falta a configuração pública do Supabase.',true);
+    else if (!authMessage && !connected) setAuthMessage('Entre para sincronizar entre dispositivos. Sem login, os dados ficam neste aparelho.');
+  }
+  async function parseResponse(response) {
+    const text=await response.text();
+    let data=null;
+    try { data=text ? JSON.parse(text) : null; } catch { data=text; }
     if (!response.ok) {
-      const message = body?.msg || body?.message || body?.error_description || body?.error || `Erro HTTP ${response.status}`;
-      const error = new Error(String(message));
-      error.status = response.status;
-      error.code = body?.code || body?.error || null;
-      throw error;
+      const message=data?.msg || data?.message || data?.error_description || data?.error || `Erro ${response.status}`;
+      const error=new Error(String(message)); error.status=response.status; throw error;
     }
-    return body;
+    return data;
   }
-  async function authRequest(path, payload, method = 'POST') {
-    const response = await fetch(`${CLOUD.url}/auth/v1/${path}`, {
-      method,
-      headers:authHeaders(),
-      body:payload ? JSON.stringify(payload) : undefined
-    });
-    return responseBody(response);
+  function authHeaders(extra={}) { return { apikey:CLOUD.publishableKey,'Content-Type':'application/json',...extra }; }
+  async function authRequest(path,payload,method='POST') {
+    const response=await fetch(`${CLOUD.url}/auth/v1/${path}`,{method,headers:authHeaders(),body:payload ? JSON.stringify(payload) : undefined});
+    return parseResponse(response);
   }
   function storeSession(data) {
-    if (!data?.access_token || !data?.refresh_token) return false;
-    session = {
-      access_token:data.access_token,
-      refresh_token:data.refresh_token,
-      expires_at:Date.now() + (Number(data.expires_in) || 3600) * 1000,
-      user:data.user || session?.user || null
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return true;
+    if (!data?.access_token || !data?.refresh_token) throw new Error('O login não retornou uma sessão. Tente novamente.');
+    session={access_token:data.access_token,refresh_token:data.refresh_token,expires_at:Date.now()+(Number(data.expires_in)||3600)*1000,user:data.user || session?.user || null};
+    localStorage.setItem(SESSION_KEY,JSON.stringify(session));
   }
   async function refreshSession() {
     if (!session?.refresh_token) throw new Error('Sessão expirada. Entre novamente.');
-    const data = await authRequest('token?grant_type=refresh_token', { refresh_token:session.refresh_token });
-    if (!storeSession(data)) throw new Error('Não foi possível renovar a sessão. Entre novamente.');
+    const data=await authRequest('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
+    storeSession(data);
   }
-  async function ensureFreshSession() {
+  async function ensureSession() {
     if (!session?.access_token) throw new Error('Entre na sua conta para sincronizar.');
-    if (!session.expires_at || Date.now() > session.expires_at - 60000) await refreshSession();
+    if (!session.expires_at || Date.now()>session.expires_at-60000) await refreshSession();
   }
-  async function getCurrentUser(canRetry = true) {
-    await ensureFreshSession();
-    const response = await fetch(`${CLOUD.url}/auth/v1/user`, {
-      headers:authHeaders({ Authorization:`Bearer ${session.access_token}` })
-    });
-    if (response.status === 401 && canRetry && session?.refresh_token) {
-      await refreshSession();
-      return getCurrentUser(false);
-    }
-    return responseBody(response);
+  async function getCurrentUser() {
+    await ensureSession();
+    let response=await fetch(`${CLOUD.url}/auth/v1/user`,{headers:authHeaders({Authorization:`Bearer ${session.access_token}`})});
+    if (response.status===401) { await refreshSession(); response=await fetch(`${CLOUD.url}/auth/v1/user`,{headers:authHeaders({Authorization:`Bearer ${session.access_token}`})}); }
+    return parseResponse(response);
   }
-  async function updateCurrentUserMetadata(metadata) {
-    await ensureFreshSession();
-    const request = () => fetch(`${CLOUD.url}/auth/v1/user`, {
-      method:'PUT', headers:authHeaders({ Authorization:`Bearer ${session.access_token}` }),
-      body:JSON.stringify({ data:metadata })
-    });
-    let response = await request();
-    if (response.status === 401 && session?.refresh_token) {
-      await refreshSession();
-      response = await request();
-    }
-    return responseBody(response);
+  async function cloudRequest(path,options={}) {
+    await ensureSession();
+    let response=await fetch(`${CLOUD.url}/rest/v1/${path}`,{...options,headers:authHeaders({Authorization:`Bearer ${session.access_token}`,...(options.headers||{})})});
+    if (response.status===401) { await refreshSession(); response=await fetch(`${CLOUD.url}/rest/v1/${path}`,{...options,headers:authHeaders({Authorization:`Bearer ${session.access_token}`,...(options.headers||{})})}); }
+    return parseResponse(response);
   }
-  async function cloudRequest(path, options = {}, canRetry = true) {
-    await ensureFreshSession();
-    const headers = authHeaders({ Authorization:`Bearer ${session.access_token}`, ...(options.headers || {}) });
-    const response = await fetch(`${CLOUD.url}/rest/v1/${path}`, { ...options, headers });
-    if (response.status === 401 && canRetry && session?.refresh_token) {
-      await refreshSession();
-      return cloudRequest(path, options, false);
+  async function fetchAll(path) {
+    const all=[]; let offset=0;
+    while (true) {
+      const page=await cloudRequest(`${path}&limit=1000&offset=${offset}`);
+      if (!Array.isArray(page)) throw new Error('Resposta de sincronização inválida.');
+      all.push(...page);
+      if (page.length<1000) return all;
+      offset+=1000;
     }
-    return responseBody(response);
   }
   function taskToRow(task) {
-    return {
-      id:String(task.id), owner_id:session.user.id, title:task.title, details:task.details || '', status:task.status,
-      release_date:task.releaseDate || null, due_date:task.dueDate || null, execution_date:task.executionDate || null, estimate_minutes:Number(task.estimateMinutes) || 60,
-      reward:task.reward || '', blocker:task.blocker || '', time_spent_seconds:Number(task.timeSpentSeconds) || 0,
-      created_at:task.createdAt || new Date().toISOString(), completed_at:task.completedAt || null,
-      completed_date:task.completedDate || null, subtasks:Array.isArray(task.subtasks) ? task.subtasks : []
-    };
+    return {id:task.id,owner_id:session.user.id,title:task.title,details:'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,area:task.area,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
   }
   function rowToTask(row) {
-    return {
-      id:String(row.id), title:row.title, details:row.details || '', status:row.status,
-      releaseDate:row.release_date || null, dueDate:row.due_date || null, executionDate:row.execution_date || null, estimateMinutes:Number(row.estimate_minutes) || 60,
-      reward:row.reward || '', blocker:row.blocker || '', timeSpentSeconds:Number(row.time_spent_seconds) || 0,
-      createdAt:row.created_at || new Date().toISOString(), completedAt:row.completed_at || null,
-      completedDate:row.completed_date || null, comments:[], links:[], subtasks:Array.isArray(row.subtasks) ? row.subtasks : []
-    };
+    return normalizeTask({id:row.id,title:row.title,area:row.area,executionDate:row.execution_date,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
   }
-  function rowToNote(row) {
-    return {
-      id:String(row.id), title:row.title || '', content:row.content || '',
-      createdAt:row.created_at || new Date().toISOString(), updatedAt:row.updated_at || row.created_at || new Date().toISOString(),
-      deletedAt:row.deleted_at || null
-    };
-  }
-  function noteToRow(note) {
-    return {
-      id:String(note.id), owner_id:session.user.id, title:String(note.title || ''), content:String(note.content || ''),
-      created_at:note.createdAt || new Date().toISOString(), updated_at:note.updatedAt || note.createdAt || new Date().toISOString(),
-      deleted_at:note.deletedAt || null
-    };
-  }
-  function subtaskRevision(item) {
-    const value = Date.parse(item?.updatedAt || item?.createdAt || '');
-    return Number.isFinite(value) ? value : 0;
-  }
-  function mergeSubtasks(remoteItems, localItems) {
-    const merged = new Map();
-    for (const item of [...(Array.isArray(remoteItems) ? remoteItems : []), ...(Array.isArray(localItems) ? localItems : [])]) {
-      if (!item || item.id == null) continue;
-      const key = String(item.id);
-      const previous = merged.get(key);
-      if (!previous || subtaskRevision(item) >= subtaskRevision(previous)) merged.set(key, { ...item, id:key });
+  function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
+  function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
+  function mergeById(local,remote) {
+    const map=new Map();
+    for (const item of [...remote,...local]) {
+      const old=map.get(item.id);
+      if (!old || Date.parse(item.updatedAt || item.createdAt || '')>=Date.parse(old.updatedAt || old.createdAt || '')) map.set(item.id,item);
     }
-    return Array.from(merged.values()).sort((a,b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
-  }
-  function clearAuth(keepLocal = true) {
-    session = null;
-    syncEnabled = false;
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(SYNC_KEY);
-    remoteTaskIds.clear(); remoteCommentIds.clear(); remoteLinkIds.clear(); remoteNoteIds.clear();
-    remoteNotesEnabled = false;
-    syncStatusText = '';
-    if (!keepLocal) { tasks = []; timer = null; save(false); }
-    updateNotesSyncStatus();
-    updateAuthUI();
+    return Array.from(map.values());
   }
   async function loadCloudData() {
-    const localTasks = clone(tasks);
-    const localNotes = clone(notes);
-    const localOrder = normalizeTaskOrder(taskOrder);
-    const localOrderUpdatedAt = taskOrderUpdatedAt;
-    const [taskRows, commentRows, linkRows] = await Promise.all([
-      cloudRequest('nmm_tasks?select=*'),
-      cloudRequest('nmm_task_comments?select=id,task_id,text,source,created_at'),
-      cloudRequest('nmm_task_links?select=id,task_id,label,url,created_at')
+    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note}));
+    const [remoteTaskRows,remoteNoteRows]=await Promise.all([
+      fetchAll(`nmm_tasks?select=*&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
+      fetchAll(`nmm_notes?select=*&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`)
     ]);
-    let noteRows = [];
-    remoteNotesEnabled = false;
-    try {
-      noteRows = await cloudRequest('nmm_notes?select=*');
-      remoteNotesEnabled = true;
-    } catch {
-      remoteNoteIds.clear();
+    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean);
+    const localActiveTasks=localTasks.filter(item=>!item.deletedAt), localActiveNotes=localNotes.filter(item=>!item.deletedAt);
+    if (!remoteTasks.length && !remoteNotes.length && (localActiveTasks.length || localActiveNotes.length) && !window.confirm('A conta está vazia. Enviar as tarefas e notas deste aparelho para ela?')) {
+      setAuthMessage('Nada foi enviado. Seus dados continuam neste aparelho.'); return false;
     }
-    const currentUser = await getCurrentUser();
-    setRemoteUser(currentUser);
-    const remoteTaskCategories = normalizeTaskCategoryMap(currentUser.user_metadata?.[USER_TASK_CATEGORIES_KEY]);
-    remoteTaskIds.clear(); taskRows.forEach(row => remoteTaskIds.add(String(row.id)));
-    remoteCommentIds.clear(); commentRows.forEach(row => remoteCommentIds.add(String(row.id)));
-    remoteLinkIds.clear(); linkRows.forEach(row => remoteLinkIds.add(String(row.id)));
-    remoteNoteIds.clear(); if (remoteNotesEnabled) noteRows.forEach(row => remoteNoteIds.add(String(row.id)));
-    const remoteById = new Map(taskRows.map(row => [String(row.id), rowToTask(row)]));
-    remoteById.forEach((task, taskId) => {
-      if (remoteTaskCategories[taskId]) applyTaskCategoryRecord(task,remoteTaskCategories[taskId]);
-      else { task.area = 'inbox'; task.category = null; task.categoryUpdatedAt = null; }
-    });
-    const remoteNotesById = new Map((remoteNotesEnabled ? noteRows : []).map(row => [String(row.id), rowToNote(row)]));
-    for (const row of commentRows) {
-      const task = remoteById.get(String(row.task_id));
-      if (task) task.comments.push({ id:String(row.id), text:row.text, source:row.source || 'Manual', createdAt:row.created_at });
-    }
-    for (const row of linkRows) {
-      const task = remoteById.get(String(row.task_id));
-      if (task) task.links.push({ id:String(row.id), label:row.label || '', url:row.url, createdAt:row.created_at });
-    }
-    const localOnlyTasks = localTasks.filter(task => !remoteById.has(String(task.id)));
-    const remoteCommentSet = new Set(remoteCommentIds);
-    const remoteLinkSet = new Set(remoteLinkIds);
-    const missingLocalComments = localTasks.reduce((sum, task) => sum + (task.comments || []).filter(item => !remoteCommentSet.has(String(item.id))).length, 0);
-    const missingLocalLinks = localTasks.reduce((sum, task) => sum + (task.links || []).filter(item => !remoteLinkSet.has(String(item.id))).length, 0);
-    const missingLocalSubtasks = localTasks.reduce((sum, task) => {
-      const remote = remoteById.get(String(task.id));
-      if (!remote) return sum;
-      const remoteSubtasks = new Map((remote.subtasks || []).filter(item => item?.id != null).map(item => [String(item.id), item]));
-      return sum + (Array.isArray(task.subtasks) ? task.subtasks : []).filter(item => {
-        if (!item || item.id == null) return false;
-        const existing = remoteSubtasks.get(String(item.id));
-        return !existing || subtaskRevision(item) > subtaskRevision(existing);
-      }).length;
-    }, 0);
-    const pendingLocalNotes = remoteNotesEnabled ? localNotes.reduce((sum, note) => {
-      const remote = remoteNotesById.get(String(note.id));
-      if (!remote) return sum + (note.deletedAt ? 0 : 1);
-      return sum + (noteRevision(note) > noteRevision(remote) ? 1 : 0);
-    }, 0) : 0;
-    const missingLocalCategories = localTasks.reduce((sum, task) => {
-      const remote = remoteById.get(String(task.id));
-      return sum + (remote && taskCategoryRevision(task) > taskCategoryRevision(remote) ? 1 : 0);
-    }, 0);
-    const pendingLocalData = localOnlyTasks.length + missingLocalComments + missingLocalLinks + missingLocalSubtasks + missingLocalCategories + pendingLocalNotes;
-    if (pendingLocalData && !window.confirm(`Enviar ${pendingLocalData} item(ns) local(is) para a conta privada do Supabase? Nada será apagado do navegador.`)) {
-      clearAuth(true);
-      setAuthMessage('Nada foi enviado. Você continua no modo local.');
-      renderNotes();
-      return false;
-    }
-    for (const local of localTasks) {
-      const remote = remoteById.get(String(local.id));
-      if (!remote) {
-        remoteById.set(String(local.id), local);
-        continue;
-      }
-      if (taskCategoryRevision(local) >= taskCategoryRevision(remote)) {
-        remote.area = local.area; remote.category = local.category; remote.categoryUpdatedAt = local.categoryUpdatedAt;
-      }
-      const commentIds = new Set((remote.comments || []).map(item => String(item.id)));
-      for (const item of local.comments || []) if (!commentIds.has(String(item.id))) remote.comments.push(item);
-      const linkIds = new Set((remote.links || []).map(item => String(item.id)));
-      for (const item of local.links || []) if (!linkIds.has(String(item.id))) remote.links.push(item);
-      remote.subtasks = mergeSubtasks(remote.subtasks, local.subtasks);
-    }
-    tasks = Array.from(remoteById.values());
-    if (remoteNotesEnabled) {
-      for (const local of localNotes) {
-        const key = String(local.id);
-        const remote = remoteNotesById.get(key);
-        if (!remote || noteRevision(local) > noteRevision(remote)) remoteNotesById.set(key, local);
-      }
-      notes = Array.from(remoteNotesById.values());
-      saveNotes(false);
-    }
-    renderNotes();
-    const userMetadata = currentUser.user_metadata && typeof currentUser.user_metadata === 'object' ? currentUser.user_metadata : {};
-    const remoteOrder = normalizeTaskOrder(userMetadata[USER_TASK_ORDER_KEY]);
-    const remoteOrderUpdatedAt = userMetadata[USER_TASK_ORDER_UPDATED_KEY] || null;
-    const localOrderTime = Date.parse(localOrderUpdatedAt || '') || 0;
-    const remoteOrderTime = Date.parse(remoteOrderUpdatedAt || '') || 0;
-    if (remoteOrderTime > 0 && remoteOrderTime >= localOrderTime) {
-      persistTaskOrder(remoteOrder, remoteOrderUpdatedAt);
-    } else if (localOrderTime > 0) {
-      persistTaskOrder(localOrder, localOrderUpdatedAt);
-    } else if (hasSavedTaskOrder(remoteOrder)) {
-      persistTaskOrder(remoteOrder, remoteOrderUpdatedAt || nextTaskOrderTimestamp());
-    } else if (hasSavedTaskOrder(localOrder)) {
-      persistTaskOrder(localOrder, nextTaskOrderTimestamp());
-    } else {
-      persistTaskOrder({}, null);
-    }
-    if (!taskOrder.inbox.length) {
-      const inboxIds = tasks.filter(task => task.area === 'inbox').map(task => String(task.id));
-      if (inboxIds.length) {
-        const allowedIds = new Set(inboxIds);
-        const legacyIds = LEGACY_TASK_ORDER_KEYS.flatMap(key => taskOrder[key]);
-        const nextOrder = normalizeTaskOrder(taskOrder);
-        nextOrder.inbox = [...new Set([...legacyIds, ...inboxIds])].filter(taskId => allowedIds.has(taskId));
-        persistTaskOrder(nextOrder,nextTaskOrderTimestamp());
-      }
-    }
-    syncEnabled = true;
-    localStorage.setItem(SYNC_KEY, 'true');
-    renderNotes();
-    setAuthMessage('Seus dados sincronizam entre aparelhos e ficam privados na sua conta.');
-    save(false); render(); updateAuthUI();
-    return await syncCloud();
+    tasks=mergeById(localTasks,remoteTasks).map(normalizeTask).filter(Boolean);
+    notes=mergeById(localNotes,remoteNotes).map(normalizeNote).filter(Boolean);
+    localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
+    localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
+    await syncCloud();
+    renderAll(); renderNotes(); updateAuthUI();
+    return true;
   }
-  async function syncNotesToCloud() {
-    if (!remoteNotesEnabled || !session?.user?.id || !syncEnabled) return;
-    const rows = notes.filter(note => note && note.id != null).map(noteToRow);
-    if (!rows.length) return;
-    await cloudRequest('nmm_notes?on_conflict=id', {
-      method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:JSON.stringify(rows)
-    });
-    rows.forEach(row => remoteNoteIds.add(String(row.id)));
-  }
-  async function syncTaskCategoriesToCloud() {
-    if (!session?.access_token || !syncEnabled) return;
-    const user = await getCurrentUser();
-    setRemoteUser(user);
-    const metadata = user.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {};
-    const remoteCategories = normalizeTaskCategoryMap(metadata[USER_TASK_CATEGORIES_KEY]);
-    const mergedCategories = {};
-    let localChanged = false;
-    for (const task of tasks) {
-      const taskId = String(task.id);
-      const remoteCategory = remoteCategories[taskId];
-      const localRevision = taskCategoryRevision(task);
-      const remoteRevision = Date.parse(remoteCategory?.updatedAt || '') || 0;
-      if (remoteCategory && remoteRevision > localRevision) {
-        applyTaskCategoryRecord(task,remoteCategory);
-        mergedCategories[taskId] = remoteCategory;
-        localChanged = true;
-      } else {
-        if (!task.categoryUpdatedAt) { task.categoryUpdatedAt = new Date().toISOString(); localChanged = true; }
-        mergedCategories[taskId] = taskCategoryRecord(task);
-      }
-    }
-    if (localChanged) { save(false); render(); }
-    if (JSON.stringify(remoteCategories) !== JSON.stringify(mergedCategories)) {
-      const updatedUser = await updateCurrentUserMetadata({ ...metadata, [USER_TASK_CATEGORIES_KEY]:mergedCategories });
-      setRemoteUser(updatedUser);
-    }
-  }
-  async function syncTaskOrderToCloud() {
-    if (!session?.access_token || !syncEnabled) return;
-    const user = await getCurrentUser();
-    setRemoteUser(user);
-    const metadata = user.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {};
-    const remoteOrder = normalizeTaskOrder(metadata[USER_TASK_ORDER_KEY]);
-    const remoteUpdatedAt = metadata[USER_TASK_ORDER_UPDATED_KEY] || null;
-    const remoteTime = Date.parse(remoteUpdatedAt || '') || 0;
-    let localTime = Date.parse(taskOrderUpdatedAt || '') || 0;
-    if (remoteTime > localTime || (remoteTime > 0 && remoteTime === localTime)) {
-      const changed = JSON.stringify(normalizeTaskOrder(taskOrder)) !== JSON.stringify(remoteOrder);
-      persistTaskOrder(remoteOrder, remoteUpdatedAt);
-      if (changed) render();
-      return;
-    }
-    if (!remoteTime && !localTime) {
-      if (hasSavedTaskOrder(remoteOrder)) persistTaskOrder(remoteOrder, nextTaskOrderTimestamp());
-      else if (hasSavedTaskOrder(taskOrder)) persistTaskOrder(taskOrder, nextTaskOrderTimestamp());
-      else return;
-      localTime = Date.parse(taskOrderUpdatedAt || '') || 0;
-    }
-    if (localTime > remoteTime) {
-      const updatedMetadata = {
-        ...metadata,
-        [USER_TASK_ORDER_KEY]:normalizeTaskOrder(taskOrder),
-        [USER_TASK_ORDER_UPDATED_KEY]:taskOrderUpdatedAt
-      };
-      const updatedUser = await updateCurrentUserMetadata(updatedMetadata);
-      setRemoteUser(updatedUser);
-    }
+  function scheduleSync() {
+    if (!session?.user?.id) return;
+    clearTimeout(syncTimer); syncTimer=setTimeout(()=>{ void syncCloud(); },500);
   }
   async function syncCloud() {
-    if (!session?.user?.id || !syncEnabled) return false;
-    if (syncInFlight) { syncQueued = true; return true; }
-    syncInFlight = true;
+    if (!session?.user?.id) return false;
+    if (syncInFlight) { syncQueued=true; return true; }
+    syncInFlight=true;
     try {
       do {
-        syncQueued = false;
-        // Upload converted destinations before deleting the source task or its links.
-        const currentTasks = clone(tasks);
-        const localTaskIds = new Set(currentTasks.map(task => String(task.id)));
-        const missingRemoteTasks = Array.from(remoteTaskIds).filter(remoteId => !localTaskIds.has(remoteId));
-        if (currentTasks.length) {
-          const rows = currentTasks.map(taskToRow);
-          await cloudRequest('nmm_tasks?on_conflict=id', {
-            method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:JSON.stringify(rows)
-          });
-          localTaskIds.forEach(taskId => remoteTaskIds.add(taskId));
-        }
-        const localComments = currentTasks.flatMap(task => (task.comments || []).map(comment => ({
-          id:String(comment.id), task_id:String(task.id), owner_id:session.user.id, text:comment.text,
-          source:['Manual','WhatsApp','Radar'].includes(comment.source) ? comment.source : 'Manual',
-          created_at:comment.createdAt || new Date().toISOString()
-        })));
-        const newComments = localComments.filter(row => !remoteCommentIds.has(row.id));
-        if (newComments.length) {
-          await cloudRequest('nmm_task_comments', { method:'POST', body:JSON.stringify(newComments) });
-          newComments.forEach(row => remoteCommentIds.add(row.id));
-        }
-        const localLinks = currentTasks.flatMap(task => (task.links || []).map(link => ({
-          id:String(link.id), task_id:String(task.id), owner_id:session.user.id, label:link.label || '', url:link.url,
-          created_at:link.createdAt || new Date().toISOString()
-        })));
-        const localLinkIds = new Set(localLinks.map(row => row.id));
-        const newLinks = localLinks.filter(row => !remoteLinkIds.has(row.id));
-        if (newLinks.length) {
-          await cloudRequest('nmm_task_links', { method:'POST', body:JSON.stringify(newLinks) });
-          newLinks.forEach(row => remoteLinkIds.add(row.id));
-        }
-        await syncNotesToCloud();
-        for (const linkId of Array.from(remoteLinkIds)) {
-          if (!localLinkIds.has(linkId)) {
-            await cloudRequest(`nmm_task_links?id=eq.${encodeURIComponent(linkId)}`, { method:'DELETE' });
-            remoteLinkIds.delete(linkId);
-          }
-        }
-        for (const taskId of missingRemoteTasks) {
-          await cloudRequest(`nmm_tasks?id=eq.${encodeURIComponent(taskId)}`, { method:'DELETE' });
-          remoteTaskIds.delete(taskId);
-        }
-        await syncTaskOrderToCloud();
-        await syncTaskCategoriesToCloud();
-        syncStatusText = `Sincronizado · ${new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}`;
-        $('authStatus').textContent = syncStatusText;
+        syncQueued=false;
+        const taskRows=tasks.map(taskToRow);
+        const noteRows=notes.map(noteToRow);
+        if (taskRows.length) await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});
+        if (noteRows.length) await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});
+        syncStatus=`Sincronizado · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+        updateAuthUI();
       } while (syncQueued);
       return true;
-    } catch (error) {
-      syncStatusText = 'Sincronização pendente';
-      $('authStatus').textContent = syncStatusText;
-      setAuthMessage('Os dados continuam salvos neste navegador; confira a conexão e tente sincronizar de novo.', true);
-      showToast('Não foi possível sincronizar agora. Seus dados locais foram mantidos.');
-      console.error('Na Minha Mão cloud sync:', error);
+    } catch {
+      syncStatus='Sincronização pendente'; updateAuthUI();
+      setAuthMessage('Não consegui sincronizar agora. Os dados continuam salvos neste aparelho.',true);
       return false;
-    } finally {
-      syncInFlight = false;
-      updateAuthUI();
-    }
-  }
-  function scheduleCloudSync() {
-    if (!session?.user?.id || !syncEnabled) return;
-    clearTimeout(syncTimeout);
-    syncTimeout = setTimeout(() => syncCloud(), 500);
+    } finally { syncInFlight=false; updateAuthUI(); }
   }
   async function finishLogin(data) {
-    if (!storeSession(data)) throw new Error('A conta foi autenticada, mas a sessão não retornou. Tente entrar novamente.');
-    const user = data.user || await getCurrentUser();
-    session.user = user;
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return await loadCloudData();
-  }
-  async function signUp() {
-    if (!CLOUD_READY) return;
-    const email = $('authEmail').value.trim();
-    const password = $('authPassword').value;
-    if (!email || password.length < 8) { setAuthMessage('Informe seu e-mail e uma senha com pelo menos 8 caracteres.', true); return; }
-    setAuthBusy(true, 'Criando sua conta segura…');
-    try {
-      const data = await authRequest('signup', { email, password });
-      if (data.access_token && data.refresh_token) await finishLogin(data);
-      else setAuthMessage('Cadastro iniciado. Confirme o e-mail enviado pelo Supabase e depois entre no app.');
-    } catch (error) {
-      setAuthMessage(`Não consegui criar a conta: ${error.message}`, true);
-    } finally { authBusy = false; updateAuthUI(); }
+    storeSession(data);
+    session.user=data.user || await getCurrentUser();
+    localStorage.setItem(SESSION_KEY,JSON.stringify(session));
+    const ok=await loadCloudData();
+    updateAuthUI();
+    return ok;
   }
   async function signIn() {
-    if (!CLOUD_READY) return;
-    const email = $('authEmail').value.trim();
-    const password = $('authPassword').value;
-    if (!email || !password) { setAuthMessage('Informe seu e-mail e senha.', true); return; }
-    setAuthBusy(true, 'Entrando e carregando suas tarefas…');
+    const email=$('authEmail').value.trim(), password=$('authPassword').value;
+    if (!CLOUD_READY || !email || !password) { setAuthMessage('Informe e-mail e senha.',true); return; }
+    authBusy=true; setAuthMessage('Entrando…'); updateAuthUI();
+    try { await finishLogin(await authRequest('token?grant_type=password',{email,password})); setAuthMessage('Login concluído.'); }
+    catch(error) { setAuthMessage(`Não consegui entrar: ${error.message}`,true); }
+    finally { authBusy=false; updateAuthUI(); }
+  }
+  async function signUp() {
+    const email=$('authEmail').value.trim(), password=$('authPassword').value;
+    if (!CLOUD_READY || !email || password.length<8) { setAuthMessage('Informe e-mail e senha com pelo menos 8 caracteres.',true); return; }
+    authBusy=true; setAuthMessage('Criando conta…'); updateAuthUI();
     try {
-      const data = await authRequest('token?grant_type=password', { email, password });
-      const connected = await finishLogin(data);
-      if (connected) showToast('Conta conectada e tarefas sincronizadas.');
-    } catch (error) {
-      setAuthMessage(`Não consegui entrar: ${error.message}`, true);
-    } finally { authBusy = false; updateAuthUI(); }
+      const data=await authRequest('signup',{email,password});
+      if (data.access_token) { await finishLogin(data); setAuthMessage('Conta criada e conectada.'); }
+      else setAuthMessage('Cadastro iniciado. Confirme o e-mail enviado pelo Supabase e depois entre.');
+    } catch(error) { setAuthMessage(`Não consegui criar a conta: ${error.message}`,true); }
+    finally { authBusy=false; updateAuthUI(); }
   }
   async function signOut() {
     if (!session?.access_token) return;
-    setAuthBusy(true, 'Desconectando…');
-    try {
-      await fetch(`${CLOUD.url}/auth/v1/logout`, { method:'POST', headers:authHeaders({ Authorization:`Bearer ${session.access_token}` }) });
-    } catch { /* A sessão local será removida mesmo se estiver offline. */ }
-    clearAuth(false); render();
-    authBusy = false; updateAuthUI();
-    setAuthMessage('Você saiu. As tarefas continuam na conta e serão carregadas ao entrar novamente.');
+    authBusy=true; updateAuthUI();
+    try { await fetch(`${CLOUD.url}/auth/v1/logout`,{method:'POST',headers:authHeaders({Authorization:`Bearer ${session.access_token}`})}); } catch {}
+    session=null; localStorage.removeItem(SESSION_KEY); syncStatus=''; authBusy=false;
+    setAuthMessage('Você saiu. Os dados continuam neste aparelho e na conta.'); updateAuthUI();
+  }
+  async function syncNow() {
+    if (!session?.user?.id) return;
+    authBusy=true; setAuthMessage('Sincronizando…'); updateAuthUI();
+    try { await loadCloudData(); setAuthMessage('Sincronização concluída.'); }
+    catch { setAuthMessage('Não consegui atualizar agora; seus dados locais foram mantidos.',true); }
+    finally { authBusy=false; updateAuthUI(); }
   }
   async function initializeAuth() {
     updateAuthUI();
     if (!CLOUD_READY || !session?.access_token) return;
-    setAuthBusy(true, 'Verificando sua sessão…');
+    authBusy=true; setAuthMessage('Verificando login…'); updateAuthUI();
     try {
-      await ensureFreshSession();
-      session.user = await getCurrentUser();
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      await ensureSession(); session.user=await getCurrentUser(); localStorage.setItem(SESSION_KEY,JSON.stringify(session));
       await loadCloudData();
-    } catch {
-      syncStatusText = 'Verificação pendente';
-      renderNotes();
-      updateAuthUI();
-      setAuthMessage('Não consegui verificar a conta agora. Mantive sua sessão e seus dados neste aparelho; tente sincronizar de novo. Se continuar, saia e entre novamente.', true);
-    } finally { authBusy = false; updateAuthUI(); }
+    } catch { setAuthMessage('Não consegui verificar a conta agora. Tente sincronizar ou entrar novamente.',true); }
+    finally { authBusy=false; updateAuthUI(); }
   }
-  async function syncNow() {
-    if (!session?.user?.id) return;
-    setAuthBusy(true, 'Buscando atualizações…');
-    try {
-      const synced = await loadCloudData();
-      if (synced) showToast('Sincronização concluída.');
-    } catch (error) {
-      setAuthMessage('Não foi possível atualizar agora. Seus dados locais foram mantidos.', true);
-      showToast('A sincronização falhou; nada foi apagado.');
-    } finally { authBusy = false; updateAuthUI(); }
+  function exportBackup() {
+    const data={format:'tnm-weekly-backup-v1',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt)};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+    const link=document.createElement('a'); link.href=url; link.download=`tnm-backup-${todayKey()}.json`; link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000); $('backupMessage').textContent='Backup exportado.';
   }
+  resetOldBrowserData();
+  loadLocalData();
+  $('areaNav').addEventListener('click',event=>{
+    const button=event.target.closest('button[data-area]');
+    if (!button || !AREAS.includes(button.dataset.area)) return;
+    currentArea=button.dataset.area; localStorage.setItem(AREA_KEY,currentArea); renderTasks();
+  });
+  document.querySelector('.main-nav').addEventListener('click',event=>{
+    const button=event.target.closest('button[data-page]'); if (button) setPage(button.dataset.page);
+  });
+  document.addEventListener('click',event=>{ if (event.target.closest('[data-open-tasks]')) setPage('tasks'); });
+  $('quickAddBtn').addEventListener('click',()=>{setPage('tasks');openTaskDialog();});
+  $('newTaskBtn').addEventListener('click',()=>openTaskDialog());
+  $('taskForm').addEventListener('submit',saveTaskFromForm);
+  $('closeTaskDialog').addEventListener('click',closeTaskDialog);
+  $('deleteTaskBtn').addEventListener('click',softDeleteTask);
+  $('weekGrid').addEventListener('click',handleTaskClick);
+  $('unplannedList').addEventListener('click',handleTaskClick);
+  $('completedList').addEventListener('click',handleTaskClick);
+  $('homePreview').addEventListener('click',handleTaskClick);
+  $('weekGrid').addEventListener('change',handleTaskChange);
+  $('unplannedList').addEventListener('change',handleTaskChange);
+  $('completedList').addEventListener('change',handleTaskChange);
+  for (const node of [$('weekGrid'),$('unplannedList')]) {
+    node.addEventListener('dragstart',handleDragStart);
+    node.addEventListener('dragover',handleDragOver);
+    node.addEventListener('drop',handleDrop);
+  }
+  $('planningBox').addEventListener('dragover',handleDragOver);
+  $('planningBox').addEventListener('drop',handleDrop);
+  document.addEventListener('dragend',handleDragEnd);
+  $('prevWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,-7)));
+  $('nextWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,7)));
+  $('todayBtn').addEventListener('click',()=>setWeek(todayKey()));
+  $('newNoteBtn').addEventListener('click',()=>openNoteDialog());
+  $('notesList').addEventListener('click',handleTaskClick);
+  $('noteForm').addEventListener('submit',saveNote);
+  $('closeNoteDialog').addEventListener('click',()=>$('noteDialog').close());
+  $('deleteNoteBtn').addEventListener('click',softDeleteNoteFromDialog);
+  $('loginBtn').addEventListener('click',signIn);
+  $('signupBtn').addEventListener('click',signUp);
+  $('logoutBtn').addEventListener('click',signOut);
+  $('syncNowBtn').addEventListener('click',syncNow);
+  $('exportBtn').addEventListener('click',exportBackup);
+  window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud(); });
 
-  document.querySelector('.main-nav').addEventListener('click', event => {
-    const button = event.target.closest('button[data-page]');
-    if (button) setPage(button.dataset.page);
-  });
-  $('taskAreaNav').addEventListener('click', event => {
-    const button = event.target.closest('button[data-task-area]:not([data-task-category])');
-    if (button) setTaskArea(button.dataset.taskArea);
-  });
-  $('taskCategoryNav').addEventListener('click', event => {
-    const button = event.target.closest('button[data-task-category]');
-    if (button && button.dataset.taskArea === currentTaskArea) setTaskCategory(button.dataset.taskCategory);
-  });
-  $('plannerPrevWeek').addEventListener('click', () => shiftPlannerWeek(-1));
-  $('plannerNextWeek').addEventListener('click', () => shiftPlannerWeek(1));
-  $('plannerTodayBtn').addEventListener('click', () => setPlannerWeek(todayKey()));
-  $('plannerWeekPickerBtn').addEventListener('click', () => {
-    plannerMonthCursor = `${addDaysKey(plannerWeekStart,3).slice(0,7)}-01`;
-    renderPlannerWeekOptions();
-    $('plannerWeekDialog').showModal();
-  });
-  $('plannerMonthPrev').addEventListener('click', () => shiftPlannerMonth(-1));
-  $('plannerMonthNext').addEventListener('click', () => shiftPlannerMonth(1));
-  $('closePlannerWeekDialog').addEventListener('click', () => $('plannerWeekDialog').close());
-  $('plannerWeekDialog').addEventListener('click', event => {
-    const button = event.target.closest('button[data-week-start]');
-    if (!button) return;
-    setPlannerWeek(button.dataset.weekStart);
-    $('plannerWeekDialog').close();
-  });
-  $('planTrayToggle').addEventListener('click', () => setPlanTrayOpen(!planTrayOpen));
-  $('closePlanTray').addEventListener('click', () => setPlanTrayOpen(false));
-  $('plannerWeekViewport').addEventListener('touchstart', event => {
-    if (event.touches.length !== 1 || event.target.closest('button,input,select,textarea,.task-menu,.task-drag-handle')) { plannerSwipeOrigin = null; return; }
-    plannerSwipeOrigin = { x:event.touches[0].clientX, y:event.touches[0].clientY };
-  }, { passive:true });
-  $('plannerWeekViewport').addEventListener('touchend', event => {
-    if (!plannerSwipeOrigin || !event.changedTouches.length) return;
-    const deltaX = event.changedTouches[0].clientX - plannerSwipeOrigin.x;
-    const deltaY = event.changedTouches[0].clientY - plannerSwipeOrigin.y;
-    plannerSwipeOrigin = null;
-    if (Math.abs(deltaX) >= 72 && Math.abs(deltaY) < 58) shiftPlannerWeek(deltaX < 0 ? 1 : -1);
-  }, { passive:true });
-  $('nextTaskContent').addEventListener('click', event => {
-    const button = event.target.closest('button[data-open-task]');
-    if (button) openTaskInList(button.dataset.openTask);
-  });
-  $('homePage').addEventListener('click', event => {
-    const card = event.target.closest('button[data-dashboard-status]');
-    if (card) openDashboardStatus(card.dataset.dashboardStatus);
-  });
-  $('historyMoreBtn').addEventListener('click', () => { historyExpanded = !historyExpanded; renderHistory(); });
-  $('homeHistoryList').addEventListener('click', event => {
-    const button = event.target.closest('button[data-history-open]');
-    if (button) openHistoryEntry(button.dataset.historyOpen, button.dataset.historySection, button.dataset.historyTarget);
-  });
-  $('newBtn').addEventListener('click', openNewForm);
-  $('closeFormBtn').addEventListener('click', closeForm);
-  $('taskForm').addEventListener('submit', onSubmitTask);
-  $('clearCompletedBtn').addEventListener('click', clearCompletedTasks);
-  $('newNoteBtn').addEventListener('click', openNewNote);
-  $('noteForm').addEventListener('submit', onSubmitNote);
-  $('closeNoteFormBtn').addEventListener('click', closeNoteForm);
-  $('cancelNoteBtn').addEventListener('click', closeNoteForm);
-  $('notesSearch').addEventListener('input', renderNotes);
-  $('notesSearch').addEventListener('keydown', event => {
-    if (event.key === 'Enter') { event.preventDefault(); saveRecentSearch(); }
-    else if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete') notesSearchManuallyEdited = true;
-  });
-  $('notesSearch').addEventListener('beforeinput', event => {
-    const inputType = String(event.inputType || '').toLowerCase();
-    if (inputType && !inputType.includes('replacement') && !inputType.includes('autofill')) notesSearchManuallyEdited = true;
-  });
-  $('notesSearch').addEventListener('change', saveRecentSearch);
-  $('notesRecentSearches').addEventListener('click', handleRecentSearchClick);
-  $('notesList').addEventListener('click', handleNotesListClick);
-  document.querySelectorAll('input[name="ready"]').forEach(input => input.addEventListener('change', setFormMode));
-  $('releaseForm').addEventListener('submit', onReleaseSubmit);
-  $('cancelReleaseBtn').addEventListener('click', () => $('releaseDialog').close());
-  $('categoryForm').addEventListener('submit', onTaskCategorySubmit);
-  $('cancelCategoryBtn').addEventListener('click', () => $('categoryDialog').close());
-  $('categoryDialog').addEventListener('close', () => { categoryTaskId = null; });
-  $('exportBtn').addEventListener('click', exportBackup);
-  ['taskList'].forEach(id => {
-    $(id).addEventListener('click', handleTaskCardClick);
-    $(id).addEventListener('keydown', handleTaskCardKeydown);
-    $(id).addEventListener('click', handleListAction);
-    $(id).addEventListener('dragstart', handleTaskDragStart);
-  });
-  $('listView').addEventListener('dragover', handleTaskDragOver);
-  $('listView').addEventListener('drop', handleTaskDrop);
-  ['plannerWeekGrid','planTrayList'].forEach(id => {
-    $(id).addEventListener('click', handleTaskCardClick);
-    $(id).addEventListener('keydown', handleTaskCardKeydown);
-    $(id).addEventListener('click', handleListAction);
-    $(id).addEventListener('dragstart', handlePlannerDragStart);
-  });
-  $('plannerWeekGrid').addEventListener('dragover', handlePlannerDragOver);
-  $('plannerWeekGrid').addEventListener('drop', handlePlannerDrop);
-  $('planTrayList').addEventListener('dragover', handlePlannerDragOver);
-  $('planTrayList').addEventListener('drop', handlePlannerDrop);
-  $('planTrayList').addEventListener('change', handlePlanDateChange);
-  document.addEventListener('dragend', handleTaskDragEnd);
-  document.addEventListener('dragend', handlePlannerDragEnd);
-  $('detailsDialog').addEventListener('click', handleListAction);
-  $('detailsDialog').addEventListener('click', event => {
-    const dialog = event.currentTarget;
-    if (event.target !== dialog) return;
-    const rect = dialog.getBoundingClientRect();
-    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
-  });
-  $('closeDetailsBtn').addEventListener('click', () => $('detailsDialog').close());
-  $('callZapiaBtn').addEventListener('click', () => {
-    const task = tasks.find(item => String(item.id) === String(detailTaskId));
-    if (!task) return;
-    const message = [
-      '@zapia me ajuda com esta tarefa do Ta Na Mão:',
-      task.title,
-      task.details?.trim() ? `Detalhes: ${task.details.trim().slice(0,1000)}` : '',
-      task.dueDate ? `Prazo: ${formatDate(task.dueDate)}` : ''
-    ].filter(Boolean).join('\n\n');
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  });
-  $('detailsDialog').addEventListener('close', () => { detailTaskId = null; });
-  $('subtaskForm').addEventListener('submit', onSubtaskSubmit);
-  $('subtasksList').addEventListener('change', handleSubtaskChange);
-  $('subtasksList').addEventListener('click', handleSubtaskDelete);
-  $('commentForm').addEventListener('submit', onCommentSubmit);
-  $('linkForm').addEventListener('submit', onLinkSubmit);
-  $('linksList').addEventListener('click', handleLinkAction);
-  $('signupBtn').addEventListener('click', signUp);
-  $('loginBtn').addEventListener('click', signIn);
-  $('logoutBtn').addEventListener('click', signOut);
-  $('syncNowBtn').addEventListener('click', syncNow);
-  window.addEventListener('online', scheduleCloudSync);
-  window.addEventListener('beforeunload', () => save(false));
-  $('zoomOutBtn').addEventListener('click', () => applyPageZoom(currentZoom - .1));
-  $('zoomInBtn').addEventListener('click', () => applyPageZoom(currentZoom + .1));
-  const initialZoom = Number(load(ZOOM_KEY, 1));
-  applyPageZoom(Number.isFinite(initialZoom) ? initialZoom : 1);
-  setInterval(updateTimerDisplays, 1000);
-  setFormMode();
-  render();
-  renderNotes();
-  initializeAuth();
+  renderAll(); renderNotes(); setPage(currentPage); void initializeAuth();
 })();

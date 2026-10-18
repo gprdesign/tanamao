@@ -1,5 +1,5 @@
-const CACHE_NAME = 'na-minha-mao-v47';
-const APP_FILES = ['./', './index.html', './config.js?v=1', './app.js?v=36', './manifest.webmanifest', './icon.svg'];
+const CACHE_NAME = 'tnm-weekly-v1';
+const APP_FILES = ['./','./index.html','./config.js?v=2','./app.js?v=50','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)));
   self.skipWaiting();
@@ -9,11 +9,11 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+  if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(fetch(event.request).then(response => {
-    if (response.ok && new URL(event.request.url).origin === self.location.origin) {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+    if (response.ok) {
+      const copy=response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(event.request,copy));
     }
     return response;
   }).catch(async () => (await caches.match(event.request)) || caches.match('./index.html')));

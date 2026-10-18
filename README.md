@@ -1,33 +1,29 @@
-# Na Minha Mão
+# TA NA MÃO
 
-PWA responsivo para organizar tarefas pela data em que foram liberadas, com prazo, estimativa, foco e recompensa.
+PWA pessoal, minimalista, inspirado no Weeklo.
 
-## Recursos
+## O que fica
 
-- Cadastro de tarefas liberadas ou aguardando liberação.
-- Subtarefas com conclusão individual, progresso e sincronização.
-- Contagem de dias desde a liberação, prazo, estimativa, tempo registrado e recompensa.
-- Navegação fixa no rodapé; Home destaca a próxima tarefa e resume os estados com barras de progresso, e Tarefas oferece uma lista enxuta por estado.
-- Detalhes, timeline de pedidos/comentários com data, hora e origem, além de links anexados.
-- Timer de foco, edição, conclusão e reabertura; o backup JSON fica em Configurações.
-- Layout responsivo e cache offline básico.
+- Planner semanal em duas colunas: ATRASADO, SEG, TER, QUA, QUI, SEX, SÁB e DOM.
+- Três áreas: VIDA, TRABALHO e OUTROS.
+- Tarefa sem data fica em Planejar; arrastar para um dia ou escolher uma data define o Dia de execução. Data anterior a hoje aparece em ATRASADO.
+- Conclusão simples de tarefas, notas, login/sincronização privada e exportação JSON de backup.
+- Navegação inferior Home, Tarefas, Notas e Configs.
 
-## Sincronização e privacidade
+## Privacidade
 
-- Sem login, os dados ficam apenas no `localStorage` deste navegador.
-- Ao entrar na conta Supabase, tarefas, comentários e links sincronizam entre dispositivos.
-- O primeiro envio de dados locais pede confirmação; nada é enviado sem essa confirmação.
-- As tabelas usam Row Level Security e cada conta só acessa as próprias linhas.
-- `config.js` contém somente a chave publicável, destinada ao navegador. Nunca coloque uma chave secreta do Supabase no código ou no repositório público.
-- `supabase/schema.sql` cria as tabelas e políticas do app no projeto Supabase.
-- O anexo automático de resumos pelo Zapia exige uma credencial privada de servidor; ela não deve ser publicada no app.
+Sem login, tarefas e notas ficam no armazenamento local do navegador. Com login, os dados sincronizam pela conta Supabase, protegidos por RLS. O app usa somente a chave publicável no navegador; nenhuma chave secreta deve entrar no repositório.
 
-## Teste local
+## Supabase
 
-Com Python instalado, abra um terminal nesta pasta e execute:
+- `supabase/schema.sql`: schema inicial.
+- `supabase/migration-execution-date.sql`: Dia de execução.
+- `supabase/migration-weekly-planner.sql`: área única, atualização e exclusão lógica.
+
+## Abrir localmente
 
 ```text
-py -m http.server 8000
+python3 -m http.server 8000
 ```
 
-Depois abra `http://localhost:8000`. Para interromper o servidor, use `Ctrl+C` no terminal.
+Abra `http://localhost:8000`.
