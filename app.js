@@ -11,6 +11,7 @@
   const TAG_FILTER_KEY = 'tnm.weekly.filterTag.v1';
   const LAST_TAG_KEY = 'tnm.weekly.lastTag.v1';
   const AUTO_BACKUP_KEY = 'tnm.weekly.autobackup.v1';
+  const CALENDAR_EVENTS_KEY = 'tnm.weekly.calendarEvents.v1';
   const AUTO_BACKUP_EVERY = 5*60*1000;
   const WEEK_KEY = 'tnm.weekly.week.v1';
   const PAGE_KEY = 'tnm.weekly.page.v1';
@@ -33,6 +34,8 @@
   let tasks = [];
   let notes = [];
   let tags = [];
+  let calendarEvents = readStored(CALENDAR_EVENTS_KEY,[]);
+  if(!Array.isArray(calendarEvents))calendarEvents=[];
   let session = readStored(SESSION_KEY,null);
   let filterTagIds = readFilterTags();
   let currentPage = ['home','tasks','notes','settings'].includes(localStorage.getItem(PAGE_KEY)) ? localStorage.getItem(PAGE_KEY) : 'home';
@@ -45,6 +48,7 @@
   let planningVisibleLimit = 6;
   let completedVisibleLimit = 6;
   let floatingActionMenu = null;
+  let pointerDrag = null;
   let activeDayKind = 'day';
   let activeDayDate = '';
   let authBusy = false;
@@ -71,6 +75,26 @@
     localStorage.setItem(RESET_KEY,'done');
   }
   function validTagColor(value) { return /^#[0-9a-f]{6}$/i.test(String(value || '')); }
+  function normalizeLink(value) {
+    const text=String(value||'').trim().slice(0,2048);
+    if(!text)return '';
+    try{const url=new URL(text);return ['http:','https:'].includes(url.protocol)?url.href:'';}catch{return '';}
+  }
+  function normalizeCalendarEvent(value) {
+    if(!value||typeof value!=='object')return null;
+    const title=String(value.summary||value.title||'').trim().slice(0,180);
+    const rawStart=value.start?.dateTime||value.start?.date||value.startAt||value.start;
+    if(!title||!rawStart)return null;
+    const allDay=/^\d{4}-\d{2}-\d{2}$/.test(String(rawStart));
+    const startDate=allDay?null:new Date(rawStart);
+    if(!allDay&&(!startDate||!Number.isFinite(startDate.getTime())))return null;
+    const startAt=allDay?String(rawStart):startDate.toISOString();
+    return {id:String(value.id||`${title}:${startAt}`),title,startAt,allDay,location:String(value.location||'').trim().slice(0,180),url:normalizeLink(value.htmlLink||value.url||'')};
+  }
+  function calendarEventOrder(a,b){return String(a.startAt).localeCompare(String(b.startAt))||String(a.title).localeCompare(String(b.title),'pt-BR');}
+  function getUpcomingCalendarEvents(){const today=todayKey(),now=Date.now();return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>event.allDay?event.startAt>=today:Date.parse(event.startAt)>=now).sort(calendarEventOrder);}
+  function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderHomeEvents();}
+  window.TNMCalendarBridge=Object.freeze({replaceEvents:setCalendarEvents});
   function normalizeTag(value) {
     if (!value || typeof value !== 'object' || !String(value.id || '').trim() || !String(value.name || '').trim()) return null;
     return {id:String(value.id),name:String(value.name).trim().replace(/\s+/g,' ').slice(0,32),color:validTagColor(value.color)?String(value.color).toLowerCase():'#8bafff',createdAt:String(value.createdAt || nowISO()),updatedAt:String(value.updatedAt || value.createdAt || nowISO()),deletedAt:value.deletedAt?String(value.deletedAt):null};
@@ -105,6 +129,7 @@
     const storedTag=value.tagId || value.tag_id;
     return {
       id:String(value.id || makeId()), title:String(value.title).trim().slice(0,180),
+      content:String(value.content ?? value.details ?? '').slice(0,20000),link:normalizeLink(value.link ?? value.link_url ?? ''),
       tagId:String(storedTag==='outros' ? 'outro' : (storedTag || legacyArea)),
       executionDate:isDateKey(value.executionDate || value.execution_date) ? String(value.executionDate || value.execution_date) : null,
       sortOrder:Number.isFinite(Number(value.sortOrder ?? value.sort_order)) ? Number(value.sortOrder ?? value.sort_order) : 0,
@@ -119,7 +144,7 @@
     if (!title && !content.trim()) return null;
     const rawTags=value.tagIds ?? value.tag_ids ?? [];
     return {
-      id:String(value.id || makeId()), title, content,
+      id:String(value.id || makeId()), title, content,link:normalizeLink(value.link ?? value.link_url ?? ''),isPinned:Boolean(value.isPinned ?? value.is_pinned ?? false),
       tagIds:Array.isArray(rawTags)?Array.from(new Set(rawTags.map(String))):[],
       sortOrder:Number.isFinite(Number(value.sortOrder ?? value.sort_order)) ? Number(value.sortOrder ?? value.sort_order) : 0,
       createdAt:String(value.createdAt || value.created_at || nowISO()), updatedAt:String(value.updatedAt || value.updated_at || value.createdAt || value.created_at || nowISO()),
@@ -237,7 +262,21 @@
     const dateDiff=String(a.executionDate || '9999-12-31').localeCompare(String(b.executionDate || '9999-12-31'));
     return dateDiff || Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.title).localeCompare(String(b.title),'pt-BR');
   }
-  function noteOrder(a,b) { return Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')); }
+  function noteOrder(a,b) { return Number(Boolean(b.isPinned))-Number(Boolean(a.isPinned)) || Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')); }
+  function addNoteTagToSelection(tagId) {
+    const selected=Array.from($('noteTagChoices').querySelectorAll('input:checked')).map(input=>input.value);
+    if(!selected.includes(tagId))selected.push(tagId);
+    renderNoteTagChoices(selected);
+  }
+  function createNoteTag() {
+    const input=$('noteNewTagName'),raw=input.value.trim().replace(/\s+/g,' ');
+    if(!raw){$('noteTagMessage').textContent='Digite o nome da tag.';input.focus();return;}
+    const name=raw.normalize('NFKC').toLocaleUpperCase('pt-BR').slice(0,32);
+    let tag=tags.find(item=>!item.deletedAt&&item.name.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR'));
+    const existed=Boolean(tag);
+    if(!tag){const now=nowISO();tag={id:makeId(),name,color:randomTagColor(),createdAt:now,updatedAt:now,deletedAt:null};tags.push(tag);saveTags();}
+    addNoteTagToSelection(tag.id);input.value='';$('noteTagMessage').textContent=existed?`A tag ${tag.name} já existia e foi selecionada.`:`Tag ${tag.name} criada e selecionada.`;
+  }
   function nextTaskOrder(date) { return Math.max(-1,...tasks.filter(item=>!item.deletedAt&&!item.completedAt&&(item.executionDate||'')===(date||'')).map(item=>Number(item.sortOrder)||0))+1; }
 
   function tagDot(tagId) {
@@ -261,9 +300,10 @@
     const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':''].filter(Boolean).join(' ');
     const linked=options.linked?'task-link':'';
     const reschedule=options.showReschedule&&!complete?`<button class="task-reschedule" type="button" data-reschedule-task="${escapeHTML(task.id)}">REAGENDAR</button>`:'';
+    const tag=getTag(task.tagId),taskTag=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:tagDot(task.tagId);
     return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
       <input class="task-check" type="checkbox" data-complete-task="${escapeHTML(task.id)}" ${complete?'checked':''} aria-label="${complete?'Reabrir':'Concluir'}: ${escapeHTML(task.title)}">
-      <div class="task-main"><div class="task-title-row">${tagDot(task.tagId)}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
+      <div class="task-main"><div class="task-title-row">${taskTag}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
       <div class="task-actions">${reschedule}${taskMenu(task,options.canMove!==false)}</div>
     </article>`;
   }
@@ -373,26 +413,45 @@
   }
   function renderHomeTaskList(id,list) {
     const node=$(id);
-    node.innerHTML=list.length?list.map(task=>{const tag=getTag(task.tagId),late=task.executionDate<todayKey();return `<article class="home-task-row${late?' is-late':''}"><div class="home-task-main"><span class="home-item-date">${escapeHTML(homeDateLabel(task.executionDate))}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div><span class="home-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span></article>`;}).join(''):'<div class="empty">Sem tarefas.</div>'; 
+    node.innerHTML=list.length?list.map(task=>{const tag=getTag(task.tagId),late=task.executionDate<todayKey();return `<article class="home-task-row${late?' is-late':''}"><div class="home-task-main"><span class="home-item-date">${escapeHTML(homeDateLabel(task.executionDate))}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button><span class="home-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span></div></article>`;}).join(''):'<div class="empty">Sem tarefas.</div>';
+  }
+  function renderHomeEvents() {
+    const node=$('homeUpcomingEventsList');if(!node)return;
+    const events=getUpcomingCalendarEvents();
+    node.innerHTML=events.length?events.map(event=>{
+      const date=event.allDay?dateAtNoon(event.startAt):new Date(event.startAt);
+      const day=date?.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace(/\./g,'')||'';
+      const when=event.allDay?'Dia todo':date?.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})||'';
+      return `<article class="home-event-row"><div class="home-event-main"><span class="home-item-date">${escapeHTML(day)}${when?` · ${escapeHTML(when)}`:''}</span><div class="home-event-title">${escapeHTML(event.title)}</div>${event.location?`<span class="home-event-location">${escapeHTML(event.location)}</span>`:''}</div>${event.url?`<a class="home-event-link" href="${escapeHTML(event.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir evento">↗</a>`:''}</article>`;
+    }).join(''):'<div class="empty">Nenhum evento próximo.</div>';
   }
   function renderHome() {
     const open=visibleTasks().filter(task=>!task.completedAt),today=todayKey(),tomorrow=addDays(today,1);
     const overdue=open.filter(task=>task.executionDate&&task.executionDate<today).sort(taskOrder);
     const todayTasks=open.filter(task=>task.executionDate===today).sort(taskOrder);
     const tomorrowTasks=open.filter(task=>task.executionDate===tomorrow).sort(taskOrder);
-    const upcoming=open.filter(task=>task.executionDate&&task.executionDate>tomorrow).sort(taskOrder);
     const unplanned=open.filter(task=>!task.executionDate);
     $('homeOverdueCount').textContent=String(overdue.length); $('homeTodayCount').textContent=String(todayTasks.length); $('homeUnplannedCount').textContent=String(unplanned.length);
-    renderHomeTaskList('homeOverdueList',overdue); renderHomeTaskList('homeTodayList',todayTasks); renderHomeTaskList('homeTomorrowList',tomorrowTasks); renderHomeTaskList('homeUpcomingList',upcoming);
+    renderHomeEvents();renderHomeTaskList('homeOverdueList',overdue);renderHomeTaskList('homeTodayList',todayTasks);renderHomeTaskList('homeTomorrowList',tomorrowTasks);
   }
   function renderNotes() {
     const active=visibleNotes().sort(noteOrder);
     $('notesList').innerHTML=active.length ? active.map(note=>{
-      const id=escapeHTML(note.id), tagsHtml=(note.tagIds||[]).map(tagId=>tags.find(tag=>tag.id===tagId&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');
-      const body=note.title?`<h3>${escapeHTML(note.title)}</h3>${note.content?`<p>${escapeHTML(note.content)}</p>`:''}`:`<p class="note-card-content--titleless">${escapeHTML(note.content)}</p>`;
-      return `<article class="note-card" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><div class="note-card-top"><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-note="${id}">EDITAR</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div><div class="note-card-body">${body}</div>${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</article>`;
+      const id=escapeHTML(note.id),tagsHtml=(note.tagIds||[]).map(tagId=>tags.find(tag=>tag.id===tagId&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');
+      const title=note.title?`<h3 class="note-card-title">${escapeHTML(note.title)}</h3>`:'<span class="note-card-title-placeholder" aria-hidden="true"></span>';
+      const body=note.title?(note.content?`<p>${escapeHTML(note.content)}</p>`:''):`<p class="note-card-content--titleless">${escapeHTML(note.content)}</p>`;
+      const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota';
+      const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'';
+      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button><button class="note-pin-btn" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}" aria-label="${pinLabel}" title="${pinLabel}">📌</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-note="${id}">EDITAR</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</article>`;
     }).join('') : '<div class="empty">Nenhuma nota para as tags selecionadas.</div>';
     renderFilterButton(); renderDialogLists();
+  }
+  function toggleNotePin(noteId) {
+    const note=notes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!note)return;
+    note.isPinned=!note.isPinned;
+    const peers=notes.filter(item=>!item.deletedAt&&item.id!==note.id&&Boolean(item.isPinned)===Boolean(note.isPinned)).sort(noteOrder);
+    note.sortOrder=Math.min(-1,...peers.map(item=>Number(item.sortOrder)||0))-1;
+    note.updatedAt=nowISO();saveNotes();showToast(note.isPinned?'Nota fixada no topo.':'Nota desafixada.');
   }
   function renderDayDialog() {
     const all=visibleTasks(),currentWeek=startOfWeek(todayKey()),today=todayKey();
@@ -412,14 +471,20 @@
     $('dayDialogAddBtn').hidden=activeDayKind!=='day';
     renderDayDialog(); $('dayDialog').showModal();
   }
+  function setLinkAttachment(kind,value='') {
+    const input=$(`${kind}Link`),wrap=$(`${kind}LinkWrap`),toggle=$(`${kind}LinkToggle`),url=normalizeLink(value);
+    input.value=url;wrap.hidden=!url;toggle.hidden=Boolean(url);
+  }
+  function toggleLinkAttachment(kind) { $(`${kind}LinkWrap`).hidden=false;$(`${kind}LinkToggle`).hidden=true;$(`${kind}Link`).focus(); }
+  function clearLinkAttachment(kind) { $(`${kind}Link`).value='';$(`${kind}LinkWrap`).hidden=true;$(`${kind}LinkToggle`).hidden=false; }
   function openTaskDialog(taskId='',suggestedDate='') {
     const task=taskId ? tasks.find(item=>item.id===String(taskId) && !item.deletedAt) : null;
     $('taskForm').reset();
     $('taskId').value=task ? task.id : '';
     $('taskDialogTitle').textContent=task ? 'Editar tarefa' : 'Nova tarefa';
-    $('taskTitle').value=task?.title || '';
+    $('taskTitle').value=task?.title || '';$('taskContent').value=task?.content || '';
     renderTaskTagOptions(task?.tagId || filterTagIds[0] || localStorage.getItem(LAST_TAG_KEY) || 'vida');
-    $('executionDate').value=task?.executionDate || suggestedDate || '';
+    $('executionDate').value=task?.executionDate || suggestedDate || '';setLinkAttachment('task',task?.link||'');
     $('deleteTaskBtn').classList.toggle('hidden',!task);
     $('taskDialog').showModal();
     $('taskTitle').focus();
@@ -427,7 +492,7 @@
   function closeTaskDialog() { if ($('taskDialog').open) $('taskDialog').close(); }
   function saveTaskFromForm(event) {
     event.preventDefault();
-    const title=$('taskTitle').value.trim();
+    const title=$('taskTitle').value.trim(),content=$('taskContent').value.trim(),link=normalizeLink($('taskLink').value);
     const tagId=$('taskTag').value;
     const date=$('executionDate').value || null;
     if (!title || !tags.some(tag=>tag.id===tagId && !tag.deletedAt) || (date && !isDateKey(date))) return;
@@ -436,9 +501,9 @@
     const now=nowISO();
     if (existing) {
       if ((existing.executionDate||'')!==(date||'')) existing.sortOrder=nextTaskOrder(date);
-      existing.title=title; existing.tagId=tagId; existing.executionDate=date; existing.updatedAt=now;
+      existing.title=title;existing.content=content;existing.link=link;existing.tagId=tagId;existing.executionDate=date;existing.updatedAt=now;
     } else {
-      tasks.push({id:makeId(),title,tagId,executionDate:date,sortOrder:nextTaskOrder(date),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
+      tasks.push({id:makeId(),title,content,link,tagId,executionDate:date,sortOrder:nextTaskOrder(date),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
     }
     localStorage.setItem(LAST_TAG_KEY,tagId);
     if (date && date>=todayKey()) setWeek(date);
@@ -499,6 +564,7 @@
     peers.push(task);peers.forEach((item,i)=>{item.sortOrder=i;item.updatedAt=nowISO();});saveTasks();
   }
   function handleTaskClick(event) {
+    if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();return;}
     const reschedule=event.target.closest('[data-reschedule-task]');
     if(reschedule){openTaskDialog(reschedule.dataset.rescheduleTask);const date=$('executionDate');date.focus();try{date.showPicker?.();}catch{}return;}
     const move=event.target.closest('[data-move-task]');
@@ -569,19 +635,25 @@
     if(!targetCard&&!destination)return;
     event.preventDefault();(targetCard||destination)?.classList.add('drop-active');
   }
-  function handleDrop(event) {
-    if(!dragTaskId)return;
-    const targetCard=event.target.closest('.task-card[data-task-id]'),day=event.target.closest('.day-column[data-date]'),planning=event.target.closest('#planningPanel'),dayList=event.target.closest('#dayDialogList'),id=dragTaskId;
-    dragTaskId='';clearDropStyles();
-    if(!targetCard&&!day&&!planning&&!dayList)return;
-    event.preventDefault();
+  function performTaskDrop(id,target) {
+    if(!target)return;
+    const targetCard=target.closest('.task-card[data-task-id]'),day=target.closest('.day-column[data-date]'),planning=target.closest('#planningPanel'),dayList=target.closest('#dayDialogList');
     if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
     else if(day)appendTaskToBucket(id,day.dataset.date);
     else if(planning)appendTaskToBucket(id,'');
     else if(dayList&&activeDayKind==='day')appendTaskToBucket(id,activeDayDate);
   }
+  function handleDrop(event) {
+    if(!dragTaskId)return;
+    const id=dragTaskId;dragTaskId='';clearDropStyles();
+    if(!event.target.closest('.task-card[data-task-id],.day-column[data-date],#planningPanel,#dayDialogList'))return;
+    event.preventDefault();performTaskDrop(id,event.target);
+  }
   function handleDragEnd() { dragTaskId=''; clearDropStyles(); }
   function handleNotesClick(event) {
+    if(event.target.closest('[data-touch-drag-note]')){event.preventDefault();return;}
+    if(event.target.closest('a'))return;
+    const pin=event.target.closest('[data-pin-note]');if(pin){toggleNotePin(pin.dataset.pinNote);return;}
     const move=event.target.closest('[data-move-note]');
     if (move) { moveNote(move.dataset.moveNote,move.dataset.direction); return; }
     const remove=event.target.closest('[data-delete-note]');
@@ -602,16 +674,19 @@
     if (event.dataTransfer) {event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',noteDragId);}
   }
   function moveNote(noteId,direction) {
-    const list=notes.filter(note=>!note.deletedAt).sort(noteOrder), index=list.findIndex(note=>note.id===String(noteId)), target=index+(direction==='up'?-1:1);
+    const source=notes.find(note=>note.id===String(noteId)&&!note.deletedAt);if(!source)return;
+    const list=notes.filter(note=>!note.deletedAt&&Boolean(note.isPinned)===Boolean(source.isPinned)).sort(noteOrder),index=list.findIndex(note=>note.id===source.id),target=index+(direction==='up'?-1:1);
     if(index<0||target<0||target>=list.length)return;
     [list[index],list[target]]=[list[target],list[index]];
-    list.forEach((note,i)=>{note.sortOrder=i;note.updatedAt=nowISO();}); saveNotes();
+    list.forEach((note,i)=>{note.sortOrder=i;note.updatedAt=nowISO();});saveNotes();
   }
   function reorderNoteBefore(sourceId,targetId) {
     if(sourceId===targetId)return;
-    const list=notes.filter(note=>!note.deletedAt).sort(noteOrder), from=list.findIndex(note=>note.id===sourceId), to=list.findIndex(note=>note.id===targetId);
+    const source=notes.find(note=>note.id===sourceId&&!note.deletedAt),target=notes.find(note=>note.id===targetId&&!note.deletedAt);
+    if(!source||!target||Boolean(source.isPinned)!==Boolean(target.isPinned))return;
+    const list=notes.filter(note=>!note.deletedAt&&Boolean(note.isPinned)===Boolean(source.isPinned)).sort(noteOrder),from=list.findIndex(note=>note.id===sourceId),to=list.findIndex(note=>note.id===targetId);
     if(from<0||to<0)return;
-    list.splice(to,0,list.splice(from,1)[0]); list.forEach((note,i)=>{note.sortOrder=i;note.updatedAt=nowISO();}); saveNotes();
+    list.splice(to,0,list.splice(from,1)[0]);list.forEach((note,i)=>{note.sortOrder=i;note.updatedAt=nowISO();});saveNotes();
   }
   function handleNoteDragOver(event) {
     if(!noteDragId)return;
@@ -622,25 +697,54 @@
     const target=event.target.closest('.note-card[data-note-id]'), source=noteDragId; noteDragId=''; clearDropStyles();
     if(target){event.preventDefault();reorderNoteBefore(source,target.dataset.noteId);}
   }
+  function pointerDropTarget(event){return document.elementFromPoint(event.clientX,event.clientY)||event.target;}
+  function startPointerDrag(event) {
+    if(event.pointerType==='mouse'||event.button!==0)return;
+    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]');
+    if(!taskHandle&&!noteHandle)return;
+    const kind=taskHandle?'task':'note',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle.closest('.note-card[data-note-id]');
+    if(!card)return;
+    event.preventDefault();
+    pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle.dataset.touchDragNote,pointerId:event.pointerId,card,wasDraggable:card.getAttribute('draggable')};
+    card.setAttribute('draggable','false');card.classList.add('is-dragging');
+    try{event.target.setPointerCapture(event.pointerId);}catch{}
+  }
+  function movePointerDrag(event) {
+    if(!pointerDrag||event.pointerId!==pointerDrag.pointerId)return;
+    event.preventDefault();document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
+    const target=pointerDropTarget(event);let destination=null;
+    if(pointerDrag.kind==='task')destination=target.closest('.task-card[data-task-id],.day-column[data-date],#planningPanel,#dayDialogList');
+    else destination=target.closest('.note-card[data-note-id]');
+    if(destination&&destination!==pointerDrag.card)destination.classList.add('drop-active');
+  }
+  function finishPointerDrag(event,cancel=false) {
+    if(!pointerDrag||event.pointerId!==pointerDrag.pointerId)return;
+    const drag=pointerDrag,target=pointerDropTarget(event);pointerDrag=null;
+    drag.card.classList.remove('is-dragging');if(drag.wasDraggable!==null)drag.card.setAttribute('draggable',drag.wasDraggable);
+    document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
+    if(cancel)return;
+    if(drag.kind==='task')performTaskDrop(drag.id,target);
+    else {const note=target.closest('.note-card[data-note-id]');if(note)reorderNoteBefore(drag.id,note.dataset.noteId);}
+  }
   function renderNoteTagChoices(selected=[]) {
     $('noteTagChoices').innerHTML=tags.filter(tag=>!tag.deletedAt).map(tag=>`<label class="note-tag-choice"><input type="checkbox" value="${escapeHTML(tag.id)}" ${selected.includes(tag.id)?'checked':''}><span class="tag-dot" style="--tag-color:${tag.color}" aria-hidden="true"></span><span>${escapeHTML(tag.name)}</span></label>`).join('');
   }
   function openNoteDialog(noteId='') {
     const note=noteId ? notes.find(item=>item.id===String(noteId) && !item.deletedAt) : null;
-    $('noteForm').reset(); $('noteId').value=note?.id || '';
+    $('noteForm').reset();$('noteId').value=note?.id || '';
     $('noteDialogTitle').textContent=note?'Editar nota':'Nova nota';
     $('noteTitle').value=note?.title || ''; $('noteContent').value=note?.content || '';
-    renderNoteTagChoices(note?.tagIds||[]);
+    renderNoteTagChoices(note?.tagIds||[]);$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';setLinkAttachment('note',note?.link||'');
     $('noteDialog').showModal(); $('noteTitle').focus();
   }
   function saveNote(event) {
     event.preventDefault();
-    const content=$('noteContent').value.trim(), title=$('noteTitle').value.trim();
+    const content=$('noteContent').value.trim(),title=$('noteTitle').value.trim(),link=normalizeLink($('noteLink').value);
     if (!title&&!content) { showToast('Preencha o título, o conteúdo ou os dois.'); return; }
     const tagIds=Array.from($('noteTagChoices').querySelectorAll('input:checked')).map(input=>input.value);
     const id=$('noteId').value, now=nowISO(), note=id?notes.find(item=>item.id===id&&!item.deletedAt):null;
-    if (note) { note.title=title; note.content=content; note.tagIds=tagIds; note.updatedAt=now; }
-    else notes.unshift({id:makeId(),title,content,tagIds,sortOrder:Math.min(-1,...notes.map(item=>Number(item.sortOrder)||0)),createdAt:now,updatedAt:now,deletedAt:null});
+    if (note) { note.title=title;note.content=content;note.link=link;note.tagIds=tagIds;note.updatedAt=now; }
+    else notes.unshift({id:makeId(),title,content,link,isPinned:false,tagIds,sortOrder:Math.min(-1,...notes.map(item=>Number(item.sortOrder)||0)),createdAt:now,updatedAt:now,deletedAt:null});
     $('noteDialog').close(); saveNotes(); showToast(note?'Nota atualizada.':'Nota salva.');
   }
   function deleteNote(noteId) {
@@ -726,15 +830,15 @@
     }
   }
   function taskToRow(task) {
-    return {id:task.id,owner_id:session.user.id,title:task.title,details:'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,tag_id:task.tagId,sort_order:Number(task.sortOrder)||0,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
+    return {id:task.id,owner_id:session.user.id,title:task.title,details:task.content||'',link_url:task.link||'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,tag_id:task.tagId,sort_order:Number(task.sortOrder)||0,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
   }
   function rowToTask(row) {
-    return normalizeTask({id:row.id,title:row.title,tagId:row.tag_id,area:row.area,executionDate:row.execution_date,sortOrder:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
+    return normalizeTask({id:row.id,title:row.title,content:row.details,link_url:row.link_url,tagId:row.tag_id,area:row.area,executionDate:row.execution_date,sortOrder:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
   }
   function tagToRow(tag) { return {owner_id:session.user.id,id:tag.id,name:tag.name,color:tag.color,created_at:tag.createdAt,updated_at:tag.updatedAt,deleted_at:tag.deletedAt,planner_version:1}; }
   function rowToTag(row) { return normalizeTag({id:row.id,name:row.name,color:row.color,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
-  function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,tag_ids:note.tagIds||[],sort_order:Number(note.sortOrder)||0,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
-  function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
+  function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,link_url:note.link||'',is_pinned:Boolean(note.isPinned),tag_ids:note.tagIds||[],sort_order:Number(note.sortOrder)||0,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
+  function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function mergeById(local,remote) {
     const map=new Map();
     for (const item of [...remote,...local]) {
@@ -901,9 +1005,12 @@
   $('quickAddBtn').addEventListener('click',()=>{setPage('tasks');openTaskDialog();});
   $('quickAddNoteBtn').addEventListener('click',()=>openNoteDialog());
   $('taskForm').addEventListener('submit',saveTaskFromForm);
+  $('taskLinkToggle').addEventListener('click',()=>toggleLinkAttachment('task'));
+  $('taskLinkRemove').addEventListener('click',()=>clearLinkAttachment('task'));
   $('closeTaskDialog').addEventListener('click',closeTaskDialog);
   $('deleteTaskBtn').addEventListener('click',softDeleteTask);
   $('weekGrid').addEventListener('click',handleTaskClick);
+  $('weekGrid').addEventListener('change',handleTaskChange);
   $('homePage').addEventListener('click',handleTaskClick);
   $('dayDialogList').addEventListener('click',handleTaskClick);
   $('planningList').addEventListener('click',handleTaskClick);
@@ -931,6 +1038,11 @@
   $('notesList').addEventListener('dragover',handleNoteDragOver);
   $('notesList').addEventListener('drop',handleNoteDrop);
   $('noteForm').addEventListener('submit',saveNote);
+  $('noteNewTagToggle').addEventListener('click',()=>{const open=$('noteNewTagRow').hidden;$('noteNewTagRow').hidden=!open;$('noteNewTagToggle').setAttribute('aria-expanded',String(open));if(open)$('noteNewTagName').focus();});
+  $('noteNewTagAdd').addEventListener('click',createNoteTag);
+  $('noteNewTagName').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();createNoteTag();}});
+  $('noteLinkToggle').addEventListener('click',()=>toggleLinkAttachment('note'));
+  $('noteLinkRemove').addEventListener('click',()=>clearLinkAttachment('note'));
   $('closeNoteDialog').addEventListener('click',()=>$('noteDialog').close());
   $('loginBtn').addEventListener('click',signIn);
   $('signupBtn').addEventListener('click',signUp);
@@ -938,6 +1050,11 @@
   $('syncNowBtn').addEventListener('click',syncNow);
   $('exportBtn').addEventListener('click',exportBackup);
   document.addEventListener('dragend',()=>{handleDragEnd();noteDragId='';clearDropStyles();});
+  document.addEventListener('pointerdown',startPointerDrag,true);
+  document.addEventListener('pointermove',movePointerDrag,{passive:false});
+  document.addEventListener('pointerup',event=>finishPointerDrag(event),true);
+  document.addEventListener('pointercancel',event=>finishPointerDrag(event,true),true);
+  for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom){closeFloatingActionMenu();dialog.close();}});
   document.addEventListener('click',captureActionMenuClick,true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&floatingActionMenu){event.preventDefault();event.stopPropagation();closeFloatingActionMenu();}},true);
   document.addEventListener('scroll',()=>{if(floatingActionMenu)closeFloatingActionMenu();},true);

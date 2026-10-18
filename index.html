@@ -500,7 +500,7 @@
       dialog { width:min(640px,calc(100% - 48px)); }
     }
     @media (max-width:600px) {
-      html { font-size:18.5px; }
+      html { font-size:20px; }
       .wrap { padding-right:12px; padding-left:12px; }
       .header-actions { gap:6px; }
       .header-actions .btn { min-height:40px; padding:7px 9px; font-size:.78rem; }
@@ -516,7 +516,7 @@
       .home-item-open { font-size:.76rem; }
       .home-tag-pill { padding:3px 5px; font-size:.56rem; }
     }
-    @media (max-width:380px) { html { font-size:18px; } .wrap { padding-right:9px; padding-left:9px; } }
+    @media (max-width:380px) { html { font-size:19.5px; } .wrap { padding-right:9px; padding-left:9px; } }
     @media (max-height:650px) {
       html { font-size:17px; }
       .app-header { margin-bottom:6px; }
@@ -532,6 +532,100 @@
       #homePage .home-task-row { padding:4px 6px; }
       #homePage .home-hero { margin-top:4px; padding:7px 9px; }
     }
+    #homePage .home-events-section { flex:none; margin-bottom:8px; }
+    #homePage .home-events-section .home-section-list { max-height:24dvh; overflow-y:auto; }
+    .home-day-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:8px; min-width:0; }
+    .home-day-columns .home-task-section { min-width:0; }
+    .home-task-row { display:block; padding:7px 9px; }
+    .home-task-main { min-width:0; }
+    .home-item-open { display:block; width:100%; white-space:normal; text-overflow:clip; line-height:1.3; overflow-wrap:anywhere; }
+    .home-tag-pill { display:inline-flex; margin-top:5px; }
+    .home-event-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; padding:7px 9px; border:1px solid #ffffff10; border-radius:10px; background:#1017299c; }
+    .home-event-main { min-width:0; }
+    .home-event-title { color:var(--text); font-size:.82rem; font-weight:800; line-height:1.3; overflow-wrap:anywhere; }
+    .home-event-location { display:block; margin-top:3px; color:var(--muted); font-size:.68rem; }
+    .home-event-link { display:grid; place-items:center; width:32px; height:32px; border:1px solid #ffffff20; border-radius:9px; color:var(--accent); text-decoration:none; }
+    .planner-section-buttons { display:grid; flex:none; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0 0 6px; }
+    .planner-section-buttons .planner-section-btn { min-width:0; margin:0; }
+    .planner-panel { width:100%; }
+    .task-card--tile .task-touch-handle { width:16px; height:24px; }
+    .task-card--tile .task-touch-handle .drag-grip { font-size:.72rem; }
+    .task-card--tile .task-menu > summary { width:20px; }
+    .task-touch-handle,.note-touch-handle { display:grid; flex:none; place-items:center; position:relative; width:16px; height:22px; padding:0; border:0; border-radius:5px; background:transparent; color:var(--muted); cursor:grab; touch-action:none; }
+    .task-touch-handle::after { content:''; position:absolute; width:8px; height:8px; border-radius:50%; background:var(--tag-color); box-shadow:0 0 0 2px #ffffff12; }
+    .task-touch-handle .drag-grip { display:none; }
+    .note-touch-handle { width:28px; height:32px; font-size:1rem; }
+    @media(pointer:coarse) {
+      .task-touch-handle { width:22px; height:28px; }
+      .task-touch-handle::after { right:1px; bottom:2px; width:5px; height:5px; border:1px solid var(--panel); }
+      .task-touch-handle .drag-grip { display:block; font-size:1rem; line-height:1; transform:rotate(90deg); }
+      .note-touch-handle { width:34px; height:36px; font-size:1.1rem; }
+    }
+    .note-card { max-height:320px; }
+    .note-card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; min-height:34px; margin:0 0 5px; }
+    .note-card-title { flex:1; min-width:0; margin:1px 0 0 !important; line-height:1.2; overflow-wrap:anywhere; }
+    .note-card-title-placeholder { flex:1; }
+    .note-card-controls { display:flex; flex:none; align-items:center; gap:3px; }
+    .note-card-controls .note-menu { flex:none; }
+    .note-card-controls .note-menu > summary { width:34px; height:34px; }
+    .note-pin-btn { display:grid; flex:none; place-items:center; width:34px; height:34px; padding:0; border:1px solid transparent; border-radius:9px; background:transparent; color:var(--muted); font-size:1rem; }
+    .note-pin-btn[aria-pressed="true"] { border-color:#9b7935; background:#42351d; color:#ffd166; }
+    .note-card.is-pinned { border-color:#9b7935; }
+    .note-link-row,.item-link { display:inline-flex; align-items:center; gap:5px; margin-top:8px; color:#a9c4ff; font-size:.78rem; font-weight:750; text-decoration:none; overflow-wrap:anywhere; }
+    .item-link:hover { text-decoration:underline; }
+    .note-card-body { max-height:210px; }
+    .planner-section-buttons .planning-box { color:#ffd166; }
+    .planner-section-buttons .completed-box { color:#8fe0b5; border-color:#397653; background:linear-gradient(145deg,#183b2d,#162a2a); }
+    .planner-section-buttons .completed-box span { color:inherit; }
+    .app-dialog { width:min(560px,calc(100% - 24px)); max-height:88dvh; padding:20px; border-radius:18px; }
+    .app-dialog .dialog-head { position:sticky; top:-20px; z-index:2; padding:4px 0 10px; background:rgba(20,27,45,.97); }
+    .app-dialog .dialog-head h2 { line-height:1.2; }
+    .app-dialog .field { gap:7px; }
+    .link-attachment-field { gap:8px; }
+    .link-attach-btn { align-self:flex-start; border-color:#526fa9; color:#c4d7ff; }
+    .link-input-row,.note-new-tag-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:8px; }
+    .link-input-row[hidden],.note-new-tag-row[hidden] { display:none !important; }
+    .link-input-row label { display:block; margin-bottom:5px; color:var(--muted); font-size:.82rem; font-weight:700; }
+    .link-remove-btn { min-height:44px; }
+    .note-new-tag-toggle { align-self:flex-start; margin-top:8px; }
+    .note-new-tag-row { margin-top:8px; }
+    .note-tag-list { display:flex; flex-wrap:wrap; gap:7px; }
+    .note-tag-choice { min-height:42px; }
+    #noteContent { min-height:190px; }
+    #taskContent { min-height:145px; }
+    @media(max-width:600px) {
+      .home-day-columns { gap:6px; }
+      .home-task-section { padding:8px 7px; }
+      .home-task-row { padding:6px 6px; }
+      .home-item-open { font-size:.74rem; }
+      .home-tag-pill { font-size:.54rem; padding:3px 5px; }
+      .planner-section-buttons { gap:6px; }
+      .planner-section-buttons .planner-section-btn { padding:7px 8px; font-size:.76rem; }
+      .week-dock { width:calc(100% - 20px); min-height:50px; bottom:calc(82px + env(safe-area-inset-bottom,0px)); }
+      .week-dock #prevWeekBtn,.week-dock #nextWeekBtn { flex:none; width:42px; min-width:42px; height:42px; padding:0; font-size:1.65rem; line-height:1; }
+      .week-dock #todayBtn { flex:none; min-width:82px; min-height:42px; padding:6px 13px; font-size:.82rem; }
+      #noteContent { min-height:220px; }
+      #taskContent { min-height:170px; }
+      #noteTitle { margin-top:0; }
+      .app-dialog { padding:16px; }
+      .app-dialog .dialog-head { top:-16px; }
+      .link-input-row,.note-new-tag-row { grid-template-columns:minmax(0,1fr) auto; gap:6px; }
+    }
+    @media (min-width:601px) and (max-width:1100px) {
+      .home-day-columns { gap:12px; }
+      .home-task-section { padding:12px; }
+      .home-task-row { padding:9px 11px; }
+      .home-item-open { font-size:.84rem; }
+      .planner-section-buttons { gap:12px; margin-bottom:10px; }
+      .week-dock #prevWeekBtn,.week-dock #nextWeekBtn { flex:none; width:48px; min-width:48px; height:48px; padding:0; font-size:1.8rem; line-height:1; }
+      .week-dock #todayBtn { min-width:96px; min-height:48px; font-size:.9rem; }
+      #noteContent { min-height:230px; }
+      #taskContent { min-height:180px; }
+    }
+    @media(max-width:380px) {
+      .week-dock #prevWeekBtn,.week-dock #nextWeekBtn { width:38px; min-width:38px; height:38px; }
+      .week-dock #todayBtn { min-width:72px; }
+    }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
   </style>
 </head>
@@ -544,6 +638,7 @@
 
     <section id="homePage" class="page active" aria-label="Início">
       <h2 class="home-week-title">MINHA SEMANA</h2>
+      <section class="home-task-section home-events-section" aria-label="Próximos eventos"><h3>Próximos eventos</h3><div id="homeUpcomingEventsList" class="home-section-list"></div></section>
       <div class="home-stats" aria-label="Atalhos da semana">
         <button class="home-stat home-stat-overdue" type="button" data-home-action="overdue"><span>Atrasado</span><strong id="homeOverdueCount">0</strong></button>
         <button class="home-stat home-stat-today" type="button" data-home-action="today"><span>Hoje</span><strong id="homeTodayCount">0</strong></button>
@@ -551,20 +646,22 @@
       </div>
       <div class="home-week-lists">
         <section class="home-task-section" aria-label="Atrasado"><h3>Atrasado</h3><div id="homeOverdueList" class="home-section-list"></div></section>
-        <section class="home-task-section" aria-label="Hoje"><h3>Hoje</h3><div id="homeTodayList" class="home-section-list"></div></section>
-        <section class="home-task-section" aria-label="Amanhã"><h3>Amanhã</h3><div id="homeTomorrowList" class="home-section-list"></div></section>
-        <section class="home-task-section" aria-label="Próximos"><h3>Próximos</h3><div id="homeUpcomingList" class="home-section-list"></div></section>
+        <div class="home-day-columns">
+          <section class="home-task-section" aria-label="Hoje"><h3>Hoje</h3><div id="homeTodayList" class="home-section-list"></div></section>
+          <section class="home-task-section" aria-label="Amanhã"><h3>Amanhã</h3><div id="homeTomorrowList" class="home-section-list"></div></section>
+        </div>
       </div>
-      <div class="home-hero"><p class="eyebrow">SEMANA</p><h2>Organize o que importa.</h2><p>Seu planner semanal, simples e sempre à mão.</p></div>
     </section>
 
     <section id="tasksPage" class="page" aria-label="Planner de tarefas">
       <div class="page-heading"><div><h2>PLANNER DE TAREFAS</h2></div><div class="filter-action"><span class="filter-summary" id="activeFilterSummaryTasks" data-active-filter-summary>TODAS</span><button class="btn filter-open" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button></div></div>
-      <div class="week-grid" id="weekGrid" aria-label="Semana"></div>
-      <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
+      <div class="planner-section-buttons">
+        <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
+        <button class="planner-section-btn completed-box" id="completedBtn" type="button" aria-expanded="false" aria-controls="completedPanel">Concluídas <span id="completedCount">0</span></button>
+      </div>
       <div class="planner-panel" id="planningPanel" hidden><div class="task-tile-grid" id="planningList"></div><button class="btn more-btn" id="planningMoreBtn" type="button">MAIS</button></div>
-      <button class="planner-section-btn completed-box" id="completedBtn" type="button" aria-expanded="false" aria-controls="completedPanel">Concluídas <span id="completedCount">0</span></button>
       <div class="planner-panel completed-panel" id="completedPanel" hidden><div class="task-tile-grid" id="completedList"></div><button class="btn more-btn" id="completedMoreBtn" type="button">MAIS</button></div>
+      <div class="week-grid" id="weekGrid" aria-label="Semana"></div>
     </section>
 
     <section id="notesPage" class="page" aria-label="Notas">
@@ -594,18 +691,18 @@
     <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>Configs</span></button>
   </nav>
 
-  <dialog id="taskDialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><p class="dialog-hint">Sem data, fica em Planejar. Uma tarefa entra em ATRASADO quando a semana seguinte começa.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar</button><button class="btn" id="deleteTaskBtn" type="button">Excluir</button></div></form></dialog>
+  <dialog id="taskDialog" class="app-dialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><div class="field"><label for="taskContent">Conteúdo <span class="muted">(opcional)</span></label><textarea id="taskContent" maxlength="20000" placeholder="Detalhes da tarefa…"></textarea></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="taskLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="taskLinkWrap" hidden><div><label for="taskLink">Endereço do link</label><input id="taskLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="taskLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Sem data, fica em Planejar. Uma tarefa entra em ATRASADO quando a semana seguinte começa.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar</button><button class="btn" id="deleteTaskBtn" type="button">Excluir</button></div></form></dialog>
 
-  <dialog id="filterDialog"><div class="dialog-head"><h2>Filtros</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione uma ou mais tags. Aparecem tarefas e notas que tenham qualquer tag selecionada.</p><div class="filter-tag-list" id="filterTagList"></div><button class="btn small" id="clearFiltersBtn" type="button">Limpar seleção</button><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
+  <dialog id="filterDialog" class="app-dialog"><div class="dialog-head"><h2>Filtros</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione uma ou mais tags. Aparecem tarefas e notas que tenham qualquer tag selecionada.</p><div class="filter-tag-list" id="filterTagList"></div><button class="btn small" id="clearFiltersBtn" type="button">Limpar seleção</button><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
 
-  <dialog id="dayDialog"><div class="dialog-head"><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><div class="form-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
+  <dialog id="dayDialog" class="app-dialog"><div class="dialog-head"><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><div class="form-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
 
 
-  <dialog id="noteDialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título (opcional)</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><label for="noteContent">Conteúdo (opcional)</label><textarea id="noteContent" maxlength="20000" placeholder="Escreva sua nota…"></textarea></div><div class="field"><span class="field-label">Tags</span><div class="note-tag-list" id="noteTagChoices"></div></div><p class="dialog-hint">Preencha o título, o conteúdo ou os dois.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar nota</button></div></form></dialog>
+  <dialog id="noteDialog" class="app-dialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título (opcional)</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><label for="noteContent">Conteúdo (opcional)</label><textarea id="noteContent" maxlength="20000" placeholder="Escreva sua nota…"></textarea></div><div class="field"><span class="field-label">Tags</span><div class="note-tag-list" id="noteTagChoices"></div><button class="btn small note-new-tag-toggle" id="noteNewTagToggle" type="button" aria-expanded="false">＋ Nova tag</button><div class="note-new-tag-row" id="noteNewTagRow" hidden><input id="noteNewTagName" maxlength="32" placeholder="Nome da tag"><button class="btn primary small" id="noteNewTagAdd" type="button">Criar tag</button></div><p class="tag-status" id="noteTagMessage" aria-live="polite"></p></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="noteLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="noteLinkWrap" hidden><div><label for="noteLink">Endereço do link</label><input id="noteLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="noteLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Preencha o título, o conteúdo ou os dois.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar nota</button></div></form></dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=55" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=55',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=56" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=56',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
