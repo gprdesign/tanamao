@@ -7,12 +7,17 @@
   const NOTES_KEY = 'tnm.weekly.notes.v1';
   const SESSION_KEY = 'naMinhaMao.supabase.session.v1';
   const RESET_KEY = 'tnm.weekly.reset.v1';
-  const AREA_KEY = 'tnm.weekly.area.v1';
+  const TAGS_KEY = 'tnm.weekly.tags.v1';
+  const TAG_FILTER_KEY = 'tnm.weekly.filterTag.v1';
+  const LAST_TAG_KEY = 'tnm.weekly.lastTag.v1';
   const WEEK_KEY = 'tnm.weekly.week.v1';
   const PAGE_KEY = 'tnm.weekly.page.v1';
   const RESET_CUTOFF = '2026-10-18T14:27:00.000Z';
-  const AREAS = ['vida','trabalho','outros'];
-  const AREA_LABELS = { vida:'VIDA', trabalho:'TRABALHO', outros:'OUTROS' };
+  const DEFAULT_TAGS = [
+    {id:'vida',name:'VIDA',color:'#73d6a2',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'},
+    {id:'trabalho',name:'TRABALHO',color:'#8bafff',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'},
+    {id:'outro',name:'OUTRO',color:'#ffc46b',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'}
+  ];
   const DAY_LABELS = ['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
   const LEGACY_KEYS = [
     'naMinhaMao.tasks.v1','naMinhaMao.notes.v1','naMinhaMao.notesSearchHistory.v1','naMinhaMao.timer.v1',
@@ -25,8 +30,9 @@
   const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   let tasks = [];
   let notes = [];
+  let tags = [];
   let session = readStored(SESSION_KEY,null);
-  let currentArea = AREAS.includes(localStorage.getItem(AREA_KEY)) ? localStorage.getItem(AREA_KEY) : 'vida';
+  let filterTagId = localStorage.getItem(TAG_FILTER_KEY) || '';
   let currentPage = ['home','tasks','notes','settings'].includes(localStorage.getItem(PAGE_KEY)) ? localStorage.getItem(PAGE_KEY) : 'home';
   let weekStart = startOfWeek(localStorage.getItem(WEEK_KEY) || todayKey());
   let dragTaskId = '';
@@ -47,6 +53,29 @@
     for (const key of LEGACY_KEYS) localStorage.removeItem(key);
     localStorage.setItem(RESET_KEY,'done');
   }
+  function validTagColor(value) { return /^#[0-9a-f]{6}$/i.test(String(value || '')); }
+  function normalizeTag(value) {
+    if (!value || typeof value !== 'object' || !String(value.id || '').trim() || !String(value.name || '').trim()) return null;
+    return {id:String(value.id),name:String(value.name).trim().replace(/\s+/g,' ').slice(0,32),color:validTagColor(value.color)?String(value.color).toLowerCase():'#8bafff',createdAt:String(value.createdAt || nowISO()),updatedAt:String(value.updatedAt || value.createdAt || nowISO()),deletedAt:value.deletedAt?String(value.deletedAt):null};
+  }
+  function getTag(tagId) { return tags.find(tag=>tag.id===String(tagId) && !tag.deletedAt) || tags.find(tag=>tag.id==='vida') || DEFAULT_TAGS[0]; }
+  function ensureDefaultTags(list) {
+    const map=new Map((Array.isArray(list)?list:[]).map(item=>[item.id,item]));
+    for (const item of DEFAULT_TAGS) if (!map.has(item.id)) map.set(item.id,{...item});
+    return Array.from(map.values()).map(normalizeTag).filter(Boolean);
+  }
+  function loadLocalTags() {
+    const stored=readStored(TAGS_KEY,[]);
+    tags=ensureDefaultTags(Array.isArray(stored)?stored.map(normalizeTag).filter(Boolean):[]);
+    if (filterTagId && !tags.some(tag=>tag.id===filterTagId && !tag.deletedAt)) filterTagId='';
+    localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
+  }
+  function saveTags(schedule=true) {
+    tags=ensureDefaultTags(tags);
+    localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
+    renderTasks(); renderHome(); renderFilterButton();
+    if (schedule) scheduleSync();
+  }
   function loadLocalData() {
     const storedTasks=readStored(TASKS_KEY,[]), storedNotes=readStored(NOTES_KEY,[]);
     tasks=Array.isArray(storedTasks) ? storedTasks.map(normalizeTask).filter(Boolean) : [];
@@ -54,13 +83,15 @@
   }
   function normalizeTask(value) {
     if (!value || typeof value !== 'object' || !String(value.title || '').trim()) return null;
+    const legacyArea=value.area==='outros' ? 'outro' : (['vida','trabalho'].includes(value.area) ? value.area : 'vida');
+    const storedTag=value.tagId || value.tag_id;
     return {
       id:String(value.id || makeId()), title:String(value.title).trim().slice(0,180),
-      area:AREAS.includes(value.area) ? value.area : 'vida',
-      executionDate:isDateKey(value.executionDate) ? value.executionDate : null,
-      createdAt:String(value.createdAt || nowISO()), updatedAt:String(value.updatedAt || value.createdAt || nowISO()),
-      completedAt:value.completedAt ? String(value.completedAt) : null,
-      deletedAt:value.deletedAt ? String(value.deletedAt) : null
+      tagId:String(storedTag==='outros' ? 'outro' : (storedTag || legacyArea)),
+      executionDate:isDateKey(value.executionDate || value.execution_date) ? String(value.executionDate || value.execution_date) : null,
+      createdAt:String(value.createdAt || value.created_at || nowISO()), updatedAt:String(value.updatedAt || value.updated_at || value.createdAt || value.created_at || nowISO()),
+      completedAt:value.completedAt || value.completed_at ? String(value.completedAt || value.completed_at) : null,
+      deletedAt:value.deletedAt || value.deleted_at ? String(value.deletedAt || value.deleted_at) : null
     };
   }
   function normalizeNote(value) {
@@ -150,11 +181,15 @@
     if (page==='notes') renderNotes();
     if (page==='settings') updateAuthUI();
   }
-  function visibleTasks(area=currentArea) { return tasks.filter(task=>!task.deletedAt && task.area===area); }
-  function openTasks(area=currentArea) { return visibleTasks(area).filter(task=>!task.completedAt); }
+  function visibleTasks() { return tasks.filter(task=>!task.deletedAt && (!filterTagId || task.tagId===filterTagId)); }
+  function openTasks() { return visibleTasks().filter(task=>!task.completedAt); }
   function taskOrder(a,b) {
     const dateDiff=String(a.executionDate || '9999-12-31').localeCompare(String(b.executionDate || '9999-12-31'));
     return dateDiff || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.title).localeCompare(String(b.title),'pt-BR');
+  }
+  function tagDot(tagId) {
+    const tag=getTag(tagId);
+    return `<span class="tag-dot" style="--tag-color:${tag.color}" aria-hidden="true"></span>`;
   }
   function taskCard(task,options={}) {
     const complete=Boolean(task.completedAt);
@@ -162,18 +197,66 @@
     const subline=options.overdue ? `Execução: ${formatDate(task.executionDate,{day:'2-digit',month:'2-digit',year:'numeric'})}` : (scheduled ? formatDate(task.executionDate) : '');
     return `<article class="task-card${complete?' completed':''}" draggable="${complete?'false':'true'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
       <input class="task-check" type="checkbox" data-complete-task="${escapeHTML(task.id)}" ${complete?'checked':''} aria-label="${complete?'Reabrir':'Concluir'}: ${escapeHTML(task.title)}">
-      <div class="task-main"><button class="task-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button>${subline?`<span class="task-date">${escapeHTML(subline)}</span>`:''}</div>
+      <div class="task-main"><div class="task-title-row">${tagDot(task.tagId)}<button class="task-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${subline?`<span class="task-date">${escapeHTML(subline)}</span>`:''}</div>
       <div class="task-actions"><button class="icon-btn" type="button" data-edit-task="${escapeHTML(task.id)}" aria-label="Editar tarefa" title="Editar">✎</button></div>
     </article>`;
   }
+  function renderFilterButton() {
+    const active=filterTagId ? getTag(filterTagId) : null;
+    $('activeFilterSummary').textContent=active ? active.name : 'TODAS';
+    $('filterBtn').setAttribute('aria-label',active ? `Filtrar por ${active.name}` : 'Filtrar por tag; todas as tags');
+  }
+  function renderTaskTagOptions(selectedId='') {
+    const active=tags.filter(tag=>!tag.deletedAt);
+    $('taskTag').innerHTML=active.map(tag=>`<option value="${escapeHTML(tag.id)}">${escapeHTML(tag.name)}</option>`).join('');
+    const remembered=tags.find(tag=>tag.id===localStorage.getItem(LAST_TAG_KEY) && !tag.deletedAt)?.id;
+    const fallback=active.find(tag=>tag.id===filterTagId)?.id || remembered || active[0]?.id || 'vida';
+    $('taskTag').value=active.some(tag=>tag.id===selectedId) ? selectedId : fallback;
+  }
+  function renderFilterTagList() {
+    const options=[{id:'',name:'TODAS',color:null},...tags.filter(tag=>!tag.deletedAt)];
+    $('filterTagList').innerHTML=options.map(tag=>`<button class="filter-tag-option" type="button" data-filter-tag="${escapeHTML(tag.id)}" aria-pressed="${String(tag.id===filterTagId)}">${tag.color?tagDot(tag.id):'<span class="tag-dot" aria-hidden="true" style="background:#aab4c8"></span>'}<span>${escapeHTML(tag.name)}</span></button>`).join('');
+  }
+  function setTagFilter(tagId) {
+    filterTagId=tags.some(tag=>tag.id===tagId && !tag.deletedAt) ? tagId : '';
+    localStorage.setItem(TAG_FILTER_KEY,filterTagId);
+    renderFilterButton(); renderAll();
+  }
+  function openFilterDialog() {
+    $('tagMessage').textContent=''; $('newTagName').value='';
+    renderFilterTagList(); $('filterDialog').showModal(); $('newTagName').focus();
+  }
+  function hslToHex(h,s=74,l=62) {
+    s/=100; l/=100;
+    const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2;
+    let r=0,g=0,b=0;
+    if (h<60) [r,g,b]=[c,x,0]; else if (h<120) [r,g,b]=[x,c,0]; else if (h<180) [r,g,b]=[0,c,x]; else if (h<240) [r,g,b]=[0,x,c]; else if (h<300) [r,g,b]=[x,0,c]; else [r,g,b]=[c,0,x];
+    const hex=value=>Math.round((value+m)*255).toString(16).padStart(2,'0');
+    return `#${hex(r)}${hex(g)}${hex(b)}`;
+  }
+  function randomTagColor() {
+    const used=new Set(tags.map(tag=>String(tag.color).toLowerCase()));
+    const start=Math.random()*360;
+    for (let i=0;i<360;i++) { const color=hslToHex((start+i*137.508)%360); if (!used.has(color)) return color; }
+    return '#a876e8';
+  }
+  function createTag(event) {
+    event.preventDefault();
+    const raw=$('newTagName').value.trim().replace(/\s+/g,' ');
+    if (!raw) return;
+    const name=raw.normalize('NFKC').toLocaleUpperCase('pt-BR').slice(0,32);
+    const existing=tags.find(tag=>!tag.deletedAt && tag.name.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR'));
+    if (existing) {
+      setTagFilter(existing.id); renderFilterTagList(); $('tagMessage').textContent='Essa tag já existe; selecionei a existente.'; return;
+    }
+    const now=nowISO(), tag={id:makeId(),name,color:randomTagColor(),createdAt:now,updatedAt:now,deletedAt:null};
+    tags.push(tag); setTagFilter(tag.id); saveTags(); renderFilterTagList(); $('newTagName').value=''; $('tagMessage').textContent=`Tag ${tag.name} criada com cor automática.`;
+  }
   function renderTasks() {
-    const areaTasks=visibleTasks();
-    const open=areaTasks.filter(task=>!task.completedAt);
+    const all=visibleTasks();
+    const open=all.filter(task=>!task.completedAt);
     const overdue=open.filter(task=>task.executionDate && task.executionDate<todayKey()).sort(taskOrder);
     const unscheduled=open.filter(task=>!task.executionDate).sort(taskOrder);
-    $('countVida').textContent=String(visibleTasks('vida').filter(task=>!task.completedAt).length);
-    $('countTrabalho').textContent=String(visibleTasks('trabalho').filter(task=>!task.completedAt).length);
-    $('countOutros').textContent=String(visibleTasks('outros').filter(task=>!task.completedAt).length);
     $('unplannedCount').textContent=String(unscheduled.length);
     $('unplannedList').innerHTML=unscheduled.length ? unscheduled.map(task=>taskCard(task)).join('') : '<div class="empty">Sem tarefas sem data.</div>';
     const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
@@ -190,10 +273,10 @@
       const body=cell.tasks.length ? cell.tasks.map(task=>taskCard(task,{overdue:cell.kind==='overdue'})).join('') : `<div class="day-empty">${cell.kind==='overdue'?'Nada atrasado':'—'}</div>`;
       return `<section class="day-column${today?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${cell.title}${cell.date?` ${formatDate(cell.date)}`:''}">${heading}<div class="day-task-list">${body}</div></section>`;
     }).join('');
-    const completed=areaTasks.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    const completed=all.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     $('completedCount').textContent=String(completed.length);
     $('completedList').innerHTML=completed.length ? completed.map(task=>taskCard(task)).join('') : '<div class="empty">Nenhuma concluída.</div>';
-    document.querySelectorAll('.area-tab').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.area===currentArea)));
+    renderFilterButton();
   }
   function renderAll() {
     renderTasks();
@@ -209,7 +292,7 @@
     $('homeTodayCount').textContent=String(today.length);
     $('homeUnplannedCount').textContent=String(unplanned.length);
     const next=open.filter(task=>task.executionDate && task.executionDate>=todayKey()).sort(taskOrder).slice(0,5);
-    const items=next.map(task=>`<article class="home-item"><span class="home-item-date">${escapeHTML(formatDate(task.executionDate))} · ${AREA_LABELS[task.area]}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></article>`).join('');
+    const items=next.map(task=>`<article class="home-item"><span class="home-item-date">${escapeHTML(formatDate(task.executionDate))} · ${escapeHTML(getTag(task.tagId).name)}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${tagDot(task.tagId)}${escapeHTML(task.title)}</button></article>`).join('');
     $('homePreview').innerHTML=items || '<div class="empty">Ainda não há tarefas agendadas para hoje ou depois.</div>';
   }
   function renderNotes() {
@@ -222,7 +305,7 @@
     $('taskId').value=task ? task.id : '';
     $('taskDialogTitle').textContent=task ? 'Editar tarefa' : 'Nova tarefa';
     $('taskTitle').value=task?.title || '';
-    $('taskArea').value=task?.area || currentArea;
+    renderTaskTagOptions(task?.tagId || filterTagId || localStorage.getItem(LAST_TAG_KEY) || 'vida');
     $('executionDate').value=task?.executionDate || suggestedDate || '';
     $('deleteTaskBtn').classList.toggle('hidden',!task);
     $('taskDialog').showModal();
@@ -232,18 +315,18 @@
   function saveTaskFromForm(event) {
     event.preventDefault();
     const title=$('taskTitle').value.trim();
-    const area=$('taskArea').value;
+    const tagId=$('taskTag').value;
     const date=$('executionDate').value || null;
-    if (!title || !AREAS.includes(area) || (date && !isDateKey(date))) return;
+    if (!title || !tags.some(tag=>tag.id===tagId && !tag.deletedAt) || (date && !isDateKey(date))) return;
     const id=$('taskId').value;
     const existing=id ? tasks.find(task=>task.id===id && !task.deletedAt) : null;
     const now=nowISO();
     if (existing) {
-      existing.title=title; existing.area=area; existing.executionDate=date; existing.updatedAt=now;
+      existing.title=title; existing.tagId=tagId; existing.executionDate=date; existing.updatedAt=now;
     } else {
-      tasks.push({id:makeId(),title,area,executionDate:date,createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
+      tasks.push({id:makeId(),title,tagId,executionDate:date,createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
     }
-    currentArea=area; localStorage.setItem(AREA_KEY,currentArea);
+    localStorage.setItem(LAST_TAG_KEY,tagId);
     if (date && date>=todayKey()) setWeek(date);
     else if (!date) $('planningBox').open=true;
     closeTaskDialog(); saveTasks();
@@ -416,11 +499,13 @@
     }
   }
   function taskToRow(task) {
-    return {id:task.id,owner_id:session.user.id,title:task.title,details:'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,area:task.area,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
+    return {id:task.id,owner_id:session.user.id,title:task.title,details:'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,tag_id:task.tagId,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
   }
   function rowToTask(row) {
-    return normalizeTask({id:row.id,title:row.title,area:row.area,executionDate:row.execution_date,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
+    return normalizeTask({id:row.id,title:row.title,tagId:row.tag_id,area:row.area,executionDate:row.execution_date,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
   }
+  function tagToRow(tag) { return {owner_id:session.user.id,id:tag.id,name:tag.name,color:tag.color,created_at:tag.createdAt,updated_at:tag.updatedAt,deleted_at:tag.deletedAt,planner_version:1}; }
+  function rowToTag(row) { return normalizeTag({id:row.id,name:row.name,color:row.color,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
   function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function mergeById(local,remote) {
@@ -432,12 +517,16 @@
     return Array.from(map.values());
   }
   async function loadCloudData() {
-    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note}));
-    const [remoteTaskRows,remoteNoteRows]=await Promise.all([
+    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note})), localTags=tags.map(tag=>({...tag}));
+    const [remoteTaskRows,remoteNoteRows,remoteTagRows]=await Promise.all([
       fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
-      fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`)
+      fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
+      fetchAll('nmm_tags?select=*&planner_version=eq.1')
     ]);
-    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean);
+    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean);
+    tags=ensureDefaultTags(mergeById(localTags,remoteTags).map(normalizeTag).filter(Boolean));
+    if (filterTagId && !tags.some(tag=>tag.id===filterTagId && !tag.deletedAt)) { filterTagId=''; localStorage.setItem(TAG_FILTER_KEY,''); }
+    localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
     const localActiveTasks=localTasks.filter(item=>!item.deletedAt), localActiveNotes=localNotes.filter(item=>!item.deletedAt);
     if (!remoteTasks.length && !remoteNotes.length && (localActiveTasks.length || localActiveNotes.length) && !window.confirm('A conta está vazia. Enviar as tarefas e notas deste aparelho para ela?')) {
       setAuthMessage('Nada foi enviado. Seus dados continuam neste aparelho.'); return false;
@@ -461,8 +550,10 @@
     try {
       do {
         syncQueued=false;
+        const tagRows=tags.map(tagToRow);
         const taskRows=tasks.map(taskToRow);
         const noteRows=notes.map(noteToRow);
+        if (tagRows.length) await cloudRequest('nmm_tags?on_conflict=owner_id,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(tagRows)});
         if (taskRows.length) await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});
         if (noteRows.length) await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});
         syncStatus=`Sincronizado · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
@@ -533,18 +624,22 @@
     setTimeout(()=>URL.revokeObjectURL(url),1000); $('backupMessage').textContent='Backup exportado.';
   }
   resetOldBrowserData();
+  loadLocalTags();
   loadLocalData();
-  $('areaNav').addEventListener('click',event=>{
-    const button=event.target.closest('button[data-area]');
-    if (!button || !AREAS.includes(button.dataset.area)) return;
-    currentArea=button.dataset.area; localStorage.setItem(AREA_KEY,currentArea); renderTasks();
+  $('filterBtn').addEventListener('click',openFilterDialog);
+  $('closeFilterDialog').addEventListener('click',()=>$('filterDialog').close());
+  $('filterTagList').addEventListener('click',event=>{
+    const button=event.target.closest('button[data-filter-tag]');
+    if (!button) return;
+    setTagFilter(button.dataset.filterTag);
+    $('filterDialog').close();
   });
+  $('tagForm').addEventListener('submit',createTag);
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]'); if (button) setPage(button.dataset.page);
   });
   document.addEventListener('click',event=>{ if (event.target.closest('[data-open-tasks]')) setPage('tasks'); });
   $('quickAddBtn').addEventListener('click',()=>{setPage('tasks');openTaskDialog();});
-  $('newTaskBtn').addEventListener('click',()=>openTaskDialog());
   $('taskForm').addEventListener('submit',saveTaskFromForm);
   $('closeTaskDialog').addEventListener('click',closeTaskDialog);
   $('deleteTaskBtn').addEventListener('click',softDeleteTask);

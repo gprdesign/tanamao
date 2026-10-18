@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tnm-weekly-v2';
-const APP_FILES = ['./','./index.html','./config.js?v=2','./app.js?v=51','./manifest.webmanifest','./icon.svg'];
+const CACHE_NAME = 'tnm-weekly-v3';
+const APP_FILES = ['./','./index.html','./config.js?v=2','./app.js?v=52','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)));
   self.skipWaiting();

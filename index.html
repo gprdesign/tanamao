@@ -53,11 +53,21 @@
     .day-add { flex:none; width:24px; height:24px; border:1px solid #394663; }
     .task-card.completed { opacity:.72; }
     .completed-box .task-open { text-decoration:line-through; }
-    .main-nav button:focus-visible,.btn:focus-visible,.area-tab:focus-visible,.icon-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-    .area-nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin:0 0 12px; }
-    .area-tab { min-height:42px; padding:7px 8px; border:1px solid var(--line); border-radius:11px; background:#111827; color:var(--muted); font-size:.82rem; font-weight:800; }
-    .area-tab[aria-pressed="true"] { border-color:#8bafff88; background:#202b42; color:var(--text); box-shadow:inset 0 0 0 1px #8bafff44; }
-    .area-tab span { margin-left:4px; color:var(--accent); font-size:.73rem; font-variant-numeric:tabular-nums; }
+    .main-nav button:focus-visible,.btn:focus-visible,.filter-tag-option:focus-visible,.icon-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .filter-action { display:flex; align-items:center; gap:7px; flex:none; }
+    .filter-summary { display:flex; align-items:center; gap:7px; max-width:110px; overflow:hidden; color:var(--muted); font-size:.74rem; text-overflow:ellipsis; white-space:nowrap; }
+    .filter-tag-list { display:grid; gap:6px; margin:0 0 16px; }
+    .filter-tag-option { display:flex; align-items:center; gap:9px; width:100%; min-height:42px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:#101729; color:var(--text); text-align:left; font-weight:750; }
+    .filter-tag-option[aria-pressed="true"] { border-color:var(--accent); background:#202b42; }
+    .tag-dot { display:inline-block; flex:none; width:10px; height:10px; border-radius:50%; background:var(--tag-color,#8bafff); box-shadow:0 0 0 2px #ffffff12; }
+    .task-title-row { display:flex; align-items:flex-start; gap:7px; min-width:0; }
+    .task-title-row .tag-dot { margin-top:4px; }
+    .home-item-open { display:flex; align-items:flex-start; gap:7px; }
+    .tag-create { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:7px; }
+    .tag-create .field { margin:0; }
+    .tag-create .btn { min-height:42px; }
+    .tag-status { min-height:1.3em; margin-top:8px; color:var(--muted); font-size:.75rem; }
+    .filter-tag-option .tag-dot { width:12px; height:12px; }
     .week-controls { display:flex; align-items:center; justify-content:center; gap:8px; margin:8px 0 13px; }
     .week-controls .btn { min-height:36px; }
     #weekLabel { min-width:150px; font-size:.84rem; font-weight:800; text-align:center; }
@@ -124,13 +134,14 @@
     @media(max-width:600px) {
       .wrap { padding:10px 10px calc(82px + env(safe-area-inset-bottom,0px)); }
       .app-header { margin-bottom:15px; }
+      .filter-action { gap:5px; }
+      .filter-summary { max-width:72px; font-size:.66rem; }
+      .filter-action .btn { min-height:36px; padding:7px 8px; font-size:.78rem; }
       .home-hero { padding:17px; }
       .home-stats { gap:6px; }
       .home-stat { padding:10px 8px; }
       .home-stat span { font-size:.68rem; }
       .home-stat strong { font-size:1.35rem; }
-      .area-nav { gap:5px; }
-      .area-tab { min-height:39px; padding:6px 3px; font-size:.72rem; }
       .week-grid { gap:6px; grid-auto-rows:minmax(128px,auto); }
       .day-column { min-height:128px; padding:7px; }
       .day-heading strong { font-size:.7rem; }
@@ -152,18 +163,13 @@
     </header>
 
     <section id="homePage" class="page active" aria-label="Início">
-      <div class="home-hero"><p class="eyebrow">SEMANA</p><h2>Organize o que importa.</h2><p>Escolha VIDA, TRABALHO ou OUTROS e distribua as tarefas pelos dias. O que tiver execução antes de hoje aparece em ATRASADO.</p><div><button class="btn primary" data-open-tasks type="button">Abrir tarefas</button></div></div>
+      <div class="home-hero"><p class="eyebrow">SEMANA</p><h2>Organize o que importa.</h2><p>Organize suas tarefas por data de execução e use tags para filtrar. O que tiver execução antes de hoje aparece em ATRASADO.</p><div><button class="btn primary" data-open-tasks type="button">Abrir tarefas</button></div></div>
       <div class="home-stats" aria-label="Resumo"><div class="home-stat"><span>ATRASADO</span><strong id="homeOverdueCount">0</strong></div><div class="home-stat"><span>HOJE</span><strong id="homeTodayCount">0</strong></div><div class="home-stat"><span>SEM DATA</span><strong id="homeUnplannedCount">0</strong></div></div>
       <section class="home-preview"><div class="page-heading"><div><p class="eyebrow">PRÓXIMOS</p><h2>Da semana</h2></div><button class="btn ghost small" data-open-tasks type="button">Ver planner</button></div><div class="home-preview-list" id="homePreview"></div></section>
     </section>
 
     <section id="tasksPage" class="page" aria-label="Tarefas">
-      <div class="page-heading"><div><p class="eyebrow">PLANNER SEMANAL</p><h2>Tarefas</h2></div><button class="btn primary" id="newTaskBtn" type="button">＋ Nova</button></div>
-      <nav class="area-nav" id="areaNav" aria-label="Áreas">
-        <button class="area-tab" type="button" data-area="vida" aria-pressed="true">VIDA <span id="countVida">0</span></button>
-        <button class="area-tab" type="button" data-area="trabalho" aria-pressed="false">TRABALHO <span id="countTrabalho">0</span></button>
-        <button class="area-tab" type="button" data-area="outros" aria-pressed="false">OUTROS <span id="countOutros">0</span></button>
-      </nav>
+      <div class="page-heading"><div><p class="eyebrow">PLANNER SEMANAL</p><h2>Tarefas</h2></div><div class="filter-action"><span class="filter-summary" id="activeFilterSummary">TODAS</span><button class="btn" id="filterBtn" type="button" aria-haspopup="dialog">FILTRO</button></div></div>
       <div class="week-controls" aria-label="Navegar entre semanas">
         <button class="btn ghost small" id="prevWeekBtn" type="button" aria-label="Semana anterior">‹</button>
         <button class="btn ghost small" id="todayBtn" type="button">Hoje</button>
@@ -202,13 +208,15 @@
     <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>Configs</span></button>
   </nav>
 
-  <dialog id="taskDialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskArea">Área</label><select id="taskArea"><option value="vida">VIDA</option><option value="trabalho">TRABALHO</option><option value="outros">OUTROS</option></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><p class="dialog-hint">Sem data, fica em Planejar. Uma data anterior a hoje envia para ATRASADO.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar</button><button class="btn" id="deleteTaskBtn" type="button">Excluir</button></div></form></dialog>
+  <dialog id="taskDialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><p class="dialog-hint">Sem data, fica em Planejar. Uma data anterior a hoje envia para ATRASADO.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar</button><button class="btn" id="deleteTaskBtn" type="button">Excluir</button></div></form></dialog>
+
+  <dialog id="filterDialog"><div class="dialog-head"><h2>Filtrar por tag</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Escolha uma tag para filtrar o planner. “Todas” mostra tudo.</p><div class="filter-tag-list" id="filterTagList"></div><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
 
   <dialog id="noteDialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><label for="noteContent">Conteúdo</label><textarea id="noteContent" maxlength="20000" required placeholder="Escreva sua nota…"></textarea></div><div class="form-actions"><button class="btn primary" type="submit">Salvar nota</button><button class="btn" id="deleteNoteBtn" type="button">Excluir</button></div></form></dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=51" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=51',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=52" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=52',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
