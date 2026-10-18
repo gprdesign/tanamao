@@ -10,7 +10,7 @@ Planner semanal pessoal, minimalista, inspirado no Weeklo.
 - Planejar e Concluídas abrem como painéis exclusivos na própria tela, em grades de 3×2 com botão MAIS.
 - Atrasadas ficam vermelhas; ao virar a semana, também aparecem como links para a tarefa original em ATRASADO, com REAGENDAR.
 - Filtros multitag para tarefas e notas; cada tarefa tem uma tag e notas aceitam várias. VIDA, TRABALHO e OUTRO vêm prontas.
-- Modo glass preserva as cores do tema; abas e telas têm transições suaves. Notas têm altura limitada e três colunas em telas web horizontais.
+- Modo glass preserva as cores do tema; abas e telas têm transições suaves. Interface ampliada para celular e tablet, com notas em três colunas nas telas web horizontais.
 - Login/sincronização privada, snapshot local automático a cada 5 minutos e exportação JSON de backup.
 - Navegação inferior Home, Tarefas, Notas e Configs.
 

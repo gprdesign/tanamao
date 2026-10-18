@@ -383,6 +383,155 @@
     @keyframes page-enter { from { opacity:0; transform:translateX(var(--page-shift,12px)); filter:blur(2px); } to { opacity:1; transform:translateX(0); filter:blur(0); } }
     dialog[open] { animation:dialog-in .22s cubic-bezier(.22,.75,.25,1) both; }
     @keyframes dialog-in { from { opacity:0; transform:translateY(8px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+    /* Interface ampliada para leitura confortável em celular e tablet. */
+    html { font-size:19px; }
+    body { font-size:17px; }
+    .wrap { padding-top:12px; padding-right:16px; padding-left:16px; padding-bottom:calc(92px + env(safe-area-inset-bottom,0px)); }
+    .app-header { margin-bottom:13px; }
+    .brand-icon { width:48px; height:48px; border-radius:14px; }
+    h1 { font-size:1.22rem; }
+    .brand p { font-size:.82rem; }
+    .btn { min-height:46px; padding:9px 14px; border-radius:12px; }
+    .btn.small { min-height:40px; padding:7px 11px; font-size:.84rem; }
+    .header-actions { gap:7px; }
+    .header-actions .btn { min-height:42px; padding:8px 11px; font-size:.82rem; }
+    .home-week-title { font-size:1rem; }
+    #homePage .home-stats { gap:8px; margin-bottom:9px; }
+    #homePage .home-stat { padding:10px 11px; }
+    #homePage .home-stat span { font-size:.74rem; }
+    #homePage .home-stat strong { font-size:1.2rem; }
+    #homePage .home-week-lists { gap:9px; }
+    .home-task-section { padding:9px 10px; border-radius:13px; }
+    .home-task-section h3 { margin-bottom:6px; font-size:.82rem; }
+    .home-section-list { gap:5px; }
+    .home-task-row { gap:8px; padding:7px 9px; border-radius:10px; }
+    .home-item-date { font-size:.68rem; }
+    .home-item-open { font-size:.82rem; }
+    .home-tag-pill { padding:4px 7px; font-size:.62rem; }
+    #homePage .home-hero { margin-top:9px; padding:12px 14px; }
+    #homePage .home-hero h2 { font-size:1.12rem; }
+    #homePage .home-hero p { font-size:.8rem; }
+    #tasksPage .page-heading { min-height:38px; margin-bottom:8px; }
+    #tasksPage .page-heading h2 { font-size:1.04rem; }
+    .filter-summary { max-width:125px; font-size:.74rem; }
+    .filter-action .btn { min-height:42px; padding:8px 11px; font-size:.8rem; }
+    .week-grid { gap:7px; }
+    .day-column { padding:8px 9px; border-radius:14px; }
+    .day-heading { min-height:24px; margin-bottom:4px; padding-bottom:4px; }
+    .day-heading-button strong { font-size:.76rem; }
+    .day-heading-button time,.day-heading-button .day-count { font-size:.68rem; }
+    .day-task-list { gap:5px; }
+    .day-empty { padding:5px 0; font-size:.72rem; }
+    .day-add { width:24px; height:24px; }
+    .day-task-list .task-card--compact { grid-template-columns:16px minmax(0,1fr) auto; gap:4px; padding:6px; border-radius:9px; }
+    .task-card--compact .task-check { width:15px; height:15px; }
+    .task-card--compact .task-title-row { gap:5px; }
+    .task-card--compact .task-title-row .tag-dot { width:8px; height:8px; }
+    .task-card--compact .task-open { font-size:.70rem; line-height:1.2; }
+    .task-card--compact .task-menu > summary { width:22px; height:22px; font-size:1.02rem; }
+    .task-card--compact .task-completion-meta { font-size:.64rem; }
+    .task-card--compact .task-reschedule { padding:3px 4px; font-size:.55rem; }
+    .planner-section-btn { min-height:40px; margin-top:6px; padding:8px 12px; font-size:.82rem; }
+    .planner-panel { margin-top:6px; padding:8px; border-radius:13px; }
+    .task-tile-grid { gap:7px; }
+    .task-tile-grid .task-card--tile { grid-template-columns:15px minmax(0,1fr) auto; min-height:54px; padding:6px; }
+    .task-card--tile .task-check { width:14px; height:14px; }
+    .task-card--tile .task-title-row { gap:5px; }
+    .task-card--tile .task-title-row .tag-dot { width:8px; height:8px; }
+    .task-card--tile .task-open { font-size:.70rem; line-height:1.2; }
+    .task-card--tile .task-menu > summary { width:22px; height:24px; font-size:1rem; }
+    .more-btn { min-height:38px; margin-top:8px; font-size:.76rem; }
+    .week-dock { bottom:calc(82px + env(safe-area-inset-bottom,0px)); min-height:48px; padding:5px 9px; gap:8px; }
+    .week-dock .btn { min-height:38px; padding:6px 10px; font-size:.8rem; }
+    #weekLabel { font-size:.8rem; }
+    .main-nav { width:min(680px,calc(100% - 24px)); padding:6px; gap:5px; border-radius:17px; }
+    .nav-btn { min-height:56px; gap:3px; padding:5px 4px; font-size:.76rem; }
+    .nav-icon { font-size:1.18rem; }
+    .nav-indicator { top:6px; bottom:6px; }
+    #notesPage .page-heading { margin-bottom:10px; }
+    #notesPage .page-heading h2 { font-size:1.3rem; }
+    .note-card { padding:15px; border-radius:14px; }
+    .note-card h3 { font-size:1.05rem; }
+    .note-card p { font-size:.92rem; line-height:1.45; }
+    .note-card-top { min-height:30px; }
+    .note-menu > summary { width:33px; height:33px; font-size:1.3rem; }
+    .note-tag-pill { padding:4px 7px; font-size:.66rem; }
+    .note-card { max-height:320px; }
+    .note-card-body { max-height:210px; }
+    .panel { padding:17px; border-radius:16px; }
+    .panel h3 { font-size:1.12rem; }
+    .field { gap:7px; margin-bottom:15px; }
+    .field label,.field-label { font-size:.88rem; }
+    input:not([type="checkbox"]):not([type="hidden"]),textarea,select { min-height:48px; padding:10px 12px; font-size:.88rem; }
+    textarea { min-height:140px; }
+    dialog { width:min(560px,calc(100% - 24px)); padding:21px; border-radius:18px; }
+    .dialog-head { margin-bottom:16px; }
+    .dialog-head h2 { font-size:1.18rem; }
+    .dialog-hint { margin-bottom:14px; font-size:.84rem; }
+    .form-actions { gap:10px; margin-top:14px; }
+    .status-text,.tag-status { font-size:.84rem; }
+    .toast { font-size:.9rem; padding:12px 16px; }
+    @media (min-width:601px) and (max-width:1100px) {
+      html { font-size:20px; }
+      .wrap { padding-right:24px; padding-left:24px; padding-bottom:calc(104px + env(safe-area-inset-bottom,0px)); }
+      body[data-page="tasks"] .wrap { padding-bottom:calc(144px + env(safe-area-inset-bottom,0px)); }
+      body[data-page="notes"] .wrap,body[data-page="settings"] .wrap { padding-bottom:calc(104px + env(safe-area-inset-bottom,0px)); }
+      .app-header { margin-bottom:18px; }
+      .brand-icon { width:54px; height:54px; }
+      .header-actions .btn { min-height:48px; padding:9px 14px; font-size:.86rem; }
+      .main-nav { width:min(760px,calc(100% - 40px)); padding:8px; }
+      .nav-btn { min-height:62px; font-size:.82rem; }
+      .nav-icon { font-size:1.28rem; }
+      .week-dock { width:min(620px,calc(100% - 48px)); min-height:54px; }
+      .week-dock .btn { min-height:42px; font-size:.84rem; }
+      .week-grid { gap:10px; }
+      .day-column { padding:11px 12px; }
+      .day-heading-button strong { font-size:.8rem; }
+      .day-heading-button time,.day-heading-button .day-count { font-size:.72rem; }
+      .day-task-list { gap:7px; }
+      .task-card--compact .task-open { font-size:.76rem; }
+      .planner-section-btn { min-height:48px; font-size:.9rem; }
+      .task-tile-grid { gap:9px; }
+      .task-tile-grid .task-card--tile { min-height:62px; padding:8px; }
+      .task-card--tile .task-open { font-size:.76rem; }
+      .note-card { padding:18px; }
+      .note-card h3 { font-size:1.12rem; }
+      .note-card p { font-size:.98rem; }
+      dialog { width:min(640px,calc(100% - 48px)); }
+    }
+    @media (max-width:600px) {
+      html { font-size:18.5px; }
+      .wrap { padding-right:12px; padding-left:12px; }
+      .header-actions { gap:6px; }
+      .header-actions .btn { min-height:40px; padding:7px 9px; font-size:.78rem; }
+      .main-nav { width:calc(100% - 24px); }
+      .week-dock { width:calc(100% - 24px); gap:5px; }
+      .week-dock .btn { padding:5px 7px; }
+      .day-column { padding:7px 7px; }
+      .day-task-list .task-card--compact { grid-template-columns:14px minmax(0,1fr) auto; gap:3px; padding:5px; }
+      .task-card--compact .task-check { width:14px; height:14px; }
+      .task-card--compact .task-open { font-size:.67rem; }
+      .task-card--compact .task-reschedule { padding:2px 3px; font-size:.52rem; }
+      .home-task-row { gap:6px; padding:6px 7px; }
+      .home-item-open { font-size:.76rem; }
+      .home-tag-pill { padding:3px 5px; font-size:.56rem; }
+    }
+    @media (max-width:380px) { html { font-size:18px; } .wrap { padding-right:9px; padding-left:9px; } }
+    @media (max-height:650px) {
+      html { font-size:17px; }
+      .app-header { margin-bottom:6px; }
+      .brand-icon { width:38px; height:38px; }
+      .header-actions .btn { min-height:34px; padding:5px 7px; }
+      .main-nav .nav-btn { min-height:44px; }
+      .week-dock { bottom:calc(76px + env(safe-area-inset-bottom,0px)); min-height:38px; }
+      .week-dock .btn { min-height:30px; padding:4px 7px; }
+      .day-column { padding:4px 5px; }
+      .day-heading { min-height:18px; margin-bottom:2px; padding-bottom:2px; }
+      .planner-section-btn { min-height:34px; margin-top:3px; padding:5px 9px; }
+      #homePage .home-task-section { padding:6px 7px; }
+      #homePage .home-task-row { padding:4px 6px; }
+      #homePage .home-hero { margin-top:4px; padding:7px 9px; }
+    }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
   </style>
 </head>
@@ -456,7 +605,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=54" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=54',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=55" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=55',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
