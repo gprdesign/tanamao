@@ -14,6 +14,7 @@ create table if not exists public.nmm_tasks (
   area text not null default 'vida' check (area in ('vida', 'trabalho', 'outros')),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
+  planner_version smallint not null check (planner_version = 1),
   estimate_minutes integer not null default 60 check (estimate_minutes >= 5),
   reward text not null default '',
   blocker text not null default '',
@@ -48,7 +49,8 @@ create table if not exists public.nmm_notes (
   content text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  deleted_at timestamptz
+  deleted_at timestamptz,
+  planner_version smallint not null check (planner_version = 1)
 );
 
 create index if not exists nmm_tasks_owner_status_idx on public.nmm_tasks(owner_id, status);

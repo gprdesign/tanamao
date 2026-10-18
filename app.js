@@ -416,12 +416,12 @@
     }
   }
   function taskToRow(task) {
-    return {id:task.id,owner_id:session.user.id,title:task.title,details:'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,area:task.area,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
+    return {id:task.id,owner_id:session.user.id,title:task.title,details:'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,area:task.area,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
   }
   function rowToTask(row) {
     return normalizeTask({id:row.id,title:row.title,area:row.area,executionDate:row.execution_date,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
   }
-  function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
+  function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
   function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function mergeById(local,remote) {
     const map=new Map();
@@ -434,8 +434,8 @@
   async function loadCloudData() {
     const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note}));
     const [remoteTaskRows,remoteNoteRows]=await Promise.all([
-      fetchAll(`nmm_tasks?select=*&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
-      fetchAll(`nmm_notes?select=*&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`)
+      fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
+      fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`)
     ]);
     const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean);
     const localActiveTasks=localTasks.filter(item=>!item.deletedAt), localActiveNotes=localNotes.filter(item=>!item.deletedAt);
