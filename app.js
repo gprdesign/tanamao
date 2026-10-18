@@ -41,6 +41,10 @@
   let observedCurrentWeek=startOfWeek(observedToday);
   let dragTaskId = '';
   let noteDragId = '';
+  let expandedSection = '';
+  let planningVisibleLimit = 6;
+  let completedVisibleLimit = 6;
+  let floatingActionMenu = null;
   let activeDayKind = 'day';
   let activeDayDate = '';
   let authBusy = false;
@@ -194,16 +198,32 @@
     clearTimeout(toastTimer);
     toastTimer=setTimeout(()=>node.classList.add('hidden'),2600);
   }
+  function updateNavIndicator(page=currentPage) {
+    const nav=document.querySelector('.main-nav'), indicator=$('navIndicator'), buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]'));
+    const index=buttons.findIndex(button=>button.dataset.page===page);
+    if (!nav||!indicator||index<0||!buttons[0]) return;
+    const step=buttons[0].getBoundingClientRect().width+4;
+    indicator.style.transform=`translateX(${index*step}px)`;
+  }
   function setPage(page) {
     if (!['home','tasks','notes','settings'].includes(page)) return;
+    const previous=currentPage, oldIndex=['home','tasks','notes','settings'].indexOf(previous), newIndex=['home','tasks','notes','settings'].indexOf(page);
     currentPage=page;
     localStorage.setItem(PAGE_KEY,page);
     document.body.dataset.page=page;
-    document.querySelectorAll('.page').forEach(node=>node.classList.toggle('active',node.id===`${page}Page`));
+    document.querySelectorAll('.page').forEach(node=>{
+      const active=node.id===`${page}Page`;
+      node.classList.toggle('active',active);
+      if (active&&previous!==page) {
+        node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');
+        node.classList.remove('page-enter'); void node.offsetWidth; node.classList.add('page-enter');
+      }
+    });
     document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{
       if (button.dataset.page===page) button.setAttribute('aria-current','page');
       else button.removeAttribute('aria-current');
     });
+    updateNavIndicator(page);
     if (page==='home') renderHome();
     if (page==='tasks') renderTasks();
     if (page==='notes') renderNotes();
@@ -237,11 +257,14 @@
     return `<details class="task-menu"><summary aria-label="Mais ações para ${escapeHTML(task.title)}" title="Mais ações">⋮</summary><div class="task-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-task="${id}">EDITAR</button>${move?`<button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="up">↑ SUBIR</button><button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="down">↓ DESCER</button>`:''}<button class="menu-action menu-delete" type="button" data-delete-task="${id}">EXCLUIR</button></div></details>`;
   }
   function taskCard(task,options={}) {
-    const complete=Boolean(task.completedAt);
-    return `<article class="task-card${complete?' completed':''}" draggable="${complete?'false':'true'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
+    const complete=Boolean(task.completedAt), late=!complete&&(options.late ?? Boolean(task.executionDate&&task.executionDate<todayKey())), draggable=!complete&&options.draggable!==false;
+    const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':''].filter(Boolean).join(' ');
+    const linked=options.linked?'task-link':'';
+    const reschedule=options.showReschedule&&!complete?`<button class="task-reschedule" type="button" data-reschedule-task="${escapeHTML(task.id)}">REAGENDAR</button>`:'';
+    return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
       <input class="task-check" type="checkbox" data-complete-task="${escapeHTML(task.id)}" ${complete?'checked':''} aria-label="${complete?'Reabrir':'Concluir'}: ${escapeHTML(task.title)}">
-      <div class="task-main"><div class="task-title-row">${tagDot(task.tagId)}<button class="task-open task-title" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
-      <div class="task-actions">${taskMenu(task,options.canMove!==false)}</div>
+      <div class="task-main"><div class="task-title-row">${tagDot(task.tagId)}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
+      <div class="task-actions">${reschedule}${taskMenu(task,options.canMove!==false)}</div>
     </article>`;
   }
   function renderFilterButton() {
@@ -302,82 +325,93 @@
   }
   function renderTasks() {
     const all=visibleTasks(), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
-    const overdue=weekStart>=currentWeek?open.filter(task=>task.executionDate && task.executionDate<currentWeek).sort(taskOrder):[];
-    const unplanned=open.filter(task=>!task.executionDate).sort(taskOrder);
-    $('unplannedCount').textContent=String(unplanned.length);
+    const overdue=weekStart>=currentWeek?open.filter(task=>task.executionDate&&task.executionDate<currentWeek).sort(taskOrder):[];
+    $('weekLabel').textContent=formatWeekRange(weekStart);
     const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
     for (let i=0;i<7;i++) {
       const date=addDays(weekStart,i);
       cells.push({kind:'day',title:DAY_LABELS[i],date,tasks:open.filter(task=>task.executionDate===date).sort(taskOrder)});
     }
-    $('weekLabel').textContent=formatWeekRange(weekStart);
     $('weekGrid').innerHTML=cells.map(cell=>{
       const dayKey=cell.kind==='overdue'?'overdue':cell.date;
-      const completed=all.filter(task=>task.completedAt && (cell.kind==='overdue' ? weekStart>=startOfWeek(todayKey()) && task.executionDate && task.executionDate<startOfWeek(todayKey()) : task.executionDate===cell.date));
-      const label=cell.kind==='overdue'?'ATRASADO':cell.title;
-      const dateText=cell.date?formatDate(cell.date,{day:'2-digit',month:'2-digit'}):'';
-      const preview=cell.tasks[0] ? `<button class="day-task-preview" type="button" data-open-day="${dayKey}">${tagDot(cell.tasks[0].tagId)}<span>${escapeHTML(cell.tasks[0].title)}</span></button>` : `<button class="day-task-preview day-empty" type="button" data-open-day="${dayKey}">${cell.kind==='overdue'?'Nada atrasado':'Sem tarefas'}</button>`;
-      const extra=[cell.tasks.length>1?`+${cell.tasks.length-1} abertas`:'',completed.length?`${completed.length} concluídas`:'' ].filter(Boolean).join(' · ');
-      return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div>${preview}${extra?`<div class="day-extra-count">${escapeHTML(extra)}</div>`:''}</section>`;
+      const completed=all.filter(task=>task.completedAt&&(cell.kind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:task.executionDate===cell.date));
+      const label=cell.kind==='overdue'?'ATRASADO':cell.title, dateText=cell.date?formatDate(cell.date,{day:'2-digit',month:'2-digit'}):'';
+      const cards=cell.tasks.map(task=>taskCard(task,{compact:true,late:Boolean(task.executionDate&&task.executionDate<todayKey()),linked:cell.kind==='overdue',showReschedule:cell.kind==='overdue',draggable:cell.kind!=='overdue'})).join('');
+      const empty=cell.kind==='overdue'?'Nada atrasado':'Sem tarefas';
+      const extra=completed.length?`${completed.length} concluídas`:'';
+      return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div><div class="day-task-list" data-day-drop="${cell.date||''}">${cards||`<div class="day-empty">${empty}</div>`}</div>${extra?`<div class="day-extra-count">${escapeHTML(extra)}</div>`:''}</section>`;
     }).join('');
-    const completed=all.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
-    $('completedCount').textContent=String(completed.length);
-    renderFilterButton(); renderDialogLists();
+    const unplanned=open.filter(task=>!task.executionDate).sort(taskOrder), completed=all.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    $('unplannedCount').textContent=String(unplanned.length); $('completedCount').textContent=String(completed.length);
+    renderPlannerPanels(); renderFilterButton(); renderDialogLists();
   }
-  function renderAll() {
-    renderTasks(); renderHome(); renderNotes();
+  function renderPlannerPanels() {
+    const planning=visibleTasks().filter(task=>!task.completedAt&&!task.executionDate).sort(taskOrder);
+    const completed=visibleTasks().filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    $('planningPanel').hidden=expandedSection!=='planning'; $('completedPanel').hidden=expandedSection!=='completed';
+    $('planningBtn').setAttribute('aria-expanded',String(expandedSection==='planning'));
+    $('completedBtn').setAttribute('aria-expanded',String(expandedSection==='completed'));
+    $('planningList').innerHTML=planning.slice(0,planningVisibleLimit).map(task=>taskCard(task,{tile:true})).join('')||'<div class="empty">Sem tarefas para planejar.</div>';
+    $('completedList').innerHTML=completed.slice(0,completedVisibleLimit).map(task=>taskCard(task,{tile:true,canMove:false})).join('')||'<div class="empty">Nenhuma tarefa concluída.</div>';
+    $('planningMoreBtn').hidden=planning.length<=planningVisibleLimit; $('completedMoreBtn').hidden=completed.length<=completedVisibleLimit;
+    document.body.classList.toggle('planner-expanded',Boolean(expandedSection));
+  }
+  function togglePlannerSection(section,forceOpen=false) {
+    if (forceOpen) expandedSection=section;
+    else expandedSection=expandedSection===section?'':section;
+    if (expandedSection==='planning') planningVisibleLimit=6;
+    if (expandedSection==='completed') completedVisibleLimit=6;
+    renderTasks();
+  }
+  function renderAll() { renderTasks(); renderHome(); renderNotes(); }
+  function homeDateLabel(date) {
+    const text=formatDate(date).replace(/\./g,'');
+    const title=text.charAt(0).toLocaleUpperCase('pt-BR')+text.slice(1);
+    if(date===todayKey())return `HOJE - ${title}`;
+    if(date===addDays(todayKey(),1))return `AMANHÃ - ${title}`;
+    return title;
+  }
+  function renderHomeTaskList(id,list) {
+    const node=$(id);
+    node.innerHTML=list.length?list.map(task=>{const tag=getTag(task.tagId),late=task.executionDate<todayKey();return `<article class="home-task-row${late?' is-late':''}"><div class="home-task-main"><span class="home-item-date">${escapeHTML(homeDateLabel(task.executionDate))}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div><span class="home-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span></article>`;}).join(''):'<div class="empty">Sem tarefas.</div>'; 
   }
   function renderHome() {
-    const active=visibleTasks(), open=active.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
-    const overdue=open.filter(task=>task.executionDate && task.executionDate<currentWeek);
-    const today=open.filter(task=>task.executionDate===todayKey());
+    const open=visibleTasks().filter(task=>!task.completedAt),today=todayKey(),tomorrow=addDays(today,1);
+    const overdue=open.filter(task=>task.executionDate&&task.executionDate<today).sort(taskOrder);
+    const todayTasks=open.filter(task=>task.executionDate===today).sort(taskOrder);
+    const tomorrowTasks=open.filter(task=>task.executionDate===tomorrow).sort(taskOrder);
+    const upcoming=open.filter(task=>task.executionDate&&task.executionDate>tomorrow).sort(taskOrder);
     const unplanned=open.filter(task=>!task.executionDate);
-    $('homeOverdueCount').textContent=String(overdue.length);
-    $('homeTodayCount').textContent=String(today.length);
-    $('homeUnplannedCount').textContent=String(unplanned.length);
-    const weekEnd=addDays(currentWeek,6);
-    const next=open.filter(task=>task.executionDate && task.executionDate>=todayKey() && task.executionDate<=weekEnd).sort(taskOrder).slice(0,3);
-    const items=next.map(task=>`<article class="home-item"><span class="home-item-date">${escapeHTML(formatDate(task.executionDate))}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${tagDot(task.tagId)}<span>${escapeHTML(task.title)}</span></button></article>`).join('');
-    $('homePreview').innerHTML=items || '<div class="empty">Sem tarefas agendadas para hoje ou depois nesta semana.</div>';
+    $('homeOverdueCount').textContent=String(overdue.length); $('homeTodayCount').textContent=String(todayTasks.length); $('homeUnplannedCount').textContent=String(unplanned.length);
+    renderHomeTaskList('homeOverdueList',overdue); renderHomeTaskList('homeTodayList',todayTasks); renderHomeTaskList('homeTomorrowList',tomorrowTasks); renderHomeTaskList('homeUpcomingList',upcoming);
   }
   function renderNotes() {
     const active=visibleNotes().sort(noteOrder);
     $('notesList').innerHTML=active.length ? active.map(note=>{
       const id=escapeHTML(note.id), tagsHtml=(note.tagIds||[]).map(tagId=>tags.find(tag=>tag.id===tagId&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');
       const body=note.title?`<h3>${escapeHTML(note.title)}</h3>${note.content?`<p>${escapeHTML(note.content)}</p>`:''}`:`<p class="note-card-content--titleless">${escapeHTML(note.content)}</p>`;
-      return `<article class="note-card" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><div class="note-card-top"><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-note="${id}">EDITAR</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div>${body}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</article>`;
+      return `<article class="note-card" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><div class="note-card-top"><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-note="${id}">EDITAR</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div><div class="note-card-body">${body}</div>${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</article>`;
     }).join('') : '<div class="empty">Nenhuma nota para as tags selecionadas.</div>';
     renderFilterButton(); renderDialogLists();
   }
   function renderDayDialog() {
-    const all=visibleTasks(), currentWeek=startOfWeek(todayKey()), inDay=all.filter(task=>activeDayKind==='overdue' ? weekStart>=currentWeek && task.executionDate && task.executionDate<currentWeek : task.executionDate===activeDayDate);
-    const open=inDay.filter(task=>!task.completedAt).sort(taskOrder), completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
-    const groups=[open.length?open.map(task=>taskCard(task,{canMove:true})).join(''):'<div class="empty">Sem tarefas em aberto.</div>'];
-    if (completed.length) groups.push(`<div class="task-divider">CONCLUÍDAS</div>${completed.map(task=>taskCard(task,{canMove:false})).join('')}`);
+    const all=visibleTasks(),currentWeek=startOfWeek(todayKey()),today=todayKey();
+    const inDay=all.filter(task=>activeDayKind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:activeDayKind==='all-overdue'?task.executionDate&&task.executionDate<today:task.executionDate===activeDayDate);
+    const open=inDay.filter(task=>!task.completedAt).sort(taskOrder),completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    const lateMode=activeDayKind==='overdue'||activeDayKind==='all-overdue';
+    const groups=[open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,showReschedule:lateMode,draggable:!lateMode})).join(''):'<div class="empty">Sem tarefas em aberto.</div>'];
+    if(completed.length)groups.push(`<div class="task-divider">CONCLUÍDAS</div>${completed.map(task=>taskCard(task,{canMove:false})).join('')}`);
     $('dayDialogList').innerHTML=groups.join('');
   }
-  function renderPlanningDialog() {
-    const list=visibleTasks().filter(task=>!task.completedAt&&!task.executionDate).sort(taskOrder);
-    $('planningList').innerHTML=list.length?list.map(task=>taskCard(task,{canMove:true})).join(''):'<div class="empty">Sem tarefas para planejar.</div>';
-  }
-  function renderCompletedDialog() {
-    const list=visibleTasks().filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
-    $('completedList').innerHTML=list.length?list.map(task=>taskCard(task,{canMove:false})).join(''):'<div class="empty">Nenhuma concluída.</div>';
-  }
-  function renderDialogLists() {
-    if ($('dayDialog')?.open) renderDayDialog();
-    if ($('planningDialog')?.open) renderPlanningDialog();
-    if ($('completedDialog')?.open) renderCompletedDialog();
-  }
+  function renderDialogLists() { if ($('dayDialog')?.open) renderDayDialog(); }
   function openDayDialog(dayKey) {
-    activeDayKind=dayKey==='overdue'?'overdue':'day';
+    activeDayKind=dayKey==='all-overdue'?'all-overdue':dayKey==='overdue'?'overdue':'day';
     activeDayDate=activeDayKind==='day'&&isDateKey(dayKey)?dayKey:'';
-    if (activeDayKind==='day'&&!activeDayDate) return;
-    $('dayDialogTitle').textContent=activeDayKind==='overdue'?'ATRASADO':`${formatDate(activeDayDate,{weekday:'long',day:'2-digit',month:'2-digit'})}`;
+    if(activeDayKind==='day'&&!activeDayDate)return;
+    $('dayDialogTitle').textContent=activeDayKind==='day'?formatDate(activeDayDate,{weekday:'long',day:'2-digit',month:'2-digit'}):'ATRASADO';
+    $('dayDialogAddBtn').hidden=activeDayKind!=='day';
     renderDayDialog(); $('dayDialog').showModal();
   }
-  function openPlanningDialog() { renderPlanningDialog(); $('planningDialog').showModal(); }
-  function openCompletedDialog() { renderCompletedDialog(); $('completedDialog').showModal(); }
   function openTaskDialog(taskId='',suggestedDate='') {
     const task=taskId ? tasks.find(item=>item.id===String(taskId) && !item.deletedAt) : null;
     $('taskForm').reset();
@@ -409,7 +443,7 @@
     localStorage.setItem(LAST_TAG_KEY,tagId);
     if (date && date>=todayKey()) setWeek(date);
     closeTaskDialog(); saveTasks();
-    if (!date) openPlanningDialog();
+    if (!date) togglePlannerSection('planning',true);
     showToast(existing?'Tarefa atualizada.':'Tarefa adicionada.');
   }
   function softDeleteTask() { softDeleteTaskById($('taskId').value); }
@@ -449,7 +483,7 @@
     if (sourceId===targetId) return;
     const source=tasks.find(item=>item.id===sourceId&&!item.deletedAt&&!item.completedAt), target=tasks.find(item=>item.id===targetId&&!item.deletedAt&&!item.completedAt);
     if (!source||!target) return;
-    if ((source.executionDate||'')!==(target.executionDate||'')) { source.executionDate=target.executionDate||null; }
+    if ((source.executionDate||'')!==(target.executionDate||'')) source.executionDate=target.executionDate||null;
     const peers=tasks.filter(item=>!item.deletedAt&&!item.completedAt&&(item.executionDate||'')===(target.executionDate||'')).sort(taskOrder);
     const from=peers.findIndex(item=>item.id===sourceId), to=peers.findIndex(item=>item.id===targetId);
     if (from<0||to<0) return;
@@ -457,7 +491,16 @@
     peers.forEach((item,i)=>{item.sortOrder=i;item.updatedAt=nowISO();});
     source.updatedAt=nowISO(); saveTasks();
   }
+  function appendTaskToBucket(taskId,date) {
+    const task=tasks.find(item=>item.id===taskId&&!item.deletedAt&&!item.completedAt);
+    if(!task||(date&&!isDateKey(date)))return;
+    task.executionDate=date||null;
+    const peers=tasks.filter(item=>!item.deletedAt&&!item.completedAt&&item.id!==taskId&&(item.executionDate||'')===(date||'')).sort(taskOrder);
+    peers.push(task);peers.forEach((item,i)=>{item.sortOrder=i;item.updatedAt=nowISO();});saveTasks();
+  }
   function handleTaskClick(event) {
+    const reschedule=event.target.closest('[data-reschedule-task]');
+    if(reschedule){openTaskDialog(reschedule.dataset.rescheduleTask);const date=$('executionDate');date.focus();try{date.showPicker?.();}catch{}return;}
     const move=event.target.closest('[data-move-task]');
     if (move) { moveTask(move.dataset.moveTask,move.dataset.direction); return; }
     const remove=event.target.closest('[data-delete-task]');
@@ -469,13 +512,50 @@
     const openDay=event.target.closest('[data-open-day]');
     if (openDay) { openDayDialog(openDay.dataset.openDay); return; }
   }
+  function openHomeAction(action) {
+    if(action==='overdue'){setPage('tasks');openDayDialog('all-overdue');return;}
+    if(action==='today'){setWeek(todayKey());setPage('tasks');openDayDialog(todayKey());return;}
+    if(action==='planning'){setPage('tasks');togglePlannerSection('planning',true);}
+  }
+  function closeFloatingActionMenu() {
+    if(!floatingActionMenu)return;
+    try{floatingActionMenu.hidePopover?.();}catch{}
+    floatingActionMenu.remove();floatingActionMenu=null;
+  }
+  function openFloatingActionMenu(details) {
+    closeFloatingActionMenu();
+    const source=details.querySelector('.task-menu-popover,.note-menu-popover'),summary=details.querySelector('summary');
+    if(!source||!summary)return;
+    const rect=summary.getBoundingClientRect(),menu=document.createElement('div');
+    menu.className='floating-action-menu';menu.innerHTML=source.innerHTML;menu.setAttribute('role','menu');
+    const usePopover=typeof menu.showPopover==='function';
+    if(usePopover){menu.setAttribute('popover','manual');document.body.append(menu);try{menu.showPopover();}catch{menu.remove();menu.removeAttribute('popover');(details.closest('dialog[open]')||document.body).append(menu);}}
+    else (details.closest('dialog[open]')||document.body).append(menu);
+    menu.addEventListener('click',event=>{
+      const action=event.target.closest('button'); if(!action)return;
+      event.preventDefault();event.stopPropagation();
+      if(action.matches('[data-edit-task],[data-move-task],[data-delete-task],[data-reschedule-task]'))handleTaskClick(event);
+      else handleNotesClick(event);
+      closeFloatingActionMenu();
+    });
+    const width=menu.offsetWidth,height=menu.offsetHeight;
+    const left=Math.max(8,Math.min(rect.right-width,window.innerWidth-width-8));
+    let top=rect.bottom+5; if(top+height>window.innerHeight-8)top=rect.top-height-5; top=Math.max(8,Math.min(top,window.innerHeight-height-8));
+    menu.style.left=`${left}px`;menu.style.top=`${top}px`;floatingActionMenu=menu;
+    requestAnimationFrame(()=>menu.querySelector('button')?.focus());
+  }
+  function captureActionMenuClick(event) {
+    const summary=event.target.closest('.task-menu>summary,.note-menu>summary');
+    if(summary){event.preventDefault();event.stopPropagation();openFloatingActionMenu(summary.parentElement);return;}
+    if(floatingActionMenu&&!event.target.closest('.floating-action-menu'))closeFloatingActionMenu();
+  }
   function handleTaskChange(event) {
     const check=event.target.closest('input[data-complete-task]');
     if (check) toggleComplete(check.dataset.completeTask,check.checked);
   }
   function handleDragStart(event) {
     const card=event.target.closest('.task-card[data-task-id]');
-    if (!card || event.target.closest('input[data-complete-task],.task-menu')) { event.preventDefault(); return; }
+    if (!card || event.target.closest('input[data-complete-task],.task-menu,.task-reschedule')) { event.preventDefault(); return; }
     const task=tasks.find(item=>item.id===card.dataset.taskId && !item.completedAt && !item.deletedAt);
     if (!task) { event.preventDefault(); return; }
     dragTaskId=task.id; card.classList.add('is-dragging');
@@ -485,15 +565,20 @@
   function handleDragOver(event) {
     if (!dragTaskId) return;
     const targetCard=event.target.closest('.task-card[data-task-id]');
-    const targetList=event.target.closest('#planningList,#dayDialogList');
-    if (!targetCard && !targetList) return;
-    event.preventDefault(); targetCard?.classList.add('drop-active');
+    const destination=event.target.closest('.day-column[data-date],#planningPanel,#dayDialogList');
+    if(!targetCard&&!destination)return;
+    event.preventDefault();(targetCard||destination)?.classList.add('drop-active');
   }
   function handleDrop(event) {
-    if (!dragTaskId) return;
-    const targetCard=event.target.closest('.task-card[data-task-id]'), id=dragTaskId; dragTaskId=''; clearDropStyles();
-    if (!targetCard) return;
-    event.preventDefault(); reorderTaskBefore(id,targetCard.dataset.taskId);
+    if(!dragTaskId)return;
+    const targetCard=event.target.closest('.task-card[data-task-id]'),day=event.target.closest('.day-column[data-date]'),planning=event.target.closest('#planningPanel'),dayList=event.target.closest('#dayDialogList'),id=dragTaskId;
+    dragTaskId='';clearDropStyles();
+    if(!targetCard&&!day&&!planning&&!dayList)return;
+    event.preventDefault();
+    if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
+    else if(day)appendTaskToBucket(id,day.dataset.date);
+    else if(planning)appendTaskToBucket(id,'');
+    else if(dayList&&activeDayKind==='day')appendTaskToBucket(id,activeDayDate);
   }
   function handleDragEnd() { dragTaskId=''; clearDropStyles(); }
   function handleNotesClick(event) {
@@ -812,21 +897,21 @@
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]'); if (button) setPage(button.dataset.page);
   });
-  document.addEventListener('click',event=>{ if (event.target.closest('[data-open-tasks]')) setPage('tasks'); });
+  document.addEventListener('click',event=>{const action=event.target.closest('[data-home-action]');if(action){openHomeAction(action.dataset.homeAction);return;}if(event.target.closest('[data-open-tasks]'))setPage('tasks');});
   $('quickAddBtn').addEventListener('click',()=>{setPage('tasks');openTaskDialog();});
   $('quickAddNoteBtn').addEventListener('click',()=>openNoteDialog());
   $('taskForm').addEventListener('submit',saveTaskFromForm);
   $('closeTaskDialog').addEventListener('click',closeTaskDialog);
   $('deleteTaskBtn').addEventListener('click',softDeleteTask);
   $('weekGrid').addEventListener('click',handleTaskClick);
-  $('homePreview').addEventListener('click',handleTaskClick);
+  $('homePage').addEventListener('click',handleTaskClick);
   $('dayDialogList').addEventListener('click',handleTaskClick);
   $('planningList').addEventListener('click',handleTaskClick);
   $('completedList').addEventListener('click',handleTaskClick);
   $('dayDialogList').addEventListener('change',handleTaskChange);
   $('planningList').addEventListener('change',handleTaskChange);
   $('completedList').addEventListener('change',handleTaskChange);
-  for (const node of [$('dayDialogList'),$('planningList')]) {
+  for (const node of [$('weekGrid'),$('dayDialogList'),$('planningPanel')]) {
     node.addEventListener('dragstart',handleDragStart);
     node.addEventListener('dragover',handleDragOver);
     node.addEventListener('drop',handleDrop);
@@ -834,12 +919,12 @@
   $('prevWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,-7)));
   $('nextWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,7)));
   $('todayBtn').addEventListener('click',()=>setWeek(todayKey()));
-  $('planningBtn').addEventListener('click',openPlanningDialog);
-  $('completedBtn').addEventListener('click',openCompletedDialog);
+  $('planningBtn').addEventListener('click',()=>togglePlannerSection('planning'));
+  $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
+  $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=6;renderTasks();});
+  $('completedMoreBtn').addEventListener('click',()=>{completedVisibleLimit+=6;renderTasks();});
   $('dayDialogAddBtn').addEventListener('click',()=>{const date=activeDayKind==='day'?activeDayDate:'';$('dayDialog').close();openTaskDialog('',date);});
   $('closeDayDialog').addEventListener('click',()=>$('dayDialog').close());
-  $('closePlanningDialog').addEventListener('click',()=>$('planningDialog').close());
-  $('closeCompletedDialog').addEventListener('click',()=>$('completedDialog').close());
   $('notesList').addEventListener('click',handleNotesClick);
   $('notesList').addEventListener('keydown',handleNoteKey);
   $('notesList').addEventListener('dragstart',handleNoteDragStart);
@@ -853,6 +938,10 @@
   $('syncNowBtn').addEventListener('click',syncNow);
   $('exportBtn').addEventListener('click',exportBackup);
   document.addEventListener('dragend',()=>{handleDragEnd();noteDragId='';clearDropStyles();});
+  document.addEventListener('click',captureActionMenuClick,true);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&floatingActionMenu){event.preventDefault();event.stopPropagation();closeFloatingActionMenu();}},true);
+  document.addEventListener('scroll',()=>{if(floatingActionMenu)closeFloatingActionMenu();},true);
+  window.addEventListener('resize',()=>updateNavIndicator());
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud(); });
 
   renderAll(); setPage(currentPage); startAutomaticBackup(); void initializeAuth();

@@ -5,9 +5,12 @@ Planner semanal pessoal, minimalista, inspirado no Weeklo.
 ## O que fica
 
 - Planner semanal em duas colunas: ATRASADO, SEG, TER, QUA, QUI, SEX, SÁB e DOM.
-- Home e planner semanal em visão compacta, sem rolagem da página; as listas completas abrem em janelas por dia.
-- Um filtro multitag para tarefas e notas. Cada tarefa tem uma tag; notas podem ter várias. VIDA, TRABALHO e OUTRO vêm prontas; novas tags recebem cor automática.
-- Planejar guarda tarefas sem data; tarefas só entram em ATRASADO quando a semana seguinte começa. Ordenação manual, tarefas concluídas com hora e mosaico de notas.
+- Home “MINHA SEMANA” com Atrasado, Hoje, Amanhã e Próximos; atalhos clicáveis e tags no fim de cada linha.
+- Planner semanal mostra todas as tarefas em cada dia; arraste entre dias e Planejar para mudar a data ou ordenar.
+- Planejar e Concluídas abrem como painéis exclusivos na própria tela, em grades de 3×2 com botão MAIS.
+- Atrasadas ficam vermelhas; ao virar a semana, também aparecem como links para a tarefa original em ATRASADO, com REAGENDAR.
+- Filtros multitag para tarefas e notas; cada tarefa tem uma tag e notas aceitam várias. VIDA, TRABALHO e OUTRO vêm prontas.
+- Modo glass preserva as cores do tema; abas e telas têm transições suaves. Notas têm altura limitada e três colunas em telas web horizontais.
 - Login/sincronização privada, snapshot local automático a cada 5 minutos e exportação JSON de backup.
 - Navegação inferior Home, Tarefas, Notas e Configs.
 
