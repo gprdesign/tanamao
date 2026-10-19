@@ -5,6 +5,9 @@
   const CLOUD_READY = Boolean(CLOUD.url && CLOUD.publishableKey);
   const TASKS_KEY = 'tnm.weekly.tasks.v1';
   const NOTES_KEY = 'tnm.weekly.notes.v1';
+  const LOGS_KEY = 'tnm.weekly.logs.v1';
+  const LOG_RANGE_KEY = 'tnm.weekly.logsRange.v1';
+  const ZOOM_KEY = 'tnm.weekly.zoom.v1';
   const SESSION_KEY = 'naMinhaMao.supabase.session.v1';
   const RESET_KEY = 'tnm.weekly.reset.v1';
   const TAGS_KEY = 'tnm.weekly.tags.v1';
@@ -33,12 +36,16 @@
   const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   let tasks = [];
   let notes = [];
+  let logs = readStored(LOGS_KEY,[]);
+  if(!Array.isArray(logs))logs=[];
+  let logRange = ['7d','30d','12w','all'].includes(localStorage.getItem(LOG_RANGE_KEY))?localStorage.getItem(LOG_RANGE_KEY):'7d';
   let tags = [];
   let calendarEvents = readStored(CALENDAR_EVENTS_KEY,[]);
   if(!Array.isArray(calendarEvents))calendarEvents=[];
   let session = readStored(SESSION_KEY,null);
   let filterTagIds = readFilterTags();
-  let currentPage = ['home','tasks','notes','settings'].includes(localStorage.getItem(PAGE_KEY)) ? localStorage.getItem(PAGE_KEY) : 'home';
+  let currentPage = ['home','tasks','log','notes','settings'].includes(localStorage.getItem(PAGE_KEY)) ? localStorage.getItem(PAGE_KEY) : 'home';
+  let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
   let weekStart = (()=>{const current=startOfWeek(todayKey()),saved=localStorage.getItem(WEEK_KEY),selected=saved?startOfWeek(saved):current;return selected<current?current:selected;})();
   let observedToday=todayKey();
   let observedCurrentWeek=startOfWeek(observedToday);
@@ -123,9 +130,10 @@
     if (schedule) scheduleSync();
   }
   function loadLocalData() {
-    const storedTasks=readStored(TASKS_KEY,[]), storedNotes=readStored(NOTES_KEY,[]);
+    const storedTasks=readStored(TASKS_KEY,[]), storedNotes=readStored(NOTES_KEY,[]), storedLogs=readStored(LOGS_KEY,[]);
     tasks=Array.isArray(storedTasks) ? storedTasks.map(normalizeTask).filter(Boolean) : [];
     notes=Array.isArray(storedNotes) ? storedNotes.map(normalizeNote).filter(Boolean) : [];
+    logs=Array.isArray(storedLogs) ? storedLogs.map(normalizeLog).filter(Boolean) : [];
   }
   function normalizeTask(value) {
     if (!value || typeof value !== 'object' || !String(value.title || '').trim()) return null;
@@ -141,6 +149,12 @@
       completedAt:value.completedAt || value.completed_at ? String(value.completedAt || value.completed_at) : null,
       deletedAt:value.deletedAt || value.deleted_at ? String(value.deletedAt || value.deleted_at) : null
     };
+  }
+  function normalizeLog(value) {
+    if(!value||typeof value!=='object')return null;
+    const content=String(value.content??value.log_text??value.text??'').trim().slice(0,20000);
+    if(!content)return null;
+    return {id:String(value.id||makeId()),content,createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
   }
   function normalizeNote(value) {
     if (!value || typeof value !== 'object') return null;
@@ -164,6 +178,11 @@
     localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
     renderNotes();
     if (schedule) scheduleSync();
+  }
+  function saveLogs(schedule=true) {
+    localStorage.setItem(LOGS_KEY,JSON.stringify(logs));
+    renderLogs();
+    if(schedule)scheduleSync();
   }
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -213,12 +232,24 @@
     localStorage.setItem(WEEK_KEY,weekStart);
     renderTasks();
   }
+  function jumpToCurrentWeek() {
+    setWeek(todayKey());
+    setTimeout(()=>{const day=$('weekGrid').querySelector('.day-column.is-today');if(!day)return;day.classList.remove('today-flash');void day.offsetWidth;day.classList.add('today-flash');},300);
+  }
   function checkWeekRollover() {
     const today=todayKey(), current=startOfWeek(today);
     if (today===observedToday&&current===observedCurrentWeek) return;
     observedToday=today; observedCurrentWeek=current;
     if (weekStart<current) {weekStart=current;localStorage.setItem(WEEK_KEY,weekStart);}
     renderAll();
+  }
+  function applyZoom() {
+    document.documentElement.style.setProperty('--app-zoom',String(zoomLevel));
+    document.querySelectorAll('[data-zoom-value]').forEach(node=>node.textContent=`${Math.round(zoomLevel*100)}%`);
+  }
+  function changeZoom(direction) {
+    zoomLevel=Math.min(1.25,Math.max(.8,Math.round((zoomLevel+(direction==='in'?.05:-.05))*100)/100));
+    localStorage.setItem(ZOOM_KEY,String(zoomLevel));applyZoom();
   }
   function showToast(message) {
     const node=$('toast');
@@ -235,8 +266,8 @@
     indicator.style.transform=`translateX(${index*step}px)`;
   }
   function setPage(page) {
-    if (!['home','tasks','notes','settings'].includes(page)) return;
-    const previous=currentPage, oldIndex=['home','tasks','notes','settings'].indexOf(previous), newIndex=['home','tasks','notes','settings'].indexOf(page);
+    if (!['home','tasks','log','notes','settings'].includes(page)) return;
+    const previous=currentPage, oldIndex=['home','tasks','log','notes','settings'].indexOf(previous), newIndex=['home','tasks','log','notes','settings'].indexOf(page);
     currentPage=page;
     localStorage.setItem(PAGE_KEY,page);
     document.body.dataset.page=page;
@@ -256,6 +287,7 @@
     if (page==='home') renderHome();
     if (page==='tasks') renderTasks();
     if (page==='notes') renderNotes();
+    if (page==='log') renderLogs();
     if (page==='settings') updateAuthUI();
   }
   function hasSelectedTag(tagIds) { return !filterTagIds.length || tagIds.some(id=>filterTagIds.includes(id)); }
@@ -406,7 +438,7 @@
     if (expandedSection==='completed') completedVisibleLimit=6;
     renderTasks();
   }
-  function renderAll() { renderTasks(); renderHome(); renderNotes(); }
+  function renderAll() { renderTasks(); renderHome(); renderNotes(); renderLogs(); }
   function homeDateLabel(date) {
     const text=formatDate(date).replace(/\./g,'');
     const title=text.charAt(0).toLocaleUpperCase('pt-BR')+text.slice(1);
@@ -437,6 +469,33 @@
     $('homeOverdueCount').textContent=String(overdue.length); $('homeTodayCount').textContent=String(todayTasks.length); $('homeUnplannedCount').textContent=String(unplanned.length);
     renderHomeEvents();renderHomeTaskList('homeOverdueList',overdue);renderHomeTaskList('homeTodayList',todayTasks);renderHomeTaskList('homeTomorrowList',tomorrowTasks);
   }
+  function logTimestampLabel(createdAt,content='') {
+    const date=new Date(createdAt);if(!Number.isFinite(date.getTime()))return '';
+    const minutes=Math.max(0,Math.floor((Date.now()-date.getTime())/60000)),days=Math.floor(minutes/1440),hours=Math.floor(minutes%1440/60),mins=minutes%60;
+    const duration=`${days}d.${hours}h.${mins}m`,today=todayKey(),yesterday=addDays(today,-1),key=dateKey(date);
+    const relative=key===today?'Hoje/':key===yesterday?'Ontem/':'';
+    const weekday=date.toLocaleDateString('pt-BR',{weekday:'short'}).replace(/\./g,'');
+    const weekdayTitle=weekday.charAt(0).toLocaleUpperCase('pt-BR')+weekday.slice(1);
+    const time=date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const shortDate=date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    return `🕑[${duration}] ${content} ➡️ ${time} - ${relative}${weekdayTitle}, ${shortDate}`;
+  }
+  function renderLogs() {
+    const list=$('logsList');if(!list)return;
+    const cutoff=logRange==='all'?0:Date.now()-({ '7d':7,'30d':30,'12w':84 }[logRange]||7)*86400000;
+    const visible=logs.filter(log=>!log.deletedAt&&Date.parse(log.createdAt)>=cutoff).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
+    document.querySelectorAll('[data-log-range]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.logRange===logRange)));
+    list.innerHTML=visible.length?visible.map(log=>`<article class="log-entry"><p>${escapeHTML(logTimestampLabel(log.createdAt,log.content))}</p></article>`).join(''):'<p class="empty">Nenhum registro neste período.</p>';
+  }
+  function saveLogFromForm(event) {
+    event.preventDefault();const content=$('logText').value.trim();if(!content)return;
+    const now=nowISO();logs.unshift({id:makeId(),content,createdAt:now,updatedAt:now,deletedAt:null});
+    $('logText').value='';saveLogs();showToast('Registro salvo.');
+  }
+  function setLogRange(range) {
+    if(!['7d','30d','12w','all'].includes(range))return;
+    logRange=range;localStorage.setItem(LOG_RANGE_KEY,range);renderLogs();
+  }
   function renderNotes() {
     const active=visibleNotes().sort(noteOrder);
     $('notesList').innerHTML=active.length ? active.map(note=>{
@@ -445,7 +504,7 @@
       const body=note.title?(note.content?`<p>${escapeHTML(note.content)}</p>`:''):`<p class="note-card-content--titleless">${escapeHTML(note.content)}</p>`;
       const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota';
       const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'';
-      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-pin-btn" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}" aria-label="${pinLabel}" title="${pinLabel}">📌</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-note="${id}">EDITAR</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button></article>`;
+      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-pin-btn" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}" aria-label="${pinLabel}" title="${pinLabel}">📌</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-duplicate-note="${id}">DUPLICAR NOTA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button></article>`;
     }).join('') : '<div class="empty">Nenhuma nota para as tags selecionadas.</div>';
     renderFilterButton(); renderDialogLists();
   }
@@ -641,7 +700,7 @@
     floatingActionMenu=menu;requestAnimationFrame(()=>menu.querySelector('button')?.focus());
   }
   function captureActionMenuClick(event) {
-    const summary=event.target.closest('.note-menu>summary');
+    const summary=event.target.closest('.task-menu>summary,.note-menu>summary');
     if(summary){event.preventDefault();event.stopPropagation();openFloatingActionMenu(summary.parentElement);return;}
     if(floatingActionMenu&&!event.target.closest('.floating-action-menu'))closeFloatingActionMenu();
   }
@@ -684,6 +743,7 @@
     if(event.target.closest('[data-touch-drag-note]')){event.preventDefault();return;}
     if(event.target.closest('a'))return;
     const pin=event.target.closest('[data-pin-note]');if(pin){toggleNotePin(pin.dataset.pinNote);return;}
+    const duplicate=event.target.closest('[data-duplicate-note]');if(duplicate){duplicateNote(duplicate.dataset.duplicateNote);return;}
     const move=event.target.closest('[data-move-note]');
     if (move) { moveNote(move.dataset.moveNote,move.dataset.direction); return; }
     const remove=event.target.closest('[data-delete-note]');
@@ -786,6 +846,7 @@
     const note=noteId ? notes.find(item=>item.id===String(noteId) && !item.deletedAt) : null;
     $('noteForm').reset();$('noteId').value=note?.id || '';
     $('noteDialogTitle').textContent=note?'Editar nota':'Nova nota';
+    $('deleteNoteBtn').classList.toggle('hidden',!note);
     $('noteTitle').value=note?.title || ''; $('noteContent').value=note?.content || '';
     renderNoteTagChoices(note?.tagIds||[]);$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';setLinkAttachment('note',note?.link||'');
     $('noteDialog').showModal(); $('noteTitle').focus();
@@ -816,6 +877,12 @@
     else lastNoteCtrlEnterAt=saved?(close?0:now):0;
     if(saved)showToast(close?'Salvo e fechado.':'Salvo. Ctrl+Enter novamente em até 500 ms para fechar.');
   }
+  function duplicateNote(noteId) {
+    const source=notes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!source)return;
+    const now=nowISO(),title=source.title?`${source.title.slice(0,132)} (cópia)`:'';
+    notes.unshift({id:makeId(),title,content:source.content,link:source.link,isPinned:false,tagIds:[...(source.tagIds||[])],sortOrder:Math.min(-1,...notes.filter(item=>!item.deletedAt&&!item.isPinned).map(item=>Number(item.sortOrder)||0))-1,createdAt:now,updatedAt:now,deletedAt:null});
+    saveNotes();showToast('Nota duplicada.');
+  }
   function deleteNote(noteId) {
     const note=notes.find(item=>item.id===String(noteId) && !item.deletedAt);
     if (!note || !window.confirm(`Excluir a nota “${note.title || 'Nota sem título'}”?`)) return;
@@ -844,7 +911,7 @@
     $('signupBtn').disabled=authBusy || !CLOUD_READY;
     $('syncNowBtn').disabled=authBusy || !connected;
     $('logoutBtn').disabled=authBusy || !connected;
-    $('refreshSyncBtn').disabled=authBusy;
+    document.querySelectorAll('.refresh-sync-action').forEach(button=>{button.disabled=authBusy;});
     if (!CLOUD_READY) setAuthMessage('Login indisponível: falta a configuração pública do Supabase.',true);
     else if (!authMessage && !connected) setAuthMessage('Entre para sincronizar entre dispositivos. Sem login, os dados ficam neste aparelho.');
   }
@@ -909,6 +976,8 @@
   function rowToTag(row) { return normalizeTag({id:row.id,name:row.name,color:row.color,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,link_url:note.link||'',is_pinned:Boolean(note.isPinned),tag_ids:note.tagIds||[],sort_order:Number(note.sortOrder)||0,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
   function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
+  function logToRow(log) { return {id:log.id,owner_id:session.user.id,content:log.content,planner_version:1,created_at:log.createdAt,updated_at:log.updatedAt,deleted_at:log.deletedAt}; }
+  function rowToLog(row) { return normalizeLog({id:row.id,content:row.content,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
   function mergeById(local,remote) {
     const map=new Map();
     for (const item of [...remote,...local]) {
@@ -918,25 +987,29 @@
     return Array.from(map.values());
   }
   async function loadCloudData() {
-    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note})), localTags=tags.map(tag=>({...tag}));
-    const [remoteTaskRows,remoteNoteRows,remoteTagRows]=await Promise.all([
+    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note})), localLogs=logs.map(log=>({...log})), localTags=tags.map(tag=>({...tag}));
+    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteTagRows]=await Promise.all([
       fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
+      fetchAll('nmm_logs?select=*&planner_version=eq.1'),
       fetchAll('nmm_tags?select=*&planner_version=eq.1')
     ]);
-    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean);
+    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean);
     tags=ensureDefaultTags(mergeById(localTags,remoteTags).map(normalizeTag).filter(Boolean));
     filterTagIds=filterTagIds.filter(id=>tags.some(tag=>tag.id===id&&!tag.deletedAt));
     localStorage.setItem(TAG_FILTER_KEY,JSON.stringify(filterTagIds));
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
     const localActiveTasks=localTasks.filter(item=>!item.deletedAt), localActiveNotes=localNotes.filter(item=>!item.deletedAt);
-    if (!remoteTasks.length && !remoteNotes.length && (localActiveTasks.length || localActiveNotes.length) && !window.confirm('A conta está vazia. Enviar as tarefas e notas deste aparelho para ela?')) {
+    const localActiveLogs=localLogs.filter(item=>!item.deletedAt);
+    if (!remoteTasks.length && !remoteNotes.length && !remoteLogs.length && (localActiveTasks.length || localActiveNotes.length || localActiveLogs.length) && !window.confirm('A conta está vazia. Enviar as tarefas, notas e logs deste aparelho para ela?')) {
       setAuthMessage('Nada foi enviado. Seus dados continuam neste aparelho.'); return false;
     }
     tasks=mergeById(localTasks,remoteTasks).map(normalizeTask).filter(Boolean);
     notes=mergeById(localNotes,remoteNotes).map(normalizeNote).filter(Boolean);
+    logs=mergeById(localLogs,remoteLogs).map(normalizeLog).filter(Boolean);
     localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
     localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
+    localStorage.setItem(LOGS_KEY,JSON.stringify(logs));
     const synced=await syncCloudAndWait();
     renderAll(); createAutomaticBackup(false); updateAuthUI();
     return synced;
@@ -955,9 +1028,11 @@
         const tagRows=tags.map(tagToRow);
         const taskRows=tasks.map(taskToRow);
         const noteRows=notes.map(noteToRow);
+        const logRows=logs.map(logToRow);
         if (tagRows.length) await cloudRequest('nmm_tags?on_conflict=owner_id,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(tagRows)});
         if (taskRows.length) await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});
         if (noteRows.length) await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});
+        if (logRows.length) await cloudRequest('nmm_logs?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(logRows)});
         syncStatus=`Sincronizado · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
         updateAuthUI();
       } while (syncQueued);
@@ -1016,8 +1091,8 @@
     catch { setAuthMessage('Não consegui atualizar agora; seus dados locais foram mantidos.',true); return false; }
     finally { authBusy=false; updateAuthUI(); }
   }
-  async function refreshAndSync() {
-    const button=$('refreshSyncBtn');
+  async function refreshAndSync(event) {
+    const button=event?.currentTarget||$('refreshSyncBtn');
     if(button.disabled)return;
     button.disabled=true;button.setAttribute('aria-busy','true');
     if(!session?.user?.id){showToast('Entre na conta para sincronizar. Atualizando…');setTimeout(()=>window.location.reload(),1200);return;}
@@ -1036,7 +1111,7 @@
     finally { authBusy=false; updateAuthUI(); }
   }
   function automaticBackupSnapshot() {
-    return {format:'tnm-weekly-autobackup-v1',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),tags:tags.filter(tag=>!tag.deletedAt)};
+    return {format:'tnm-weekly-autobackup-v2',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),tags:tags.filter(tag=>!tag.deletedAt)};
   }
   function updateAutoBackupStatus(timestamp='') {
     const node=$('autoBackupStatus');
@@ -1069,7 +1144,7 @@
     });
   }
   function exportBackup() {
-    const data={format:'tnm-weekly-backup-v2',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),tags:tags.filter(tag=>!tag.deletedAt)};
+    const data={format:'tnm-weekly-backup-v3',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),tags:tags.filter(tag=>!tag.deletedAt)};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const link=document.createElement('a'); link.href=url; link.download=`tnm-backup-${todayKey()}.json`; link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000); $('backupMessage').textContent='Backup exportado.';
@@ -1088,8 +1163,6 @@
     const button=event.target.closest('button[data-page]'); if (button) setPage(button.dataset.page);
   });
   document.addEventListener('click',event=>{const action=event.target.closest('[data-home-action]');if(action){openHomeAction(action.dataset.homeAction);return;}if(event.target.closest('[data-open-tasks]'))setPage('tasks');});
-  $('quickAddBtn').addEventListener('click',()=>{setPage('tasks');openTaskDialog();});
-  $('quickAddNoteBtn').addEventListener('click',()=>openNoteDialog());
   $('taskForm').addEventListener('submit',saveTaskFromForm);
   $('taskForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'task'));
   $('taskForm').addEventListener('input',()=>{taskDialogDirty=true;});
@@ -1114,7 +1187,7 @@
   }
   $('prevWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,-7)));
   $('nextWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,7)));
-  $('todayBtn').addEventListener('click',()=>setWeek(todayKey()));
+  $('todayBtn').addEventListener('click',jumpToCurrentWeek);
   $('planningBtn').addEventListener('click',()=>togglePlannerSection('planning'));
   $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
   $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=6;renderTasks();});
@@ -1136,11 +1209,19 @@
   $('noteLinkToggle').addEventListener('click',()=>toggleLinkAttachment('note'));
   $('noteLinkRemove').addEventListener('click',()=>clearLinkAttachment('note'));
   $('closeNoteDialog').addEventListener('click',closeNoteDialogSafely);
+  $('deleteNoteBtn').addEventListener('click',softDeleteNoteFromDialog);
   $('loginBtn').addEventListener('click',signIn);
   $('signupBtn').addEventListener('click',signUp);
   $('logoutBtn').addEventListener('click',signOut);
   $('syncNowBtn').addEventListener('click',syncNow);
-  $('refreshSyncBtn').addEventListener('click',refreshAndSync);
+  document.querySelectorAll('.refresh-sync-action').forEach(button=>button.addEventListener('click',refreshAndSync));
+  $('headerSettingsBtn').addEventListener('click',()=>setPage('settings'));
+  document.querySelectorAll('[data-zoom-action]').forEach(button=>button.addEventListener('click',()=>changeZoom(button.dataset.zoomAction)));
+  $('logForm').addEventListener('submit',saveLogFromForm);
+  document.querySelectorAll('[data-log-range]').forEach(button=>button.addEventListener('click',()=>setLogRange(button.dataset.logRange)));
+  $('notesDockAddBtn').addEventListener('click',()=>openNoteDialog());
+  $('scrollNotesTopBtn').addEventListener('click',()=>$('notesPage').scrollTo({top:0,behavior:'smooth'}));
+  $('scrollNotesBottomBtn').addEventListener('click',()=>$('notesPage').scrollTo({top:$('notesPage').scrollHeight,behavior:'smooth'}));
   $('exportBtn').addEventListener('click',exportBackup);
   document.addEventListener('dragend',()=>{handleDragEnd();noteDragId='';clearDropStyles();});
   document.addEventListener('pointerdown',startPointerDrag,true);
@@ -1172,5 +1253,5 @@
   window.addEventListener('resize',()=>updateNavIndicator());
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud(); });
 
-  renderAll(); setPage(currentPage); startAutomaticBackup(); void initializeAuth();
+  applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); void initializeAuth();
 })();

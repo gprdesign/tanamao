@@ -382,8 +382,8 @@
     dialog[open] { animation:dialog-in .22s cubic-bezier(.22,.75,.25,1) both; }
     @keyframes dialog-in { from { opacity:0; transform:translateY(8px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
     /* Interface ampliada para leitura confortável em celular e tablet. */
-    html { font-size:19px; }
-    body { font-size:17px; }
+    html { font-size:calc(18px * var(--app-zoom,1)); }
+    body { font-size:calc(16px * var(--app-zoom,1)); }
     .wrap { padding-top:12px; padding-right:16px; padding-left:16px; padding-bottom:calc(92px + env(safe-area-inset-bottom,0px)); }
     .app-header { margin-bottom:13px; }
     .brand-icon { width:48px; height:48px; border-radius:14px; }
@@ -649,8 +649,8 @@
       .note-card .note-touch-handle { display:grid; position:relative; right:auto; bottom:auto; z-index:1; width:36px; height:36px; margin:7px 0 0 auto; place-items:center; padding:0; border:1px solid #52617b; border-radius:10px; background:rgba(16,23,41,.94); color:#cbd5ea; font-size:1rem; touch-action:none; }
     }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
-    .day-task-list .task-card--compact { padding-top:2px; padding-bottom:2px; }
-    .day-task-list .task-card--compact .task-touch-handle { height:24px; }
+    .day-task-list .task-card--compact { padding-top:1px; padding-bottom:1px; }
+    .day-task-list .task-card--compact .task-touch-handle { height:22px; }
     .task-actions { align-items:center; justify-content:flex-end; gap:2px; }
     .task-actions .task-menu { align-self:center; }
     .task-card--compact .task-touch-handle,.task-card--tile .task-touch-handle { width:24px; height:26px; margin:0; border-radius:6px; }
@@ -660,17 +660,53 @@
     .refresh-sync-btn span { display:block; }
     .refresh-sync-btn[aria-busy="true"] span { animation:refresh-rotate .8s linear infinite; }
     @keyframes refresh-rotate { to { transform:rotate(360deg); } }
+    .note-list { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; columns:unset; column-gap:unset; }
+    .home-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .home-stat-overdue { background:rgba(169,73,88,.8); }
+    .home-stat-today { background:rgba(77,112,178,.8); }
+    .home-stat-unplanned { background:rgba(153,111,44,.8); }
+    .zoom-controls { display:flex; flex:none; align-items:center; gap:3px; }
+    .zoom-controls button { display:grid; place-items:center; width:30px; height:30px; padding:0; border:1px solid #53627e; border-radius:8px; background:#19253b; color:var(--text); font-size:.9rem; font-weight:800; }
+    .zoom-controls span { min-width:38px; color:var(--muted); font-size:.62rem; text-align:center; }
+    .header-settings-btn { width:40px; padding:5px !important; font-size:1rem !important; }
+    .dialog-save-actions { display:flex; justify-content:space-between; align-items:center; }
+    .btn.danger { border-color:#a94958; color:#ffc5cb; }
+    .sub-dock { z-index:19; bottom:calc(82px + env(safe-area-inset-bottom,0px)); width:min(640px,calc(100% - 20px)); min-height:48px; padding:5px 7px; gap:4px; justify-content:space-between; }
+    body:not([data-page="tasks"]) #weekDock { display:none !important; }
+    body:not([data-page="notes"]) #notesDock { display:none !important; }
+    body[data-page="notes"] #notesDock { display:flex !important; }
+    .subdock-item { display:grid; flex:none; place-items:center; min-width:32px; min-height:36px; padding:5px 7px; border:1px solid #53627e; border-radius:10px; background:rgba(25,37,59,.94); color:var(--text); font-size:.62rem; font-weight:850; white-space:nowrap; }
+    .subdock-item:active { transform:scale(.97); }
+    .subdock-sync { min-width:75px; border-color:#8299c6; background:rgba(35,51,78,.96); }
+    .subdock-add-note { border-color:#c99626; background:rgba(194,145,35,.88); color:#18130a; }
+    #weekLabel { min-width:0; flex:1; font-size:.64rem; text-align:center; }
+    #todayBtn { min-width:88px; border-color:#789cf0; color:#dce6ff; }
+    .day-column.today-flash { animation:today-flash .45s ease-in-out 2; }
+    @keyframes today-flash { 50% { border-color:#a3c0ff; box-shadow:0 0 0 2px #8fb2ff66,0 0 18px #769fff55; } }
+    body[data-page="tasks"] .refresh-sync-btn,body[data-page="notes"] .refresh-sync-btn { display:none !important; }
+    .refresh-sync-btn { bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
+    .log-form { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:7px; margin-bottom:10px; }
+    .log-form textarea { min-height:54px; max-height:130px; margin:0; }
+    .log-ranges { display:flex; gap:5px; margin-bottom:10px; overflow-x:auto; }
+    .log-ranges button { flex:none; padding:5px 8px; border:1px solid #52617b; border-radius:999px; background:#111827; color:var(--muted); font-size:.62rem; font-weight:800; }
+    .log-ranges button[aria-pressed="true"] { border-color:var(--accent); background:#243452; color:var(--text); }
+    .logs-list { display:grid; align-content:start; gap:6px; }
+    .log-entry { min-width:0; padding:8px 10px; border-left:3px solid #718fcd; border-radius:7px 10px 10px 7px; background:rgba(20,27,45,.72); }
+    .log-entry p { margin:0; overflow-wrap:anywhere; font-size:.72rem; line-height:1.35; }
+    .settings-stack { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:10px; }
+    .settings-stack > :last-child { grid-column:1 / -1; }
+    @media(max-width:560px) { .settings-stack { grid-template-columns:1fr; } .settings-stack > :last-child { grid-column:auto; } }
   </style>
 </head>
 <body>
   <main class="wrap">
     <header class="app-header">
       <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div><h1>Tá na mão!</h1><p>Seu planner semanal</p></div></div>
-      <div class="header-actions"><button class="btn quick-note" id="quickAddNoteBtn" type="button">＋ Nota</button><button class="btn quick-task" id="quickAddBtn" type="button">＋ Tarefa</button></div>
+      <div class="header-actions"><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
     </header>
 
     <section id="homePage" class="page active" aria-label="Início">
-      <h2 class="home-week-title">MINHA SEMANA</h2>
+      <div class="home-heading"><h2 class="home-week-title">MINHA SEMANA</h2><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <section class="home-task-section home-events-section" aria-label="Próximos eventos"><h3>Próximos eventos</h3><div id="homeUpcomingEventsList" class="home-section-list"></div></section>
       <div class="home-stats" aria-label="Atalhos da semana">
         <button class="home-stat home-stat-overdue" type="button" data-home-action="overdue"><span>Atrasado</span><strong id="homeOverdueCount">0</strong></button>
@@ -687,7 +723,7 @@
     </section>
 
     <section id="tasksPage" class="page" aria-label="Planner de tarefas">
-      <div class="page-heading"><div><h2>PLANNER DE TAREFAS</h2></div><div class="filter-action"><span class="filter-summary" id="activeFilterSummaryTasks" data-active-filter-summary>TODAS</span><button class="btn filter-open" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button></div></div>
+      <div class="page-heading"><div><h2>PLANNER</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <div class="planner-section-buttons">
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
         <button class="planner-section-btn completed-box" id="completedBtn" type="button" aria-expanded="false" aria-controls="completedPanel">Concluídas <span id="completedCount">0</span></button>
@@ -697,13 +733,20 @@
       <div class="week-grid" id="weekGrid" aria-label="Semana"></div>
     </section>
 
+    <section id="logPage" class="page" aria-label="Log de eventos">
+      <div class="page-heading"><div><h2>LOG DE EVENTOS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <form id="logForm" class="log-form"><textarea id="logText" maxlength="20000" rows="2" required aria-label="Texto do registro" placeholder="Escreva um registro…"></textarea><button class="btn primary" type="submit">REGISTRAR</button></form>
+      <div class="log-ranges" role="group" aria-label="Período do log"><button type="button" data-log-range="7d" aria-pressed="true">7 DIAS</button><button type="button" data-log-range="30d" aria-pressed="false">30 DIAS</button><button type="button" data-log-range="12w" aria-pressed="false">12 SEMANAS</button><button type="button" data-log-range="all" aria-pressed="false">TUDO</button></div>
+      <div id="logsList" class="logs-list" aria-live="polite"></div>
+    </section>
+
     <section id="notesPage" class="page" aria-label="Notas">
-      <div class="page-heading"><div><h2>Notas</h2></div><div class="filter-action"><span class="filter-summary" id="activeFilterSummaryNotes" data-active-filter-summary>TODAS</span><button class="btn filter-open" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button></div></div>
+      <div class="page-heading"><div><h2>Notas</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <div class="note-list" id="notesList"></div>
     </section>
 
     <section id="settingsPage" class="page" aria-label="Configurações">
-      <div class="page-heading"><div><p class="eyebrow">PREFERÊNCIAS</p><h2>Configurações</h2></div></div>
+      <div class="page-heading"><div><p class="eyebrow">PREFERÊNCIAS</p><h2>Configurações</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <div class="settings-stack">
         <section class="panel" aria-label="Login e sincronização"><h3>Login e sincronização</h3><p class="muted" id="authStatus">Modo local</p>
           <div id="authFields"><div class="field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Mínimo de 8 caracteres"></div></div>
@@ -714,30 +757,31 @@
     </section>
   </main>
 
-  <nav class="week-dock" id="weekDock" aria-label="Navegar entre semanas"><button class="btn ghost" id="prevWeekBtn" type="button" aria-label="Semana anterior">‹</button><strong id="weekLabel" aria-live="polite"></strong><button class="btn ghost" id="todayBtn" type="button">HOJE</button><button class="btn ghost" id="nextWeekBtn" type="button" aria-label="Próxima semana">›</button></nav>
+  <nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior">‹</button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="todayBtn" type="button">SEMANA ATUAL</button><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana">›</button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav>
+  <nav class="week-dock sub-dock notes-dock" id="notesDock" aria-label="Ações das notas"><button class="subdock-item" id="scrollNotesBottomBtn" type="button">ROLAR ↓</button><button class="subdock-item" id="scrollNotesTopBtn" type="button">ROLAR ↑</button><button class="subdock-item subdock-add-note" id="notesDockAddBtn" type="button">＋ NOTA</button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav>
 
-  <button class="refresh-sync-btn" id="refreshSyncBtn" type="button" aria-label="Atualizar página e sincronizar conta" title="Atualizar e sincronizar"><span aria-hidden="true">↻</span></button>
+  <button class="refresh-sync-btn refresh-sync-action" id="refreshSyncBtn" type="button" aria-label="Atualizar página e sincronizar conta" title="Atualizar e sincronizar"><span aria-hidden="true">↻</span></button>
 
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
     <button class="nav-btn" type="button" data-page="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span>Home</span></button>
     <button class="nav-btn" type="button" data-page="tasks"><span class="nav-icon" aria-hidden="true">▦</span><span>Tarefas</span></button>
+    <button class="nav-btn" type="button" data-page="log"><span class="nav-icon" aria-hidden="true">◷</span><span>Log</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true">▤</span><span>Notas</span></button>
-    <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>Configs</span></button>
   </nav>
 
-  <dialog id="taskDialog" class="app-dialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><div class="field"><label for="taskContent">Conteúdo <span class="muted">(opcional)</span></label><textarea id="taskContent" maxlength="20000" placeholder="Detalhes da tarefa…"></textarea></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="taskLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="taskLinkWrap" hidden><div><label for="taskLink">Endereço do link</label><input id="taskLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="taskLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Sem data, fica em Planejar. Enter no título vai para Conteúdo; Enter no conteúdo cria linha. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar</button><button class="btn" id="deleteTaskBtn" type="button">Excluir</button></div></form></dialog>
+  <dialog id="taskDialog" class="app-dialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><div class="field"><label for="taskContent">Conteúdo <span class="muted">(opcional)</span></label><textarea id="taskContent" maxlength="20000" placeholder="Detalhes da tarefa…"></textarea></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="taskLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="taskLinkWrap" hidden><div><label for="taskLink">Endereço do link</label><input id="taskLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="taskLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Sem data, fica em Planejar. Enter no título vai para Conteúdo; Enter no conteúdo cria linha. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions dialog-save-actions"><button class="btn danger" id="deleteTaskBtn" type="button">Excluir</button><button class="btn primary" type="submit">Salvar</button></div></form></dialog>
 
   <dialog id="filterDialog" class="app-dialog"><div class="dialog-head"><h2>Filtros</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione uma ou mais tags. Aparecem tarefas e notas que tenham qualquer tag selecionada.</p><div class="filter-tag-list" id="filterTagList"></div><button class="btn small" id="clearFiltersBtn" type="button">Limpar seleção</button><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
 
   <dialog id="dayDialog" class="app-dialog"><div class="dialog-head"><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><div class="form-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
 
 
-  <dialog id="noteDialog" class="app-dialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título (opcional)</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><label for="noteContent">Conteúdo (opcional)</label><textarea id="noteContent" maxlength="20000" placeholder="Escreva sua nota…"></textarea></div><div class="field"><span class="field-label">Tags</span><div class="note-tag-list" id="noteTagChoices"></div><button class="btn small note-new-tag-toggle" id="noteNewTagToggle" type="button" aria-expanded="false">＋ Nova tag</button><div class="note-new-tag-row" id="noteNewTagRow" hidden><input id="noteNewTagName" maxlength="32" placeholder="Nome da tag"><button class="btn primary small" id="noteNewTagAdd" type="button">Criar tag</button></div><p class="tag-status" id="noteTagMessage" aria-live="polite"></p></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="noteLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="noteLinkWrap" hidden><div><label for="noteLink">Endereço do link</label><input id="noteLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="noteLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Preencha título, conteúdo ou os dois. Enter no título vai para Conteúdo; Enter no conteúdo cria linha. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions"><button class="btn primary" type="submit">Salvar nota</button></div></form></dialog>
+  <dialog id="noteDialog" class="app-dialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título (opcional)</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><label for="noteContent">Conteúdo (opcional)</label><textarea id="noteContent" maxlength="20000" placeholder="Escreva sua nota…"></textarea></div><div class="field"><span class="field-label">Tags</span><div class="note-tag-list" id="noteTagChoices"></div><button class="btn small note-new-tag-toggle" id="noteNewTagToggle" type="button" aria-expanded="false">＋ Nova tag</button><div class="note-new-tag-row" id="noteNewTagRow" hidden><input id="noteNewTagName" maxlength="32" placeholder="Nome da tag"><button class="btn primary small" id="noteNewTagAdd" type="button">Criar tag</button></div><p class="tag-status" id="noteTagMessage" aria-live="polite"></p></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="noteLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="noteLinkWrap" hidden><div><label for="noteLink">Endereço do link</label><input id="noteLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="noteLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Preencha título, conteúdo ou os dois. Enter no título vai para Conteúdo; Enter no conteúdo cria linha. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions dialog-save-actions"><button class="btn danger hidden" id="deleteNoteBtn" type="button">Excluir</button><button class="btn primary" type="submit">Salvar nota</button></div></form></dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=63" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=63',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=64" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=64',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
