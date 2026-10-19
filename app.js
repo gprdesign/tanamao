@@ -398,6 +398,10 @@
     const dateDiff=String(a.executionDate || '9999-12-31').localeCompare(String(b.executionDate || '9999-12-31'));
     return dateDiff || Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.title).localeCompare(String(b.title),'pt-BR');
   }
+  function sortOverdueTasks(list) {
+    const ranks=new Map(userSettings.overdueTaskOrder.map((id,index)=>[id,index]));
+    return list.sort((a,b)=>{const ai=ranks.get(a.id),bi=ranks.get(b.id);if(ai!==undefined&&bi!==undefined)return ai-bi;if(ai!==undefined)return -1;if(bi!==undefined)return 1;return taskOrder(a,b);});
+  }
   function noteOrder(a,b) { return Number(Boolean(b.isPinned))-Number(Boolean(a.isPinned)) || Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')); }
   function addNoteTagToSelection(tagId) {
     const selected=Array.from($('noteTagChoices').querySelectorAll('input:checked')).map(input=>input.value);
@@ -500,7 +504,7 @@
   }
   function renderTasks() {
     const all=visibleTasks(), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
-    const overdue=weekStart>=currentWeek?open.filter(task=>task.executionDate&&task.executionDate<currentWeek).sort(taskOrder):[];
+    const overdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
     $('weekLabel').textContent=formatWeekRange(weekStart);
     const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
     for (let i=0;i<7;i++) {
@@ -511,7 +515,7 @@
       const dayKey=cell.kind==='overdue'?'overdue':cell.date;
       const completed=all.filter(task=>task.completedAt&&(cell.kind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:task.executionDate===cell.date));
       const label=cell.kind==='overdue'?'ATRASADO':cell.title, dateText=cell.date?formatDate(cell.date,{day:'2-digit',month:'2-digit'}):'';
-      const cards=cell.tasks.map(task=>taskCard(task,{compact:true,late:Boolean(task.executionDate&&task.executionDate<todayKey()),linked:cell.kind==='overdue',draggable:cell.kind!=='overdue'})).join('');
+      const cards=cell.tasks.map(task=>taskCard(task,{compact:true,late:Boolean(task.executionDate&&task.executionDate<todayKey()),linked:cell.kind==='overdue',draggable:true})).join('');
       const empty=cell.kind==='overdue'?'Nada atrasado':'Sem tarefas';
       const extra=completed.length?`${completed.length} concluídas`:'';
       return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div><div class="day-task-list" data-day-drop="${cell.date||''}">${cards||`<div class="day-empty">${empty}</div>`}</div>${extra?`<div class="day-extra-count">${escapeHTML(extra)}</div>`:''}</section>`;
@@ -726,7 +730,7 @@
     const all=visibleTasks(),currentWeek=startOfWeek(todayKey()),today=todayKey();
     const inDay=all.filter(task=>activeDayKind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:activeDayKind==='all-overdue'?task.executionDate&&task.executionDate<today:task.executionDate===activeDayDate);
     const open=inDay.filter(task=>!task.completedAt),completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
-    if(activeDayKind==='all-overdue'&&userSettings.overdueTaskOrder.length){const ranks=new Map(userSettings.overdueTaskOrder.map((id,index)=>[id,index]));open.sort((a,b)=>{const ai=ranks.get(a.id),bi=ranks.get(b.id);if(ai!==undefined&&bi!==undefined)return ai-bi;if(ai!==undefined)return -1;if(bi!==undefined)return 1;return taskOrder(a,b);});}else open.sort(taskOrder);
+    if(activeDayKind==='all-overdue')sortOverdueTasks(open);else open.sort(taskOrder);
     const lateMode=activeDayKind==='overdue'||activeDayKind==='all-overdue';
     const groups=[open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode})).join(''):'<div class="empty">Sem tarefas em aberto.</div>'];
     if(completed.length)groups.push(`<div class="task-divider">CONCLUÍDAS</div>${completed.map(task=>taskCard(task,{canMove:false})).join('')}`);
@@ -848,9 +852,7 @@
     source.updatedAt=nowISO(); saveTasks();
   }
   function reorderOverdueTaskBefore(sourceId,targetId='') {
-    const today=todayKey(),ordered=tasks.filter(task=>!task.deletedAt&&!task.completedAt&&task.executionDate&&task.executionDate<today);
-    const ranks=new Map(userSettings.overdueTaskOrder.map((id,index)=>[id,index]));
-    ordered.sort((a,b)=>{const ai=ranks.get(a.id),bi=ranks.get(b.id);if(ai!==undefined&&bi!==undefined)return ai-bi;if(ai!==undefined)return -1;if(bi!==undefined)return 1;return taskOrder(a,b);});
+    const today=todayKey(),ordered=sortOverdueTasks(tasks.filter(task=>!task.deletedAt&&!task.completedAt&&task.executionDate&&task.executionDate<today));
     const from=ordered.findIndex(task=>task.id===String(sourceId));if(from<0)return;
     const [source]=ordered.splice(from,1),to=targetId?ordered.findIndex(task=>task.id===String(targetId)):ordered.length;
     if(to<0)return;
@@ -936,14 +938,14 @@
   function handleDragOver(event) {
     if (!dragTaskId) return;
     const targetCard=event.target.closest('.task-card[data-task-id]');
-    const destination=event.target.closest('.day-column[data-date],#planningPanel,#dayDialogList');
+    const destination=event.target.closest('.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#dayDialogList');
     if(!targetCard&&!destination)return;
     event.preventDefault();(targetCard||destination)?.classList.add('drop-active');
   }
   function performTaskDrop(id,target) {
     if(!target)return;
-    const targetCard=target.closest('.task-card[data-task-id]'),day=target.closest('.day-column[data-date]'),planning=target.closest('#planningPanel'),dayList=target.closest('#dayDialogList');
-    if(dayList&&activeDayKind==='all-overdue')reorderOverdueTaskBefore(id,targetCard?.dataset.taskId||'');
+    const targetCard=target.closest('.task-card[data-task-id]'),day=target.closest('.day-column[data-date]'),overdueColumn=target.closest('.day-column[data-kind="overdue"]'),planning=target.closest('#planningPanel'),dayList=target.closest('#dayDialogList');
+    if(overdueColumn||dayList&&activeDayKind==='all-overdue')reorderOverdueTaskBefore(id,targetCard?.dataset.taskId||'');
     else if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
     else if(day)appendTaskToBucket(id,day.dataset.date);
     else if(planning)appendTaskToBucket(id,'');
@@ -952,7 +954,7 @@
   function handleDrop(event) {
     if(!dragTaskId)return;
     const id=dragTaskId;dragTaskId='';clearDropStyles();
-    if(!event.target.closest('.task-card[data-task-id],.day-column[data-date],#planningPanel,#dayDialogList'))return;
+    if(!event.target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#dayDialogList'))return;
     event.preventDefault();performTaskDrop(id,event.target);
   }
   function handleDragEnd() { dragTaskId=''; clearDropStyles(); }
@@ -1008,7 +1010,7 @@
   function updateDragHighlight(drag,target) {
     document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
     if(!target)return;
-    const destination=drag.kind==='task'?target.closest('.task-card[data-task-id],.day-column[data-date],#planningPanel,#dayDialogList'):target.closest('.note-card[data-note-id]');
+    const destination=drag.kind==='task'?target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#dayDialogList'):target.closest('.note-card[data-note-id]');
     if(destination&&destination!==drag.card)destination.classList.add('drop-active');
   }
   function finishDragAt(drag,target,cancel=false) {
