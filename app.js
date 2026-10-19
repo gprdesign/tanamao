@@ -188,7 +188,7 @@
   function normalizeUserSettings(value) {
     const source=value&&typeof value==='object'?value:{};
     const times=Array.isArray(source.summaryTimes)?Array.from(new Set(source.summaryTimes.map(String).filter(time=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time)))):[];
-    return {summaryTimes:times.sort(),calendarIds:Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[],nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    return {summaryTimes:times.sort(),calendarIds:Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[],overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -725,9 +725,10 @@
   function renderDayDialog() {
     const all=visibleTasks(),currentWeek=startOfWeek(todayKey()),today=todayKey();
     const inDay=all.filter(task=>activeDayKind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:activeDayKind==='all-overdue'?task.executionDate&&task.executionDate<today:task.executionDate===activeDayDate);
-    const open=inDay.filter(task=>!task.completedAt).sort(taskOrder),completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    const open=inDay.filter(task=>!task.completedAt),completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    if(activeDayKind==='all-overdue'&&userSettings.overdueTaskOrder.length){const ranks=new Map(userSettings.overdueTaskOrder.map((id,index)=>[id,index]));open.sort((a,b)=>{const ai=ranks.get(a.id),bi=ranks.get(b.id);if(ai!==undefined&&bi!==undefined)return ai-bi;if(ai!==undefined)return -1;if(bi!==undefined)return 1;return taskOrder(a,b);});}else open.sort(taskOrder);
     const lateMode=activeDayKind==='overdue'||activeDayKind==='all-overdue';
-    const groups=[open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:!lateMode})).join(''):'<div class="empty">Sem tarefas em aberto.</div>'];
+    const groups=[open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode})).join(''):'<div class="empty">Sem tarefas em aberto.</div>'];
     if(completed.length)groups.push(`<div class="task-divider">CONCLUÍDAS</div>${completed.map(task=>taskCard(task,{canMove:false})).join('')}`);
     $('dayDialogList').innerHTML=groups.join('');
   }
@@ -846,6 +847,15 @@
     peers.forEach((item,i)=>{item.sortOrder=i;item.updatedAt=nowISO();});
     source.updatedAt=nowISO(); saveTasks();
   }
+  function reorderOverdueTaskBefore(sourceId,targetId='') {
+    const today=todayKey(),ordered=tasks.filter(task=>!task.deletedAt&&!task.completedAt&&task.executionDate&&task.executionDate<today);
+    const ranks=new Map(userSettings.overdueTaskOrder.map((id,index)=>[id,index]));
+    ordered.sort((a,b)=>{const ai=ranks.get(a.id),bi=ranks.get(b.id);if(ai!==undefined&&bi!==undefined)return ai-bi;if(ai!==undefined)return -1;if(bi!==undefined)return 1;return taskOrder(a,b);});
+    const from=ordered.findIndex(task=>task.id===String(sourceId));if(from<0)return;
+    const [source]=ordered.splice(from,1),to=targetId?ordered.findIndex(task=>task.id===String(targetId)):ordered.length;
+    if(to<0)return;
+    ordered.splice(to,0,source);userSettings.overdueTaskOrder=ordered.map(task=>task.id);saveUserSettings();renderDayDialog();showToast('Ordem do ATRASADO atualizada; as datas foram mantidas.');
+  }
   function appendTaskToBucket(taskId,date) {
     const task=tasks.find(item=>item.id===taskId&&!item.deletedAt&&!item.completedAt);
     if(!task||(date&&!isDateKey(date)))return;
@@ -933,7 +943,8 @@
   function performTaskDrop(id,target) {
     if(!target)return;
     const targetCard=target.closest('.task-card[data-task-id]'),day=target.closest('.day-column[data-date]'),planning=target.closest('#planningPanel'),dayList=target.closest('#dayDialogList');
-    if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
+    if(dayList&&activeDayKind==='all-overdue')reorderOverdueTaskBefore(id,targetCard?.dataset.taskId||'');
+    else if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
     else if(day)appendTaskToBucket(id,day.dataset.date);
     else if(planning)appendTaskToBucket(id,'');
     else if(dayList&&activeDayKind==='day')appendTaskToBucket(id,activeDayDate);
