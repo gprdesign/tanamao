@@ -382,8 +382,8 @@
     dialog[open] { animation:dialog-in .22s cubic-bezier(.22,.75,.25,1) both; }
     @keyframes dialog-in { from { opacity:0; transform:translateY(8px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
     /* Interface ampliada para leitura confortável em celular e tablet. */
-    html { font-size:calc(18px * var(--app-zoom,1)); }
-    body { font-size:calc(16px * var(--app-zoom,1)); }
+    html { font-size:18px; zoom:var(--app-zoom,1); }
+    body { font-size:16px; }
     .wrap { padding-top:12px; padding-right:16px; padding-left:16px; padding-bottom:calc(92px + env(safe-area-inset-bottom,0px)); }
     .app-header { margin-bottom:13px; }
     .brand-icon { width:48px; height:48px; border-radius:14px; }
@@ -564,8 +564,6 @@
     .note-card-controls { display:flex; flex:none; align-items:center; gap:3px; }
     .note-card-controls .note-menu { flex:none; }
     .note-card-controls .note-menu > summary { width:34px; height:34px; }
-    .note-pin-btn { display:grid; flex:none; place-items:center; width:34px; height:34px; padding:0; border:1px solid transparent; border-radius:9px; background:transparent; color:var(--muted); font-size:1rem; }
-    .note-pin-btn[aria-pressed="true"] { border-color:#9b7935; background:#42351d; color:#ffd166; }
     .note-card.is-pinned { border-color:#9b7935; }
     .note-link-row,.item-link { display:inline-flex; align-items:center; gap:5px; margin-top:8px; color:#a9c4ff; font-size:.78rem; font-weight:750; text-decoration:none; overflow-wrap:anywhere; }
     .item-link:hover { text-decoration:underline; }
@@ -816,7 +814,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=69" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=69',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=70" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=70',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
