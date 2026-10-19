@@ -626,6 +626,34 @@
       .week-dock #prevWeekBtn,.week-dock #nextWeekBtn { width:38px; min-width:38px; height:38px; }
       .week-dock #todayBtn { min-width:72px; }
     }
+    .task-card .task-main,.task-card .task-title-row { min-width:0; }
+    .task-card .task-title-row { align-items:center; }
+    .task-card .task-open { display:block !important; flex:1 1 0; min-width:0; width:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap !important; overflow-wrap:normal; word-break:normal; -webkit-line-clamp:unset !important; }
+    .task-card.has-reschedule { grid-template-columns:20px minmax(0,1fr) max-content; }
+    .task-card.has-reschedule .task-actions { min-width:max-content; max-width:100%; align-items:center; gap:5px; }
+    .task-card.has-reschedule .task-reschedule { min-height:32px; padding:5px 7px; font-size:.58rem; }
+    .task-touch-handle { width:24px; height:30px; color:var(--tag-color); }
+    .task-touch-handle::after { content:none !important; }
+    .task-touch-handle .drag-grip { display:block !important; color:var(--tag-color); font-size:.84rem; line-height:1; transform:none !important; white-space:nowrap; }
+    .task-card--tile .task-touch-handle { width:18px; height:26px; }
+    .task-card--tile .task-touch-handle .drag-grip { font-size:.68rem; }
+    .floating-action-menu { pointer-events:auto; touch-action:manipulation; user-select:none; }
+    .floating-action-menu .menu-action { pointer-events:auto; touch-action:manipulation; }
+    .floating-action-menu.in-dialog { position:absolute; z-index:10002; max-width:calc(100% - 16px); max-height:55dvh; overflow:auto; }
+    .note-card { padding-bottom:12px; }
+    .note-card .note-touch-handle { display:none; }
+    @media(max-width:600px) {
+      .task-card.has-reschedule { grid-template-columns:16px minmax(0,1fr) max-content; }
+      .task-card--compact.has-reschedule { grid-template-columns:14px minmax(0,1fr) max-content; }
+      .task-card.has-reschedule .task-reschedule { min-height:30px; padding:4px 6px; font-size:.54rem; }
+    }
+    @media(pointer:coarse) {
+      .task-touch-handle { width:28px; height:34px; }
+      .task-touch-handle .drag-grip { font-size:.9rem; }
+      .task-card--tile .task-touch-handle { width:18px; height:26px; }
+      .note-card { max-height:360px; padding-bottom:12px; }
+      .note-card .note-touch-handle { display:grid; position:relative; right:auto; bottom:auto; z-index:1; width:36px; height:36px; margin:7px 0 0 auto; place-items:center; padding:0; border:1px solid #52617b; border-radius:10px; background:rgba(16,23,41,.94); color:#cbd5ea; font-size:1rem; touch-action:none; }
+    }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
   </style>
 </head>
@@ -702,7 +730,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=56" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=56',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=57" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=57',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

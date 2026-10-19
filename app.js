@@ -297,7 +297,7 @@
   }
   function taskCard(task,options={}) {
     const complete=Boolean(task.completedAt), late=!complete&&(options.late ?? Boolean(task.executionDate&&task.executionDate<todayKey())), draggable=!complete&&options.draggable!==false;
-    const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':''].filter(Boolean).join(' ');
+    const classes=['task-card',complete?'completed':'',late?'is-late':'',options.showReschedule&&!complete?'has-reschedule':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':''].filter(Boolean).join(' ');
     const linked=options.linked?'task-link':'';
     const reschedule=options.showReschedule&&!complete?`<button class="task-reschedule" type="button" data-reschedule-task="${escapeHTML(task.id)}">REAGENDAR</button>`:'';
     const tag=getTag(task.tagId),taskTag=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:tagDot(task.tagId);
@@ -442,7 +442,7 @@
       const body=note.title?(note.content?`<p>${escapeHTML(note.content)}</p>`:''):`<p class="note-card-content--titleless">${escapeHTML(note.content)}</p>`;
       const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota';
       const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'';
-      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button><button class="note-pin-btn" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}" aria-label="${pinLabel}" title="${pinLabel}">📌</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-note="${id}">EDITAR</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</article>`;
+      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-pin-btn" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}" aria-label="${pinLabel}" title="${pinLabel}">📌</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-note="${id}">EDITAR</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button></article>`;
     }).join('') : '<div class="empty">Nenhuma nota para as tags selecionadas.</div>';
     renderFilterButton(); renderDialogLists();
   }
@@ -585,18 +585,15 @@
   }
   function closeFloatingActionMenu() {
     if(!floatingActionMenu)return;
-    try{floatingActionMenu.hidePopover?.();}catch{}
     floatingActionMenu.remove();floatingActionMenu=null;
   }
   function openFloatingActionMenu(details) {
     closeFloatingActionMenu();
     const source=details.querySelector('.task-menu-popover,.note-menu-popover'),summary=details.querySelector('summary');
     if(!source||!summary)return;
-    const rect=summary.getBoundingClientRect(),menu=document.createElement('div');
-    menu.className='floating-action-menu';menu.innerHTML=source.innerHTML;menu.setAttribute('role','menu');
-    const usePopover=typeof menu.showPopover==='function';
-    if(usePopover){menu.setAttribute('popover','manual');document.body.append(menu);try{menu.showPopover();}catch{menu.remove();menu.removeAttribute('popover');(details.closest('dialog[open]')||document.body).append(menu);}}
-    else (details.closest('dialog[open]')||document.body).append(menu);
+    const rect=summary.getBoundingClientRect(),host=details.closest('dialog[open]'),menu=document.createElement('div');
+    menu.className=`floating-action-menu${host?' in-dialog':''}`;menu.innerHTML=source.innerHTML;menu.setAttribute('role','menu');
+    (host||document.body).append(menu);
     menu.addEventListener('click',event=>{
       const action=event.target.closest('button'); if(!action)return;
       event.preventDefault();event.stopPropagation();
@@ -605,10 +602,20 @@
       closeFloatingActionMenu();
     });
     const width=menu.offsetWidth,height=menu.offsetHeight;
-    const left=Math.max(8,Math.min(rect.right-width,window.innerWidth-width-8));
-    let top=rect.bottom+5; if(top+height>window.innerHeight-8)top=rect.top-height-5; top=Math.max(8,Math.min(top,window.innerHeight-height-8));
-    menu.style.left=`${left}px`;menu.style.top=`${top}px`;floatingActionMenu=menu;
-    requestAnimationFrame(()=>menu.querySelector('button')?.focus());
+    if(host){
+      const box=host.getBoundingClientRect(),maxLeft=Math.max(8,host.clientWidth-width-8),maxTop=Math.max(8,host.clientHeight-height-8);
+      let left=rect.right-box.left-host.clientLeft-width;
+      if(left<8)left=rect.left-box.left-host.clientLeft;
+      let top=rect.bottom-box.top-host.clientTop+host.scrollTop+5;
+      if(top>maxTop)top=rect.top-box.top-host.clientTop+host.scrollTop-height-5;
+      menu.style.left=`${Math.max(8,Math.min(left,maxLeft))+host.scrollLeft}px`;
+      menu.style.top=`${Math.max(8,Math.min(top,maxTop))+host.scrollTop}px`;
+    }else{
+      const left=Math.max(8,Math.min(rect.right-width,window.innerWidth-width-8));
+      let top=rect.bottom+5;if(top+height>window.innerHeight-8)top=rect.top-height-5;
+      menu.style.left=`${left}px`;menu.style.top=`${Math.max(8,Math.min(top,window.innerHeight-height-8))}px`;
+    }
+    floatingActionMenu=menu;requestAnimationFrame(()=>menu.querySelector('button')?.focus());
   }
   function captureActionMenuClick(event) {
     const summary=event.target.closest('.task-menu>summary,.note-menu>summary');
@@ -697,34 +704,56 @@
     const target=event.target.closest('.note-card[data-note-id]'), source=noteDragId; noteDragId=''; clearDropStyles();
     if(target){event.preventDefault();reorderNoteBefore(source,target.dataset.noteId);}
   }
-  function pointerDropTarget(event){return document.elementFromPoint(event.clientX,event.clientY)||event.target;}
+  function updateDragHighlight(drag,target) {
+    document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
+    if(!target)return;
+    const destination=drag.kind==='task'?target.closest('.task-card[data-task-id],.day-column[data-date],#planningPanel,#dayDialogList'):target.closest('.note-card[data-note-id]');
+    if(destination&&destination!==drag.card)destination.classList.add('drop-active');
+  }
+  function finishDragAt(drag,target,cancel=false) {
+    if(pointerDrag!==drag)return;
+    pointerDrag=null;drag.card.classList.remove('is-dragging');
+    if(drag.wasDraggable!==null)drag.card.setAttribute('draggable',drag.wasDraggable);
+    document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
+    if(cancel||!target)return;
+    if(drag.kind==='task')performTaskDrop(drag.id,target);
+    else {const note=target.closest('.note-card[data-note-id]');if(note)reorderNoteBefore(drag.id,note.dataset.noteId);}
+  }
   function startPointerDrag(event) {
-    if(event.pointerType==='mouse'||event.button!==0)return;
+    if(event.pointerType==='mouse'||event.pointerType==='touch'||event.button!==0||pointerDrag)return;
     const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]');
     if(!taskHandle&&!noteHandle)return;
     const kind=taskHandle?'task':'note',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle.closest('.note-card[data-note-id]');
     if(!card)return;
-    event.preventDefault();
-    pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle.dataset.touchDragNote,pointerId:event.pointerId,card,wasDraggable:card.getAttribute('draggable')};
-    card.setAttribute('draggable','false');card.classList.add('is-dragging');
-    try{event.target.setPointerCapture(event.pointerId);}catch{}
+    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle.dataset.touchDragNote,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
+    card.setAttribute('draggable','false');card.classList.add('is-dragging');try{event.target.setPointerCapture(event.pointerId);}catch{}
   }
   function movePointerDrag(event) {
-    if(!pointerDrag||event.pointerId!==pointerDrag.pointerId)return;
-    event.preventDefault();document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
-    const target=pointerDropTarget(event);let destination=null;
-    if(pointerDrag.kind==='task')destination=target.closest('.task-card[data-task-id],.day-column[data-date],#planningPanel,#dayDialogList');
-    else destination=target.closest('.note-card[data-note-id]');
-    if(destination&&destination!==pointerDrag.card)destination.classList.add('drop-active');
+    if(!pointerDrag||pointerDrag.source!=='pointer'||event.pointerId!==pointerDrag.pointerId)return;
+    event.preventDefault();updateDragHighlight(pointerDrag,document.elementFromPoint(event.clientX,event.clientY));
   }
   function finishPointerDrag(event,cancel=false) {
-    if(!pointerDrag||event.pointerId!==pointerDrag.pointerId)return;
-    const drag=pointerDrag,target=pointerDropTarget(event);pointerDrag=null;
-    drag.card.classList.remove('is-dragging');if(drag.wasDraggable!==null)drag.card.setAttribute('draggable',drag.wasDraggable);
-    document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
-    if(cancel)return;
-    if(drag.kind==='task')performTaskDrop(drag.id,target);
-    else {const note=target.closest('.note-card[data-note-id]');if(note)reorderNoteBefore(drag.id,note.dataset.noteId);}
+    if(!pointerDrag||pointerDrag.source!=='pointer'||event.pointerId!==pointerDrag.pointerId)return;
+    finishDragAt(pointerDrag,document.elementFromPoint(event.clientX,event.clientY),cancel);
+  }
+  function startTouchDrag(event) {
+    if(pointerDrag)return;
+    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),touch=event.changedTouches?.[0];
+    if((!taskHandle&&!noteHandle)||!touch)return;
+    const kind=taskHandle?'task':'note',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle.closest('.note-card[data-note-id]');
+    if(!card)return;
+    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle.dataset.touchDragNote,touchId:touch.identifier,source:'touch',card,wasDraggable:card.getAttribute('draggable')};
+    card.setAttribute('draggable','false');card.classList.add('is-dragging');
+  }
+  function moveTouchDrag(event) {
+    if(!pointerDrag||pointerDrag.source!=='touch')return;
+    const touch=Array.from(event.changedTouches||[]).find(item=>item.identifier===pointerDrag.touchId)||Array.from(event.touches||[]).find(item=>item.identifier===pointerDrag.touchId);
+    if(!touch)return;event.preventDefault();updateDragHighlight(pointerDrag,document.elementFromPoint(touch.clientX,touch.clientY));
+  }
+  function finishTouchDrag(event,cancel=false) {
+    if(!pointerDrag||pointerDrag.source!=='touch')return;
+    const drag=pointerDrag,touch=Array.from(event.changedTouches||[]).find(item=>item.identifier===drag.touchId);
+    finishDragAt(drag,touch?document.elementFromPoint(touch.clientX,touch.clientY):null,cancel);
   }
   function renderNoteTagChoices(selected=[]) {
     $('noteTagChoices').innerHTML=tags.filter(tag=>!tag.deletedAt).map(tag=>`<label class="note-tag-choice"><input type="checkbox" value="${escapeHTML(tag.id)}" ${selected.includes(tag.id)?'checked':''}><span class="tag-dot" style="--tag-color:${tag.color}" aria-hidden="true"></span><span>${escapeHTML(tag.name)}</span></label>`).join('');
@@ -1054,6 +1083,10 @@
   document.addEventListener('pointermove',movePointerDrag,{passive:false});
   document.addEventListener('pointerup',event=>finishPointerDrag(event),true);
   document.addEventListener('pointercancel',event=>finishPointerDrag(event,true),true);
+  document.addEventListener('touchstart',startTouchDrag,{capture:true,passive:false});
+  document.addEventListener('touchmove',moveTouchDrag,{capture:true,passive:false});
+  document.addEventListener('touchend',event=>finishTouchDrag(event),true);
+  document.addEventListener('touchcancel',event=>finishTouchDrag(event,true),true);
   for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom){closeFloatingActionMenu();dialog.close();}});
   document.addEventListener('click',captureActionMenuClick,true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&floatingActionMenu){event.preventDefault();event.stopPropagation();closeFloatingActionMenu();}},true);
