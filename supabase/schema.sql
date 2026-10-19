@@ -91,6 +91,28 @@ create table if not exists public.nmm_user_settings (
   planner_version smallint not null default 1 check (planner_version = 1)
 );
 
+create table if not exists public.nmm_private_vaults (
+  owner_id uuid primary key references auth.users(id) on delete cascade,
+  salt text not null,
+  verifier_iv text not null,
+  verifier_ciphertext text not null,
+  updated_at timestamptz not null default now(),
+  planner_version smallint not null default 1 check (planner_version = 1)
+);
+
+create table if not exists public.nmm_private_notes (
+  id text primary key,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  iv text not null,
+  ciphertext text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
+  planner_version smallint not null default 1 check (planner_version = 1)
+);
+
+create index if not exists nmm_private_notes_owner_updated_idx on public.nmm_private_notes(owner_id, updated_at desc);
+
 create index if not exists nmm_tasks_owner_status_idx on public.nmm_tasks(owner_id, status);
 create index if not exists nmm_tasks_owner_tag_idx on public.nmm_tasks(owner_id, tag_id);
 create index if not exists nmm_tasks_owner_execution_sort_idx on public.nmm_tasks(owner_id, execution_date, sort_order);
@@ -107,6 +129,8 @@ alter table public.nmm_task_links enable row level security;
 alter table public.nmm_notes enable row level security;
 alter table public.nmm_logs enable row level security;
 alter table public.nmm_user_settings enable row level security;
+alter table public.nmm_private_vaults enable row level security;
+alter table public.nmm_private_notes enable row level security;
 
 grant select, insert, update, delete on public.nmm_tasks to authenticated;
 grant select, insert, update, delete on public.nmm_tags to authenticated;
@@ -115,6 +139,8 @@ grant select, insert, delete on public.nmm_task_links to authenticated;
 grant select, insert, update on public.nmm_notes to authenticated;
 grant select, insert, update, delete on public.nmm_logs to authenticated;
 grant select, insert, update on public.nmm_user_settings to authenticated;
+grant select, insert, update on public.nmm_private_vaults to authenticated;
+grant select, insert, update, delete on public.nmm_private_notes to authenticated;
 
 create policy nmm_tags_owner_all on public.nmm_tags
   for all to authenticated
@@ -132,6 +158,16 @@ create policy nmm_logs_owner_all on public.nmm_logs
   with check (owner_id = (select auth.uid()));
 
 create policy nmm_user_settings_owner_all on public.nmm_user_settings
+  for all to authenticated
+  using (owner_id = (select auth.uid()))
+  with check (owner_id = (select auth.uid()));
+
+create policy nmm_private_vaults_owner_all on public.nmm_private_vaults
+  for all to authenticated
+  using (owner_id = (select auth.uid()))
+  with check (owner_id = (select auth.uid()));
+
+create policy nmm_private_notes_owner_all on public.nmm_private_notes
   for all to authenticated
   using (owner_id = (select auth.uid()))
   with check (owner_id = (select auth.uid()));

@@ -705,6 +705,21 @@
     .summary-time-chip button { width:20px; height:20px; padding:0; border:0; border-radius:50%; background:#283650; color:#ffc5cb; line-height:1; }
     .updates-list { margin:6px 0 0; padding-left:20px; color:var(--muted); font-size:.72rem; }
     .updates-list li+li { margin-top:5px; }
+    .notes-mode-tabs { display:flex; gap:6px; margin:0 0 8px; }
+    .notes-mode-tabs button { flex:1; min-height:34px; border:1px solid #53627e; border-radius:9px; background:#111827; color:var(--muted); font-size:.67rem; font-weight:850; }
+    .notes-mode-tabs button[aria-selected="true"] { border-color:#8299c6; background:#243452; color:var(--text); }
+    .private-notes-view { display:grid; align-content:start; gap:8px; padding-bottom:6px; }
+    .private-notes-view[hidden],.private-notes-view section[hidden],.private-note-editor[hidden] { display:none !important; }
+    .private-notes-toolbar { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:7px 2px; }
+    .private-notes-toolbar h3 { margin:0; font-size:.9rem; }
+    .private-notes-toolbar > div { display:flex; gap:5px; }
+    .private-note-editor,.private-notes-list { display:grid; gap:7px; }
+    .private-note-card { padding:10px; border:1px solid #7c6db0; border-radius:11px; background:rgba(37,29,58,.78); }
+    .private-note-open { display:block; width:100%; padding:0; border:0; background:none; color:var(--text); text-align:left; }
+    .private-note-card h4 { margin:0 0 4px; font-size:.82rem; }
+    .private-note-card p { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:.72rem; }
+    .private-note-actions { display:flex; justify-content:flex-end; gap:5px; margin-top:7px; }
+    .private-note-actions button { min-height:28px; padding:4px 7px; border:1px solid #665b8d; border-radius:7px; background:#30274b; color:var(--text); font-size:.62rem; }
   </style>
 </head>
 <body>
@@ -751,7 +766,14 @@
 
     <section id="notesPage" class="page" aria-label="Notas">
       <div class="page-heading"><div><h2>Notas</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
-      <div class="note-list" id="notesList"></div>
+      <div class="notes-mode-tabs" role="tablist" aria-label="Tipo de notas"><button id="regularNotesTab" type="button" data-notes-mode="public" aria-selected="true">NOTAS</button><button id="privateNotesTab" type="button" data-notes-mode="private" aria-selected="false">NOTAS PRIVADAS 🔒</button></div>
+      <div id="normalNotesView"><div class="note-list" id="notesList"></div></div>
+      <section id="privateNotesView" class="private-notes-view" hidden>
+        <section id="privateSetupPanel" class="panel" hidden><h3>Criar cofre privado</h3><p class="muted">O conteúdo será criptografado neste aparelho antes de sincronizar. Se esquecer a senha, não há recuperação.</p><form id="privateSetupForm"><div class="field"><label for="privateSetupPassword">Senha (mínimo 8 caracteres)</label><input id="privateSetupPassword" type="password" minlength="8" autocomplete="new-password" required></div><button class="btn primary" type="submit">Criar cofre</button></form></section>
+        <section id="privateUnlockPanel" class="panel" hidden><h3>Desbloquear notas privadas</h3><form id="privateUnlockForm"><div class="field"><label for="privateUnlockPassword">Senha do cofre</label><input id="privateUnlockPassword" type="password" autocomplete="current-password" required></div><button class="btn primary" type="submit">Desbloquear</button></form><p class="muted">A senha nunca é salva. Sem ela, o conteúdo criptografado não pode ser recuperado.</p></section>
+        <section id="privateUnlockedPanel" hidden><div class="private-notes-toolbar"><h3>Notas privadas</h3><div><button class="btn small" id="privateNewNoteBtn" type="button">＋ Nota privada</button><button class="btn small" id="privateLockBtn" type="button">Bloquear</button></div></div><form id="privateNoteForm" class="private-note-editor" hidden><input id="privateNoteId" type="hidden"><div class="field"><label for="privateNoteTitle">Título</label><input id="privateNoteTitle" maxlength="140"></div><div class="field"><label for="privateNoteContent">Conteúdo</label><textarea id="privateNoteContent" maxlength="20000"></textarea></div><div class="form-actions dialog-save-actions"><button class="btn" id="privateCancelEditBtn" type="button">Cancelar</button><button class="btn primary" type="submit">Salvar privada</button></div></form><div id="privateNotesList" class="private-notes-list"></div></section>
+        <p class="status-text" id="privateStatus" aria-live="polite"></p>
+      </section>
     </section>
 
     <section id="settingsPage" class="page" aria-label="Configurações">
@@ -793,7 +815,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=65" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=65',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=66" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=66',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

@@ -9,6 +9,8 @@
   const LOG_RANGE_KEY = 'tnm.weekly.logsRange.v1';
   const ZOOM_KEY = 'tnm.weekly.zoom.v1';
   const USER_SETTINGS_KEY = 'tnm.weekly.userSettings.v1';
+  const PRIVATE_VAULT_KEY = 'tnm.weekly.privateVault.v1';
+  const PRIVATE_ROWS_KEY = 'tnm.weekly.privateRows.v1';
   const SESSION_KEY = 'naMinhaMao.supabase.session.v1';
   const RESET_KEY = 'tnm.weekly.reset.v1';
   const TAGS_KEY = 'tnm.weekly.tags.v1';
@@ -41,6 +43,16 @@
   if(!Array.isArray(logs))logs=[];
   let logRange = ['7d','30d','12w','all'].includes(localStorage.getItem(LOG_RANGE_KEY))?localStorage.getItem(LOG_RANGE_KEY):'7d';
   let userSettings = normalizeUserSettings(readStored(USER_SETTINGS_KEY,{summaryTimes:['08:00'],calendarIds:[],nickname:'Gio'}));
+  let privateVault = normalizePrivateVault(readStored(PRIVATE_VAULT_KEY,null));
+  let privateCipherRows = readStored(PRIVATE_ROWS_KEY,[]);
+  if(!Array.isArray(privateCipherRows))privateCipherRows=[];
+  privateCipherRows=privateCipherRows.map(normalizePrivateRow).filter(Boolean);
+  let privateCryptoKey = null;
+  let privateNotes = [];
+  let privateNotesUnlocked = false;
+  let privateNotesMode = false;
+  let privateNoteDirty = false;
+  let privateHiddenAt = 0;
   let tags = [];
   let calendarEvents = readStored(CALENDAR_EVENTS_KEY,[]);
   if(!Array.isArray(calendarEvents))calendarEvents=[];
@@ -152,10 +164,40 @@
       deletedAt:value.deletedAt || value.deleted_at ? String(value.deletedAt || value.deleted_at) : null
     };
   }
+  function bytesToBase64(value) {
+    const bytes=value instanceof Uint8Array?value:new Uint8Array(value);let binary='';
+    for(let offset=0;offset<bytes.length;offset+=0x8000)binary+=String.fromCharCode(...bytes.subarray(offset,offset+0x8000));
+    return btoa(binary);
+  }
+  function base64ToBytes(value) { const binary=atob(String(value));return Uint8Array.from(binary,char=>char.charCodeAt(0)); }
+  async function derivePrivateKey(password,salt) {
+    if(!globalThis.crypto?.subtle)throw new Error('Este aparelho não oferece criptografia segura.');
+    const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  }
+  async function encryptPrivateValue(key,value) {
+    const iv=crypto.getRandomValues(new Uint8Array(12)),plain=new TextEncoder().encode(JSON.stringify(value));
+    const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,plain);
+    return {iv:bytesToBase64(iv),ciphertext:bytesToBase64(encrypted)};
+  }
+  async function decryptPrivateValue(key,iv,ciphertext) {
+    const raw=await crypto.subtle.decrypt({name:'AES-GCM',iv:base64ToBytes(iv)},key,base64ToBytes(ciphertext));
+    return JSON.parse(new TextDecoder().decode(raw));
+  }
   function normalizeUserSettings(value) {
     const source=value&&typeof value==='object'?value:{};
     const times=Array.isArray(source.summaryTimes)?Array.from(new Set(source.summaryTimes.map(String).filter(time=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time)))):[];
     return {summaryTimes:times.sort(),calendarIds:Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[],nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+  }
+  function normalizePrivateVault(value) {
+    if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
+    return {salt:String(value.salt),verifierIv:String(value.verifierIv),verifierCiphertext:String(value.verifierCiphertext),ownerId:String(value.ownerId||value.owner_id||''),updatedAt:String(value.updatedAt||value.updated_at||'1970-01-01T00:00:00.000Z')};
+  }
+  function normalizePrivateRow(value) {
+    if(!value||typeof value!=='object'||!value.id)return null;
+    const deletedAt=value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null;
+    if(!deletedAt&&(!value.iv||!value.ciphertext))return null;
+    return {id:String(value.id),iv:String(value.iv||''),ciphertext:String(value.ciphertext||''),createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt};
   }
   function normalizeLog(value) {
     if(!value||typeof value!=='object')return null;
@@ -195,6 +237,32 @@
     userSettings=normalizeUserSettings({...userSettings,updatedAt:nowISO()});
     localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));renderSummarySettings();
     if(schedule)scheduleSync();
+  }
+  function persistPrivateVault(schedule=true) {
+    if(privateVault)localStorage.setItem(PRIVATE_VAULT_KEY,JSON.stringify(privateVault));
+    else localStorage.removeItem(PRIVATE_VAULT_KEY);
+    localStorage.setItem(PRIVATE_ROWS_KEY,JSON.stringify(privateCipherRows));
+    if(schedule)scheduleSync();
+  }
+  function renderPrivateNotes() {
+    const setup=$('privateSetupPanel'),unlock=$('privateUnlockPanel'),opened=$('privateUnlockedPanel'),list=$('privateNotesList');
+    if(!setup||!unlock||!opened||!list)return;
+    setup.hidden=Boolean(privateVault);unlock.hidden=!privateVault||privateNotesUnlocked;opened.hidden=!privateNotesUnlocked;
+    if(!privateNotesUnlocked){list.innerHTML='';$('privateNoteForm').hidden=true;return;}
+    const ordered=privateNotes.filter(note=>!note.deletedAt).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    list.innerHTML=ordered.length?ordered.map(note=>`<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${escapeHTML(note.content)}</p></button><div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`).join(''):'<p class="empty">Nenhuma nota privada.</p>';
+  }
+  function renderNotesMode() {
+    $('normalNotesView').hidden=privateNotesMode;$('privateNotesView').hidden=!privateNotesMode;
+    $('regularNotesTab').setAttribute('aria-selected',String(!privateNotesMode));$('privateNotesTab').setAttribute('aria-selected',String(privateNotesMode));
+    const addButton=$('notesDockAddBtn');if(addButton)addButton.textContent=privateNotesMode?'＋ NOTA PRIVADA':'＋ NOTA';
+    renderPrivateNotes();
+  }
+  function setNotesMode(mode) {
+    const wantPrivate=mode==='private';
+    if(!wantPrivate&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setNotesMode('public');});return;}
+    if(!wantPrivate&&privateNotesUnlocked)void lockPrivateNotes();
+    privateNotesMode=wantPrivate;renderNotesMode();
   }
   function renderSummarySettings() {
     const list=$('summaryTimesList');if(!list)return;
@@ -295,6 +363,8 @@
   function setPage(page) {
     if (!['home','tasks','log','notes','settings'].includes(page)) return;
     const previous=currentPage, oldIndex=['home','tasks','log','notes','settings'].indexOf(previous), newIndex=['home','tasks','log','notes','settings'].indexOf(page);
+    if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
+    if(page!=='notes'&&privateNotesUnlocked)void lockPrivateNotes();
     currentPage=page;
     localStorage.setItem(PAGE_KEY,page);
     document.body.dataset.page=page;
@@ -313,7 +383,7 @@
     updateNavIndicator(page);
     if (page==='home') renderHome();
     if (page==='tasks') renderTasks();
-    if (page==='notes') renderNotes();
+    if (page==='notes') { renderNotes();renderNotesMode(); }
     if (page==='log') renderLogs();
     if (page==='settings') { updateAuthUI();renderSettings(); }
   }
@@ -465,7 +535,7 @@
     if (expandedSection==='completed') completedVisibleLimit=6;
     renderTasks();
   }
-  function renderAll() { renderTasks(); renderHome(); renderNotes(); renderLogs(); }
+  function renderAll() { renderTasks(); renderHome(); renderNotes(); renderLogs(); renderNotesMode(); }
   function homeDateLabel(date) {
     const text=formatDate(date).replace(/\./g,'');
     const title=text.charAt(0).toLocaleUpperCase('pt-BR')+text.slice(1);
@@ -522,6 +592,84 @@
   function setLogRange(range) {
     if(!['7d','30d','12w','all'].includes(range))return;
     logRange=range;localStorage.setItem(LOG_RANGE_KEY,range);renderLogs();
+  }
+  function setPrivateStatus(message,isError=false) {
+    const node=$('privateStatus');if(!node)return;
+    node.textContent=String(message||'');node.classList.toggle('error',isError);
+  }
+  async function createPrivateVault(event) {
+    event.preventDefault();const password=$('privateSetupPassword').value;
+    if(password.length<8){setPrivateStatus('Use uma senha com pelo menos 8 caracteres.',true);return;}
+    try {
+      const salt=crypto.getRandomValues(new Uint8Array(16)),key=await derivePrivateKey(password,salt),check=await encryptPrivateValue(key,'TNM private vault v1');
+      privateVault={salt:bytesToBase64(salt),verifierIv:check.iv,verifierCiphertext:check.ciphertext,ownerId:'',updatedAt:nowISO()};
+      privateCryptoKey=currentPage==='notes'&&privateNotesMode?key:null;privateNotesUnlocked=Boolean(privateCryptoKey);privateNotes=[];$('privateSetupPassword').value='';persistPrivateVault();setPrivateStatus(privateNotesUnlocked?'Cofre criado e desbloqueado neste aparelho.':'Cofre criado. Desbloqueie para acessar.');renderPrivateNotes();
+    } catch { setPrivateStatus('Não consegui criar o cofre com a criptografia deste aparelho.',true); }
+  }
+  async function loadDecryptedPrivateNotes(key=privateCryptoKey) {
+    const result=[];
+    for(const row of privateCipherRows.filter(item=>!item.deletedAt)){
+      const data=await decryptPrivateValue(key,row.iv,row.ciphertext);
+      result.push({...data,id:row.id,createdAt:row.createdAt,updatedAt:row.updatedAt,deletedAt:null});
+    }
+    return result.sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  }
+  async function unlockPrivateVault(event) {
+    event.preventDefault();if(!privateVault)return;
+    if(session?.user?.id&&privateVault.ownerId&&privateVault.ownerId!==session.user.id){setPrivateStatus('Este cofre está vinculado a outra conta. Entre na conta original.',true);return;}
+    const password=$('privateUnlockPassword').value;$('privateUnlockPassword').value='';
+    try {
+      const key=await derivePrivateKey(password,base64ToBytes(privateVault.salt));
+      const check=await decryptPrivateValue(key,privateVault.verifierIv,privateVault.verifierCiphertext);
+      if(check!=='TNM private vault v1')throw new Error('wrong password');
+      if(currentPage!=='notes'||!privateNotesMode){setPrivateStatus('Volte para Notas privadas para desbloquear.');return;}
+      privateNotes=await loadDecryptedPrivateNotes(key);privateCryptoKey=key;privateNotesUnlocked=true;setPrivateStatus('Cofre desbloqueado.');renderPrivateNotes();
+    } catch { privateCryptoKey=null;privateNotes=[];privateNotesUnlocked=false;setPrivateStatus('Senha incorreta. Não há recuperação se ela for esquecida.',true);renderPrivateNotes(); }
+  }
+  async function lockPrivateNotes() {
+    if(privateNoteDirty){const saved=await savePrivateNote({preventDefault(){}},false,true);if(!saved)return false;}
+    privateCryptoKey=null;privateNotes=[];privateNotesUnlocked=false;privateNoteDirty=false;privateHiddenAt=0;setPrivateStatus('Cofre bloqueado.');
+    const form=$('privateNoteForm');if(form){form.reset();form.hidden=true;}
+    if($('privateNoteId'))$('privateNoteId').value='';renderPrivateNotes();return true;
+  }
+  function openPrivateNoteEditor(noteId='') {
+    if(!privateNotesUnlocked){showToast('Desbloqueie as Notas privadas primeiro.');return;}
+    if(privateNoteDirty){void savePrivateNote({preventDefault(){}},false).then(saved=>{if(saved)openPrivateNoteEditor(noteId);});return;}
+    const note=noteId?privateNotes.find(item=>item.id===String(noteId)&&!item.deletedAt):null;
+    privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteId').value=note?.id||'';$('privateNoteTitle').value=note?.title||'';$('privateNoteContent').value=note?.content||'';$('privateNoteForm').hidden=false;$('privateNoteTitle').focus();
+  }
+  async function savePrivateNote(event,close=true,allowEmpty=false) {
+    event?.preventDefault?.();if(!privateNotesUnlocked||!privateCryptoKey)return false;
+    const title=$('privateNoteTitle').value.trim(),content=$('privateNoteContent').value.trim();
+    if(!title&&!content){if(allowEmpty){privateNoteDirty=false;return true;}setPrivateStatus('Preencha o título ou conteúdo.',true);return false;}
+    try {
+      const id=$('privateNoteId').value||makeId(),old=privateCipherRows.find(item=>item.id===id&&!item.deletedAt),now=nowISO();
+      const data={title,content},key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
+      if(!privateNotesUnlocked||privateCryptoKey!==key)return false;
+      const row={id,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:old?.createdAt||now,updatedAt:now,deletedAt:null};
+      privateCipherRows=privateCipherRows.filter(item=>item.id!==id).concat(row);privateNotes=privateNotes.filter(item=>item.id!==id).concat({...data,id,createdAt:row.createdAt,updatedAt:now,deletedAt:null});
+      privateNoteDirty=false;$('privateNoteId').value=id;persistPrivateVault();
+      if(close){$('privateNoteForm').reset();$('privateNoteForm').hidden=true;$('privateNoteId').value='';}
+      setPrivateStatus('Nota privada criptografada e salva.');renderPrivateNotes();return true;
+    } catch { setPrivateStatus('Falha ao criptografar. A nota não foi salva.',true);return false; }
+  }
+  async function duplicatePrivateNote(noteId) {
+    const source=privateNotes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!source||!privateCryptoKey)return;
+    try {
+      const now=nowISO(),data={title:source.title?`${source.title.slice(0,132)} (cópia)`: '',content:source.content},id=makeId(),key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
+      if(!privateNotesUnlocked||privateCryptoKey!==key)return;
+      const row={id,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:now,updatedAt:now,deletedAt:null};privateCipherRows.push(row);privateNotes.unshift({...data,id,createdAt:now,updatedAt:now,deletedAt:null});persistPrivateVault();renderPrivateNotes();showToast('Nota privada duplicada.');
+    } catch { setPrivateStatus('Não consegui duplicar a nota privada.',true); }
+  }
+  function deletePrivateNote(noteId) {
+    const note=privateNotes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!note||!window.confirm(`Excluir a nota privada “${note.title||'Nota sem título'}”?`))return;
+    const row=privateCipherRows.find(item=>item.id===note.id);if(row){row.iv='';row.ciphertext='';row.deletedAt=nowISO();row.updatedAt=row.deletedAt;}
+    privateNotes=privateNotes.filter(item=>item.id!==note.id);persistPrivateVault();renderPrivateNotes();showToast('Nota privada excluída.');
+  }
+  function handlePrivateNotesClick(event) {
+    const edit=event.target.closest('[data-private-edit]');if(edit){openPrivateNoteEditor(edit.dataset.privateEdit);return;}
+    const duplicate=event.target.closest('[data-private-duplicate]');if(duplicate){void duplicatePrivateNote(duplicate.dataset.privateDuplicate);return;}
+    const remove=event.target.closest('[data-private-delete]');if(remove)deletePrivateNote(remove.dataset.privateDelete);
   }
   function renderNotes() {
     const active=visibleNotes().sort(noteOrder);
@@ -1003,6 +1151,14 @@
   function rowToTag(row) { return normalizeTag({id:row.id,name:row.name,color:row.color,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function settingsToRow() { return {owner_id:session.user.id,data:userSettings,updated_at:userSettings.updatedAt,planner_version:1}; }
   function rowToSettings(row) { return normalizeUserSettings({...row.data,updatedAt:row.updated_at||row.data?.updatedAt}); }
+  function privateVaultToRow() {
+    if(!privateVault||privateVault.ownerId&&privateVault.ownerId!==session.user.id)return null;
+    if(!privateVault.ownerId){privateVault.ownerId=session.user.id;localStorage.setItem(PRIVATE_VAULT_KEY,JSON.stringify(privateVault));}
+    return {owner_id:session.user.id,salt:privateVault.salt,verifier_iv:privateVault.verifierIv,verifier_ciphertext:privateVault.verifierCiphertext,updated_at:privateVault.updatedAt,planner_version:1};
+  }
+  function rowToPrivateVault(row) { return normalizePrivateVault({salt:row.salt,verifierIv:row.verifier_iv,verifierCiphertext:row.verifier_ciphertext,ownerId:row.owner_id,updatedAt:row.updated_at}); }
+  function privateRowToRow(row) { return {id:row.id,owner_id:session.user.id,iv:row.iv,ciphertext:row.ciphertext,created_at:row.createdAt,updated_at:row.updatedAt,deleted_at:row.deletedAt,planner_version:1}; }
+  function rowToPrivateNote(row) { return normalizePrivateRow({id:row.id,iv:row.iv,ciphertext:row.ciphertext,created_at:row.created_at,updated_at:row.updated_at,deleted_at:row.deleted_at}); }
   function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,link_url:note.link||'',is_pinned:Boolean(note.isPinned),tag_ids:note.tagIds||[],sort_order:Number(note.sortOrder)||0,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
   function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function logToRow(log) { return {id:log.id,owner_id:session.user.id,content:log.content,planner_version:1,created_at:log.createdAt,updated_at:log.updatedAt,deleted_at:log.deletedAt}; }
@@ -1016,15 +1172,17 @@
     return Array.from(map.values());
   }
   async function loadCloudData() {
-    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note})), localLogs=logs.map(log=>({...log})), localTags=tags.map(tag=>({...tag})), localSettings={...userSettings};
-    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteTagRows,remoteSettingRows]=await Promise.all([
+    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note})), localLogs=logs.map(log=>({...log})), localTags=tags.map(tag=>({...tag})), localSettings={...userSettings},localVault=privateVault?{...privateVault}:null,localPrivateRows=privateCipherRows.map(row=>({...row}));
+    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteTagRows,remoteSettingRows,remoteVaultRows,remotePrivateRows]=await Promise.all([
       fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll('nmm_logs?select=*&planner_version=eq.1'),
       fetchAll('nmm_tags?select=*&planner_version=eq.1'),
-      fetchAll('nmm_user_settings?select=*&planner_version=eq.1')
+      fetchAll('nmm_user_settings?select=*&planner_version=eq.1'),
+      fetchAll('nmm_private_vaults?select=*&planner_version=eq.1'),
+      fetchAll('nmm_private_notes?select=*&planner_version=eq.1')
     ]);
-    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean), remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null;
+    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean), remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null,remoteVault=remoteVaultRows.length?rowToPrivateVault(remoteVaultRows[0]):null,remotePrivateNotes=remotePrivateRows.map(rowToPrivateNote).filter(Boolean);
     tags=ensureDefaultTags(mergeById(localTags,remoteTags).map(normalizeTag).filter(Boolean));
     filterTagIds=filterTagIds.filter(id=>tags.some(tag=>tag.id===id&&!tag.deletedAt));
     localStorage.setItem(TAG_FILTER_KEY,JSON.stringify(filterTagIds));
@@ -1042,6 +1200,14 @@
     localStorage.setItem(LOGS_KEY,JSON.stringify(logs));
     userSettings=remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(localSettings.updatedAt)?remoteSettings:normalizeUserSettings(localSettings);
     localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));
+    const foreignLocalVault=localVault?.ownerId&&localVault.ownerId!==session.user.id;
+    privateVault=foreignLocalVault?localVault:(remoteVault&&(!localVault||Date.parse(remoteVault.updatedAt)>=Date.parse(localVault.updatedAt))?remoteVault:localVault);
+    if(privateVault&&!privateVault.ownerId&&!foreignLocalVault)privateVault.ownerId=session.user.id;
+    privateCipherRows=foreignLocalVault?localPrivateRows:mergeById(localPrivateRows,remotePrivateNotes).map(normalizePrivateRow).filter(Boolean);
+    if(privateVault)localStorage.setItem(PRIVATE_VAULT_KEY,JSON.stringify(privateVault));else localStorage.removeItem(PRIVATE_VAULT_KEY);
+    localStorage.setItem(PRIVATE_ROWS_KEY,JSON.stringify(privateCipherRows));
+    if(foreignLocalVault&&privateNotesUnlocked)await lockPrivateNotes();
+    else if(privateNotesUnlocked&&privateCryptoKey)privateNotes=await loadDecryptedPrivateNotes();
     const synced=await syncCloudAndWait();
     renderAll(); createAutomaticBackup(false); updateAuthUI();
     return synced;
@@ -1061,12 +1227,14 @@
         const taskRows=tasks.map(taskToRow);
         const noteRows=notes.map(noteToRow);
         const logRows=logs.map(logToRow);
-        const settingsRow=settingsToRow();
+        const settingsRow=settingsToRow(),vaultRow=privateVaultToRow(),canSyncPrivate=Boolean(privateVault)&&(!privateVault.ownerId||privateVault.ownerId===session.user.id),privateRows=canSyncPrivate?privateCipherRows.map(privateRowToRow):[];
         if (tagRows.length) await cloudRequest('nmm_tags?on_conflict=owner_id,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(tagRows)});
         if (taskRows.length) await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});
         if (noteRows.length) await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});
         if (logRows.length) await cloudRequest('nmm_logs?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(logRows)});
         await cloudRequest('nmm_user_settings?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(settingsRow)});
+        if(vaultRow)await cloudRequest('nmm_private_vaults?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(vaultRow)});
+        if(privateRows.length)await cloudRequest('nmm_private_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(privateRows)});
         syncStatus=`Sincronizado · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
         updateAuthUI();
       } while (syncQueued);
@@ -1113,6 +1281,7 @@
   }
   async function signOut() {
     if (!session?.access_token) return;
+    if(privateNotesUnlocked&&!await lockPrivateNotes()){showToast('Não consegui salvar a edição privada; você continua conectado.');return;}
     authBusy=true; updateAuthUI();
     try { await fetch(`${CLOUD.url}/auth/v1/logout`,{method:'POST',headers:authHeaders({Authorization:`Bearer ${session.access_token}`})}); } catch {}
     session=null; localStorage.removeItem(SESSION_KEY); syncStatus=''; authBusy=false;
@@ -1145,7 +1314,7 @@
     finally { authBusy=false; updateAuthUI(); }
   }
   function automaticBackupSnapshot() {
-    return {format:'tnm-weekly-autobackup-v2',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),tags:tags.filter(tag=>!tag.deletedAt)};
+    return {format:'tnm-weekly-autobackup-v4',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
   }
   function updateAutoBackupStatus(timestamp='') {
     const node=$('autoBackupStatus');
@@ -1178,7 +1347,7 @@
     });
   }
   function exportBackup() {
-    const data={format:'tnm-weekly-backup-v3',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),tags:tags.filter(tag=>!tag.deletedAt)};
+    const data={format:'tnm-weekly-backup-v5',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const link=document.createElement('a'); link.href=url; link.download=`tnm-backup-${todayKey()}.json`; link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000); $('backupMessage').textContent='Backup exportado.';
@@ -1256,7 +1425,19 @@
   $('addSummaryTimeBtn').addEventListener('click',addSummaryTime);
   $('summaryTimesList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-summary-time]');if(button)removeSummaryTime(button.dataset.removeSummaryTime);});
   $('summaryNickname').addEventListener('change',()=>{userSettings.nickname=$('summaryNickname').value.trim()||'Gio';saveUserSettings();});
-  $('notesDockAddBtn').addEventListener('click',()=>openNoteDialog());
+  $('notesDockAddBtn').addEventListener('click',()=>{if(privateNotesMode){if(privateNotesUnlocked)openPrivateNoteEditor();else showToast('Desbloqueie as Notas privadas primeiro.');}else openNoteDialog();});
+  $('regularNotesTab').addEventListener('click',()=>setNotesMode('public'));
+  $('privateNotesTab').addEventListener('click',()=>setNotesMode('private'));
+  $('privateSetupForm').addEventListener('submit',event=>{void createPrivateVault(event);});
+  $('privateUnlockForm').addEventListener('submit',event=>{void unlockPrivateVault(event);});
+  $('privateNoteForm').addEventListener('submit',event=>{void savePrivateNote(event);});
+  $('privateNoteForm').addEventListener('input',()=>{privateNoteDirty=true;});
+  $('privateNoteForm').addEventListener('change',()=>{privateNoteDirty=true;});
+  $('privateNewNoteBtn').addEventListener('click',()=>openPrivateNoteEditor());
+  $('privateLockBtn').addEventListener('click',()=>{void lockPrivateNotes();});
+  $('privateCancelEditBtn').addEventListener('click',()=>{privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteForm').hidden=true;$('privateNoteId').value='';});
+  $('privateNotesList').addEventListener('click',handlePrivateNotesClick);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&privateNotesUnlocked)privateHiddenAt=Date.now();else if(privateHiddenAt&&Date.now()-privateHiddenAt>=5*60*1000)lockPrivateNotes();});
   $('scrollNotesTopBtn').addEventListener('click',()=>$('notesPage').scrollTo({top:0,behavior:'smooth'}));
   $('scrollNotesBottomBtn').addEventListener('click',()=>$('notesPage').scrollTo({top:$('notesPage').scrollHeight,behavior:'smooth'}));
   $('exportBtn').addEventListener('click',exportBackup);
