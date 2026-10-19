@@ -8,6 +8,7 @@
   const LOGS_KEY = 'tnm.weekly.logs.v1';
   const LOG_RANGE_KEY = 'tnm.weekly.logsRange.v1';
   const ZOOM_KEY = 'tnm.weekly.zoom.v1';
+  const USER_SETTINGS_KEY = 'tnm.weekly.userSettings.v1';
   const SESSION_KEY = 'naMinhaMao.supabase.session.v1';
   const RESET_KEY = 'tnm.weekly.reset.v1';
   const TAGS_KEY = 'tnm.weekly.tags.v1';
@@ -39,6 +40,7 @@
   let logs = readStored(LOGS_KEY,[]);
   if(!Array.isArray(logs))logs=[];
   let logRange = ['7d','30d','12w','all'].includes(localStorage.getItem(LOG_RANGE_KEY))?localStorage.getItem(LOG_RANGE_KEY):'7d';
+  let userSettings = normalizeUserSettings(readStored(USER_SETTINGS_KEY,{summaryTimes:['08:00'],calendarIds:[],nickname:'Gio'}));
   let tags = [];
   let calendarEvents = readStored(CALENDAR_EVENTS_KEY,[]);
   if(!Array.isArray(calendarEvents))calendarEvents=[];
@@ -150,6 +152,11 @@
       deletedAt:value.deletedAt || value.deleted_at ? String(value.deletedAt || value.deleted_at) : null
     };
   }
+  function normalizeUserSettings(value) {
+    const source=value&&typeof value==='object'?value:{};
+    const times=Array.isArray(source.summaryTimes)?Array.from(new Set(source.summaryTimes.map(String).filter(time=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time)))):[];
+    return {summaryTimes:times.sort(),calendarIds:Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[],nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+  }
   function normalizeLog(value) {
     if(!value||typeof value!=='object')return null;
     const content=String(value.content??value.log_text??value.text??'').trim().slice(0,20000);
@@ -184,6 +191,26 @@
     renderLogs();
     if(schedule)scheduleSync();
   }
+  function saveUserSettings(schedule=true) {
+    userSettings=normalizeUserSettings({...userSettings,updatedAt:nowISO()});
+    localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));renderSummarySettings();
+    if(schedule)scheduleSync();
+  }
+  function renderSummarySettings() {
+    const list=$('summaryTimesList');if(!list)return;
+    list.innerHTML=userSettings.summaryTimes.length?userSettings.summaryTimes.map(time=>`<span class="summary-time-chip">${escapeHTML(time)}<button type="button" data-remove-summary-time="${escapeHTML(time)}" aria-label="Remover horário ${escapeHTML(time)}">×</button></span>`).join(''):'<span class="muted">Resumo diário desativado.</span>';
+    const nickname=$('summaryNickname');if(nickname&&nickname.value!==userSettings.nickname)nickname.value=userSettings.nickname;
+  }
+  function addSummaryTime() {
+    const input=$('summaryTimeInput'),time=input.value;
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){showToast('Escolha um horário válido.');return;}
+    if(userSettings.summaryTimes.includes(time)){showToast('Esse horário já está na lista.');return;}
+    userSettings.summaryTimes=[...userSettings.summaryTimes,time].sort();saveUserSettings();showToast('Horário do resumo adicionado.');
+  }
+  function removeSummaryTime(time) {
+    userSettings.summaryTimes=userSettings.summaryTimes.filter(item=>item!==time);saveUserSettings();showToast(userSettings.summaryTimes.length?'Horário removido.':'Resumo diário desativado.');
+  }
+  function renderSettings() { renderSummarySettings(); }
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }
@@ -288,7 +315,7 @@
     if (page==='tasks') renderTasks();
     if (page==='notes') renderNotes();
     if (page==='log') renderLogs();
-    if (page==='settings') updateAuthUI();
+    if (page==='settings') { updateAuthUI();renderSettings(); }
   }
   function hasSelectedTag(tagIds) { return !filterTagIds.length || tagIds.some(id=>filterTagIds.includes(id)); }
   function visibleTasks() { return tasks.filter(task=>!task.deletedAt && hasSelectedTag([task.tagId])); }
@@ -974,6 +1001,8 @@
   }
   function tagToRow(tag) { return {owner_id:session.user.id,id:tag.id,name:tag.name,color:tag.color,created_at:tag.createdAt,updated_at:tag.updatedAt,deleted_at:tag.deletedAt,planner_version:1}; }
   function rowToTag(row) { return normalizeTag({id:row.id,name:row.name,color:row.color,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
+  function settingsToRow() { return {owner_id:session.user.id,data:userSettings,updated_at:userSettings.updatedAt,planner_version:1}; }
+  function rowToSettings(row) { return normalizeUserSettings({...row.data,updatedAt:row.updated_at||row.data?.updatedAt}); }
   function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,link_url:note.link||'',is_pinned:Boolean(note.isPinned),tag_ids:note.tagIds||[],sort_order:Number(note.sortOrder)||0,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
   function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function logToRow(log) { return {id:log.id,owner_id:session.user.id,content:log.content,planner_version:1,created_at:log.createdAt,updated_at:log.updatedAt,deleted_at:log.deletedAt}; }
@@ -987,14 +1016,15 @@
     return Array.from(map.values());
   }
   async function loadCloudData() {
-    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note})), localLogs=logs.map(log=>({...log})), localTags=tags.map(tag=>({...tag}));
-    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteTagRows]=await Promise.all([
+    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note})), localLogs=logs.map(log=>({...log})), localTags=tags.map(tag=>({...tag})), localSettings={...userSettings};
+    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteTagRows,remoteSettingRows]=await Promise.all([
       fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll('nmm_logs?select=*&planner_version=eq.1'),
-      fetchAll('nmm_tags?select=*&planner_version=eq.1')
+      fetchAll('nmm_tags?select=*&planner_version=eq.1'),
+      fetchAll('nmm_user_settings?select=*&planner_version=eq.1')
     ]);
-    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean);
+    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean), remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null;
     tags=ensureDefaultTags(mergeById(localTags,remoteTags).map(normalizeTag).filter(Boolean));
     filterTagIds=filterTagIds.filter(id=>tags.some(tag=>tag.id===id&&!tag.deletedAt));
     localStorage.setItem(TAG_FILTER_KEY,JSON.stringify(filterTagIds));
@@ -1010,6 +1040,8 @@
     localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
     localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
     localStorage.setItem(LOGS_KEY,JSON.stringify(logs));
+    userSettings=remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(localSettings.updatedAt)?remoteSettings:normalizeUserSettings(localSettings);
+    localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));
     const synced=await syncCloudAndWait();
     renderAll(); createAutomaticBackup(false); updateAuthUI();
     return synced;
@@ -1029,10 +1061,12 @@
         const taskRows=tasks.map(taskToRow);
         const noteRows=notes.map(noteToRow);
         const logRows=logs.map(logToRow);
+        const settingsRow=settingsToRow();
         if (tagRows.length) await cloudRequest('nmm_tags?on_conflict=owner_id,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(tagRows)});
         if (taskRows.length) await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});
         if (noteRows.length) await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});
         if (logRows.length) await cloudRequest('nmm_logs?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(logRows)});
+        await cloudRequest('nmm_user_settings?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(settingsRow)});
         syncStatus=`Sincronizado · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
         updateAuthUI();
       } while (syncQueued);
@@ -1219,6 +1253,9 @@
   document.querySelectorAll('[data-zoom-action]').forEach(button=>button.addEventListener('click',()=>changeZoom(button.dataset.zoomAction)));
   $('logForm').addEventListener('submit',saveLogFromForm);
   document.querySelectorAll('[data-log-range]').forEach(button=>button.addEventListener('click',()=>setLogRange(button.dataset.logRange)));
+  $('addSummaryTimeBtn').addEventListener('click',addSummaryTime);
+  $('summaryTimesList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-summary-time]');if(button)removeSummaryTime(button.dataset.removeSummaryTime);});
+  $('summaryNickname').addEventListener('change',()=>{userSettings.nickname=$('summaryNickname').value.trim()||'Gio';saveUserSettings();});
   $('notesDockAddBtn').addEventListener('click',()=>openNoteDialog());
   $('scrollNotesTopBtn').addEventListener('click',()=>$('notesPage').scrollTo({top:0,behavior:'smooth'}));
   $('scrollNotesBottomBtn').addEventListener('click',()=>$('notesPage').scrollTo({top:$('notesPage').scrollHeight,behavior:'smooth'}));
