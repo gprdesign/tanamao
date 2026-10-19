@@ -287,7 +287,7 @@
       .day-heading { min-height:17px; margin-bottom:2px; padding-bottom:2px; }
     }
     /* Glass translúcido: preserva as cores do tema e acrescenta brilho/desfoque. */
-    .app-header,.main-nav,.week-dock,.panel,.home-stat,.home-item,.home-hero,.home-task-section,.planner-panel,.day-column,.task-card,.note-card,dialog,.planner-section-btn,.btn,.filter-tag-option,.note-tag-choice,.task-reschedule,input:not([type="checkbox"]):not([type="hidden"]),textarea,select {
+    .app-header,.main-nav,.week-dock,.panel,.home-stat,.home-item,.home-hero,.home-task-section,.planner-panel,.day-column,.task-card,.note-card,dialog,.planner-section-btn,.btn,.filter-tag-option,.note-tag-choice,input:not([type="checkbox"]):not([type="hidden"]),textarea,select {
       -webkit-backdrop-filter:blur(14px) saturate(145%); backdrop-filter:blur(14px) saturate(145%);
       box-shadow:inset 0 1px 0 #ffffff0d,0 6px 22px #0002;
     }
@@ -340,8 +340,6 @@
     .task-card.is-late .task-open,.task-card.is-late .task-title-row .tag-dot { color:#ff8b8b; }
     .task-card.is-late { border-color:#a94958; background:rgba(62,24,37,.82); }
     .task-card.is-linked .task-open::after { content:' ↗'; color:#ff9ca5; font-size:.72em; }
-    .task-reschedule { flex:none; padding:3px 5px; border:1px solid #bb6670; border-radius:6px; background:#532a35; color:#ffd5d8; font-size:.55rem; font-weight:850; line-height:1.15; white-space:nowrap; }
-    .task-card--compact .task-reschedule { padding:2px 3px; font-size:.48rem; }
     .task-card--compact .task-actions { align-items:center; gap:2px; }
     .day-column[data-kind="overdue"] .day-task-list { max-height:none; }
     .day-heading-button .day-count { padding:1px 4px; border-radius:999px; background:#ffffff12; }
@@ -430,7 +428,6 @@
     .task-card--compact .task-open { font-size:.70rem; line-height:1.2; }
     .task-card--compact .task-menu > summary { width:22px; height:22px; font-size:1.02rem; }
     .task-card--compact .task-completion-meta { font-size:.64rem; }
-    .task-card--compact .task-reschedule { padding:3px 4px; font-size:.55rem; }
     .planner-section-btn { min-height:40px; margin-top:6px; padding:8px 12px; font-size:.82rem; }
     .planner-panel { margin-top:6px; padding:8px; border-radius:13px; }
     .task-tile-grid { gap:7px; }
@@ -511,7 +508,6 @@
       .day-task-list .task-card--compact { grid-template-columns:14px minmax(0,1fr) auto; gap:3px; padding:5px; }
       .task-card--compact .task-check { width:14px; height:14px; }
       .task-card--compact .task-open { font-size:.67rem; }
-      .task-card--compact .task-reschedule { padding:2px 3px; font-size:.52rem; }
       .home-task-row { gap:6px; padding:6px 7px; }
       .home-item-open { font-size:.76rem; }
       .home-tag-pill { padding:3px 5px; font-size:.56rem; }
@@ -629,9 +625,6 @@
     .task-card .task-main,.task-card .task-title-row { min-width:0; }
     .task-card .task-title-row { align-items:center; }
     .task-card .task-open { display:block !important; flex:1 1 0; min-width:0; width:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap !important; overflow-wrap:normal; word-break:normal; -webkit-line-clamp:unset !important; }
-    .task-card.has-reschedule { grid-template-columns:20px minmax(0,1fr) max-content; }
-    .task-card.has-reschedule .task-actions { min-width:max-content; max-width:100%; align-items:center; gap:5px; }
-    .task-card.has-reschedule .task-reschedule { min-height:32px; padding:5px 7px; font-size:.58rem; }
     .task-touch-handle { width:24px; height:30px; color:var(--tag-color); }
     .task-touch-handle::after { content:none !important; }
     .task-touch-handle .drag-grip { display:block !important; color:var(--tag-color); font-size:.84rem; line-height:1; transform:none !important; white-space:nowrap; }
@@ -643,9 +636,6 @@
     .note-card { padding-bottom:12px; }
     .note-card .note-touch-handle { display:none; }
     @media(max-width:600px) {
-      .task-card.has-reschedule { grid-template-columns:16px minmax(0,1fr) max-content; }
-      .task-card--compact.has-reschedule { grid-template-columns:14px minmax(0,1fr) max-content; }
-      .task-card.has-reschedule .task-reschedule { min-height:30px; padding:4px 6px; font-size:.54rem; }
     }
     @media(pointer:coarse) {
       .task-touch-handle { width:28px; height:34px; }
@@ -730,7 +720,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=57" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=57',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=58" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=58',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

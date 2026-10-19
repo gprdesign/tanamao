@@ -297,14 +297,13 @@
   }
   function taskCard(task,options={}) {
     const complete=Boolean(task.completedAt), late=!complete&&(options.late ?? Boolean(task.executionDate&&task.executionDate<todayKey())), draggable=!complete&&options.draggable!==false;
-    const classes=['task-card',complete?'completed':'',late?'is-late':'',options.showReschedule&&!complete?'has-reschedule':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':''].filter(Boolean).join(' ');
+    const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':''].filter(Boolean).join(' ');
     const linked=options.linked?'task-link':'';
-    const reschedule=options.showReschedule&&!complete?`<button class="task-reschedule" type="button" data-reschedule-task="${escapeHTML(task.id)}">REAGENDAR</button>`:'';
     const tag=getTag(task.tagId),taskTag=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:tagDot(task.tagId);
     return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
       <input class="task-check" type="checkbox" data-complete-task="${escapeHTML(task.id)}" ${complete?'checked':''} aria-label="${complete?'Reabrir':'Concluir'}: ${escapeHTML(task.title)}">
       <div class="task-main"><div class="task-title-row">${taskTag}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
-      <div class="task-actions">${reschedule}${taskMenu(task,options.canMove!==false)}</div>
+      <div class="task-actions">${taskMenu(task,options.canMove!==false)}</div>
     </article>`;
   }
   function renderFilterButton() {
@@ -376,7 +375,7 @@
       const dayKey=cell.kind==='overdue'?'overdue':cell.date;
       const completed=all.filter(task=>task.completedAt&&(cell.kind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:task.executionDate===cell.date));
       const label=cell.kind==='overdue'?'ATRASADO':cell.title, dateText=cell.date?formatDate(cell.date,{day:'2-digit',month:'2-digit'}):'';
-      const cards=cell.tasks.map(task=>taskCard(task,{compact:true,late:Boolean(task.executionDate&&task.executionDate<todayKey()),linked:cell.kind==='overdue',showReschedule:cell.kind==='overdue',draggable:cell.kind!=='overdue'})).join('');
+      const cards=cell.tasks.map(task=>taskCard(task,{compact:true,late:Boolean(task.executionDate&&task.executionDate<todayKey()),linked:cell.kind==='overdue',draggable:cell.kind!=='overdue'})).join('');
       const empty=cell.kind==='overdue'?'Nada atrasado':'Sem tarefas';
       const extra=completed.length?`${completed.length} concluídas`:'';
       return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div><div class="day-task-list" data-day-drop="${cell.date||''}">${cards||`<div class="day-empty">${empty}</div>`}</div>${extra?`<div class="day-extra-count">${escapeHTML(extra)}</div>`:''}</section>`;
@@ -458,7 +457,7 @@
     const inDay=all.filter(task=>activeDayKind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:activeDayKind==='all-overdue'?task.executionDate&&task.executionDate<today:task.executionDate===activeDayDate);
     const open=inDay.filter(task=>!task.completedAt).sort(taskOrder),completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     const lateMode=activeDayKind==='overdue'||activeDayKind==='all-overdue';
-    const groups=[open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,showReschedule:lateMode,draggable:!lateMode})).join(''):'<div class="empty">Sem tarefas em aberto.</div>'];
+    const groups=[open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:!lateMode})).join(''):'<div class="empty">Sem tarefas em aberto.</div>'];
     if(completed.length)groups.push(`<div class="task-divider">CONCLUÍDAS</div>${completed.map(task=>taskCard(task,{canMove:false})).join('')}`);
     $('dayDialogList').innerHTML=groups.join('');
   }
@@ -565,8 +564,6 @@
   }
   function handleTaskClick(event) {
     if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();return;}
-    const reschedule=event.target.closest('[data-reschedule-task]');
-    if(reschedule){openTaskDialog(reschedule.dataset.rescheduleTask);const date=$('executionDate');date.focus();try{date.showPicker?.();}catch{}return;}
     const move=event.target.closest('[data-move-task]');
     if (move) { moveTask(move.dataset.moveTask,move.dataset.direction); return; }
     const remove=event.target.closest('[data-delete-task]');
@@ -597,7 +594,7 @@
     menu.addEventListener('click',event=>{
       const action=event.target.closest('button'); if(!action)return;
       event.preventDefault();event.stopPropagation();
-      if(action.matches('[data-edit-task],[data-move-task],[data-delete-task],[data-reschedule-task]'))handleTaskClick(event);
+      if(action.matches('[data-edit-task],[data-move-task],[data-delete-task]'))handleTaskClick(event);
       else handleNotesClick(event);
       closeFloatingActionMenu();
     });
@@ -628,7 +625,7 @@
   }
   function handleDragStart(event) {
     const card=event.target.closest('.task-card[data-task-id]');
-    if (!card || event.target.closest('input[data-complete-task],.task-menu,.task-reschedule')) { event.preventDefault(); return; }
+    if (!card || event.target.closest('input[data-complete-task],.task-menu')) { event.preventDefault(); return; }
     const task=tasks.find(item=>item.id===card.dataset.taskId && !item.completedAt && !item.deletedAt);
     if (!task) { event.preventDefault(); return; }
     dragTaskId=task.id; card.classList.add('is-dragging');
