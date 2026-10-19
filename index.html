@@ -649,6 +649,8 @@
       .note-card .note-touch-handle { display:grid; position:relative; right:auto; bottom:auto; z-index:1; width:36px; height:36px; margin:7px 0 0 auto; place-items:center; padding:0; border:1px solid #52617b; border-radius:10px; background:rgba(16,23,41,.94); color:#cbd5ea; font-size:1rem; touch-action:none; }
     }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+    .day-task-list .task-card--compact { padding-top:2px; padding-bottom:2px; }
+    .day-task-list .task-card--compact .task-touch-handle { height:24px; }
   </style>
 </head>
 <body>
@@ -724,7 +726,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=59" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=59',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=60" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=60',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
