@@ -52,6 +52,10 @@
   let activeDayKind = 'day';
   let activeDayDate = '';
   let authBusy = false;
+  let taskDialogDirty = false;
+  let noteDialogDirty = false;
+  let lastTaskCtrlEnterAt = 0;
+  let lastNoteCtrlEnterAt = 0;
   let authMessage = '';
   let syncStatus = '';
   let syncTimer = null;
@@ -477,6 +481,7 @@
   function toggleLinkAttachment(kind) { $(`${kind}LinkWrap`).hidden=false;$(`${kind}LinkToggle`).hidden=true;$(`${kind}Link`).focus(); }
   function clearLinkAttachment(kind) { $(`${kind}Link`).value='';$(`${kind}LinkWrap`).hidden=true;$(`${kind}LinkToggle`).hidden=false; }
   function openTaskDialog(taskId='',suggestedDate='') {
+    taskDialogDirty=false;lastTaskCtrlEnterAt=0;
     const task=taskId ? tasks.find(item=>item.id===String(taskId) && !item.deletedAt) : null;
     $('taskForm').reset();
     $('taskId').value=task ? task.id : '';
@@ -488,27 +493,48 @@
     $('taskDialog').showModal();
     $('taskTitle').focus();
   }
-  function closeTaskDialog() { if ($('taskDialog').open) $('taskDialog').close(); }
-  function saveTaskFromForm(event) {
-    event.preventDefault();
+  function closeTaskDialog() { taskDialogDirty=false;if ($('taskDialog').open) $('taskDialog').close(); }
+  function savePopupBeforeClose(dialog) {
+    if(dialog.id==='taskDialog'&&taskDialogDirty){
+      const hasText=$('taskTitle').value.trim()||$('taskContent').value.trim()||$('taskLink').value.trim();
+      if(!hasText){taskDialogDirty=false;return true;}
+      saveTaskFromForm({preventDefault(){}});
+      if(dialog.open){showToast('Preencha o título da tarefa. Mantive o popup aberto para não perder o texto.');return false;}
+      return true;
+    }
+    if(dialog.id==='noteDialog'&&noteDialogDirty){
+      const hasText=$('noteTitle').value.trim()||$('noteContent').value.trim()||$('noteLink').value.trim();
+      if(!hasText){noteDialogDirty=false;return true;}
+      saveNote({preventDefault(){}});
+      if(dialog.open){showToast('Preencha o título ou conteúdo da nota. Mantive o popup aberto para não perder o texto.');return false;}
+      return true;
+    }
+    return true;
+  }
+  function closeTaskDialogSafely() { const dialog=$('taskDialog');if(savePopupBeforeClose(dialog)&&dialog.open)closeTaskDialog(); }
+  function closeNoteDialogSafely() { const dialog=$('noteDialog');if(savePopupBeforeClose(dialog)&&dialog.open)dialog.close(); }
+  function saveTaskFromForm(event,close=true) {
+    event?.preventDefault?.();
     const title=$('taskTitle').value.trim(),content=$('taskContent').value.trim(),link=normalizeLink($('taskLink').value);
     const tagId=$('taskTag').value;
     const date=$('executionDate').value || null;
-    if (!title || !tags.some(tag=>tag.id===tagId && !tag.deletedAt) || (date && !isDateKey(date))) return;
+    if (!title || !tags.some(tag=>tag.id===tagId && !tag.deletedAt) || (date && !isDateKey(date))) { showToast('Confira o título, a tag e a data da tarefa.');return false; }
     const id=$('taskId').value;
     const existing=id ? tasks.find(task=>task.id===id && !task.deletedAt) : null;
-    const now=nowISO();
+    const now=nowISO(),savedId=existing?.id||makeId();
     if (existing) {
       if ((existing.executionDate||'')!==(date||'')) existing.sortOrder=nextTaskOrder(date);
       existing.title=title;existing.content=content;existing.link=link;existing.tagId=tagId;existing.executionDate=date;existing.updatedAt=now;
     } else {
-      tasks.push({id:makeId(),title,content,link,tagId,executionDate:date,sortOrder:nextTaskOrder(date),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
+      tasks.push({id:savedId,title,content,link,tagId,executionDate:date,sortOrder:nextTaskOrder(date),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
     }
+    $('taskId').value=savedId;
+    if(!close){$('taskDialogTitle').textContent='Editar tarefa';$('deleteTaskBtn').classList.remove('hidden');}
     localStorage.setItem(LAST_TAG_KEY,tagId);
     if (date && date>=todayKey()) setWeek(date);
-    closeTaskDialog(); saveTasks();
+    taskDialogDirty=false;if(close)closeTaskDialog();saveTasks();
     if (!date) togglePlannerSection('planning',true);
-    showToast(existing?'Tarefa atualizada.':'Tarefa adicionada.');
+    showToast(existing?'Tarefa atualizada.':'Tarefa adicionada.');return true;
   }
   function softDeleteTask() { softDeleteTaskById($('taskId').value); }
   function softDeleteTaskById(id) {
@@ -756,6 +782,7 @@
     $('noteTagChoices').innerHTML=tags.filter(tag=>!tag.deletedAt).map(tag=>`<label class="note-tag-choice"><input type="checkbox" value="${escapeHTML(tag.id)}" ${selected.includes(tag.id)?'checked':''}><span class="tag-dot" style="--tag-color:${tag.color}" aria-hidden="true"></span><span>${escapeHTML(tag.name)}</span></label>`).join('');
   }
   function openNoteDialog(noteId='') {
+    noteDialogDirty=false;lastNoteCtrlEnterAt=0;
     const note=noteId ? notes.find(item=>item.id===String(noteId) && !item.deletedAt) : null;
     $('noteForm').reset();$('noteId').value=note?.id || '';
     $('noteDialogTitle').textContent=note?'Editar nota':'Nova nota';
@@ -763,15 +790,31 @@
     renderNoteTagChoices(note?.tagIds||[]);$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';setLinkAttachment('note',note?.link||'');
     $('noteDialog').showModal(); $('noteTitle').focus();
   }
-  function saveNote(event) {
-    event.preventDefault();
+  function saveNote(event,close=true) {
+    event?.preventDefault?.();
     const content=$('noteContent').value.trim(),title=$('noteTitle').value.trim(),link=normalizeLink($('noteLink').value);
-    if (!title&&!content) { showToast('Preencha o título, o conteúdo ou os dois.'); return; }
+    if (!title&&!content) { showToast('Preencha o título ou conteúdo da nota.');return false; }
     const tagIds=Array.from($('noteTagChoices').querySelectorAll('input:checked')).map(input=>input.value);
-    const id=$('noteId').value, now=nowISO(), note=id?notes.find(item=>item.id===id&&!item.deletedAt):null;
+    const id=$('noteId').value, now=nowISO(), note=id?notes.find(item=>item.id===id&&!item.deletedAt):null,savedId=note?.id||makeId();
     if (note) { note.title=title;note.content=content;note.link=link;note.tagIds=tagIds;note.updatedAt=now; }
-    else notes.unshift({id:makeId(),title,content,link,isPinned:false,tagIds,sortOrder:Math.min(-1,...notes.map(item=>Number(item.sortOrder)||0)),createdAt:now,updatedAt:now,deletedAt:null});
-    $('noteDialog').close(); saveNotes(); showToast(note?'Nota atualizada.':'Nota salva.');
+    else notes.unshift({id:savedId,title,content,link,isPinned:false,tagIds,sortOrder:Math.min(-1,...notes.map(item=>Number(item.sortOrder)||0)),createdAt:now,updatedAt:now,deletedAt:null});
+    $('noteId').value=savedId;
+    if(!close)$('noteDialogTitle').textContent='Editar nota';
+    noteDialogDirty=false;if(close)$('noteDialog').close();saveNotes();showToast(note?'Nota atualizada.':'Nota salva.');return true;
+  }
+  function handlePopupKeyboard(event,kind) {
+    if(event.key!=='Enter')return;
+    const titleId=kind==='task'?'taskTitle':'noteTitle',contentId=kind==='task'?'taskContent':'noteContent';
+    if(!(event.ctrlKey||event.metaKey)){
+      if(event.target.id===titleId){event.preventDefault();$(contentId).focus();}
+      return;
+    }
+    event.preventDefault();
+    const now=Date.now(),last=kind==='task'?lastTaskCtrlEnterAt:lastNoteCtrlEnterAt,close=last>0&&now-last<=500;
+    const saved=kind==='task'?saveTaskFromForm({preventDefault(){}},close):saveNote({preventDefault(){}},close);
+    if(kind==='task')lastTaskCtrlEnterAt=saved?(close?0:now):0;
+    else lastNoteCtrlEnterAt=saved?(close?0:now):0;
+    if(saved)showToast(close?'Salvo e fechado.':'Salvo. Ctrl+Enter novamente em até 500 ms para fechar.');
   }
   function deleteNote(noteId) {
     const note=notes.find(item=>item.id===String(noteId) && !item.deletedAt);
@@ -1048,9 +1091,12 @@
   $('quickAddBtn').addEventListener('click',()=>{setPage('tasks');openTaskDialog();});
   $('quickAddNoteBtn').addEventListener('click',()=>openNoteDialog());
   $('taskForm').addEventListener('submit',saveTaskFromForm);
+  $('taskForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'task'));
+  $('taskForm').addEventListener('input',()=>{taskDialogDirty=true;});
+  $('taskForm').addEventListener('change',()=>{taskDialogDirty=true;});
   $('taskLinkToggle').addEventListener('click',()=>toggleLinkAttachment('task'));
   $('taskLinkRemove').addEventListener('click',()=>clearLinkAttachment('task'));
-  $('closeTaskDialog').addEventListener('click',closeTaskDialog);
+  $('closeTaskDialog').addEventListener('click',closeTaskDialogSafely);
   $('deleteTaskBtn').addEventListener('click',softDeleteTask);
   $('weekGrid').addEventListener('click',handleTaskClick);
   $('weekGrid').addEventListener('change',handleTaskChange);
@@ -1081,12 +1127,15 @@
   $('notesList').addEventListener('dragover',handleNoteDragOver);
   $('notesList').addEventListener('drop',handleNoteDrop);
   $('noteForm').addEventListener('submit',saveNote);
+  $('noteForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'note'));
+  $('noteForm').addEventListener('input',()=>{noteDialogDirty=true;});
+  $('noteForm').addEventListener('change',()=>{noteDialogDirty=true;});
   $('noteNewTagToggle').addEventListener('click',()=>{const open=$('noteNewTagRow').hidden;$('noteNewTagRow').hidden=!open;$('noteNewTagToggle').setAttribute('aria-expanded',String(open));if(open)$('noteNewTagName').focus();});
   $('noteNewTagAdd').addEventListener('click',createNoteTag);
   $('noteNewTagName').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();createNoteTag();}});
   $('noteLinkToggle').addEventListener('click',()=>toggleLinkAttachment('note'));
   $('noteLinkRemove').addEventListener('click',()=>clearLinkAttachment('note'));
-  $('closeNoteDialog').addEventListener('click',()=>$('noteDialog').close());
+  $('closeNoteDialog').addEventListener('click',closeNoteDialogSafely);
   $('loginBtn').addEventListener('click',signIn);
   $('signupBtn').addEventListener('click',signUp);
   $('logoutBtn').addEventListener('click',signOut);
@@ -1102,7 +1151,21 @@
   document.addEventListener('touchmove',moveTouchDrag,{capture:true,passive:false});
   document.addEventListener('touchend',event=>finishTouchDrag(event),true);
   document.addEventListener('touchcancel',event=>finishTouchDrag(event,true),true);
-  for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom){closeFloatingActionMenu();dialog.close();}});
+  for(const dialog of document.querySelectorAll('dialog')){
+    dialog.addEventListener('cancel',event=>{
+      if(!['taskDialog','noteDialog'].includes(dialog.id))return;
+      event.preventDefault();if(!savePopupBeforeClose(dialog))return;
+      if(dialog.id==='taskDialog')closeTaskDialog();else if(dialog.open)dialog.close();
+    });
+    dialog.addEventListener('click',event=>{
+      if(event.target!==dialog)return;
+      const rect=dialog.getBoundingClientRect();
+      if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom){
+        if(!savePopupBeforeClose(dialog))return;
+        closeFloatingActionMenu();if(dialog.open)dialog.close();
+      }
+    });
+  }
   document.addEventListener('click',captureActionMenuClick,true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&floatingActionMenu){event.preventDefault();event.stopPropagation();closeFloatingActionMenu();}},true);
   document.addEventListener('scroll',()=>{if(floatingActionMenu)closeFloatingActionMenu();},true);
