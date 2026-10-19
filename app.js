@@ -299,11 +299,11 @@
     const complete=Boolean(task.completedAt), late=!complete&&(options.late ?? Boolean(task.executionDate&&task.executionDate<todayKey())), draggable=!complete&&options.draggable!==false;
     const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':''].filter(Boolean).join(' ');
     const linked=options.linked?'task-link':'';
-    const tag=getTag(task.tagId),taskTag=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:tagDot(task.tagId);
+    const tag=getTag(task.tagId),taskTag=tagDot(task.tagId),taskHandle=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:'';
     return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
       <input class="task-check" type="checkbox" data-complete-task="${escapeHTML(task.id)}" ${complete?'checked':''} aria-label="${complete?'Reabrir':'Concluir'}: ${escapeHTML(task.title)}">
       <div class="task-main"><div class="task-title-row">${taskTag}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
-      <div class="task-actions">${taskMenu(task,options.canMove!==false)}</div>
+      <div class="task-actions">${taskMenu(task,options.canMove!==false)}${taskHandle}</div>
     </article>`;
   }
   function renderFilterButton() {
@@ -801,6 +801,7 @@
     $('signupBtn').disabled=authBusy || !CLOUD_READY;
     $('syncNowBtn').disabled=authBusy || !connected;
     $('logoutBtn').disabled=authBusy || !connected;
+    $('refreshSyncBtn').disabled=authBusy;
     if (!CLOUD_READY) setAuthMessage('Login indisponível: falta a configuração pública do Supabase.',true);
     else if (!authMessage && !connected) setAuthMessage('Entre para sincronizar entre dispositivos. Sem login, os dados ficam neste aparelho.');
   }
@@ -893,9 +894,9 @@
     notes=mergeById(localNotes,remoteNotes).map(normalizeNote).filter(Boolean);
     localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
     localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
-    await syncCloud();
+    const synced=await syncCloudAndWait();
     renderAll(); createAutomaticBackup(false); updateAuthUI();
-    return true;
+    return synced;
   }
   function scheduleSync() {
     if (!session?.user?.id) return;
@@ -923,6 +924,13 @@
       setAuthMessage('Não consegui sincronizar agora. Os dados continuam salvos neste aparelho.',true);
       return false;
     } finally { syncInFlight=false; updateAuthUI(); }
+  }
+  async function syncCloudAndWait() {
+    if (!session?.user?.id) return false;
+    const ok=await syncCloud();
+    if (!ok) return false;
+    while (syncInFlight) await new Promise(resolve=>setTimeout(resolve,50));
+    return syncStatus.startsWith('Sincronizado ·');
   }
   async function finishLogin(data) {
     storeSession(data);
@@ -959,11 +967,20 @@
     setAuthMessage('Você saiu. Os dados continuam neste aparelho e na conta.'); updateAuthUI();
   }
   async function syncNow() {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id) return false;
     authBusy=true; setAuthMessage('Sincronizando…'); updateAuthUI();
-    try { await loadCloudData(); setAuthMessage('Sincronização concluída.'); }
-    catch { setAuthMessage('Não consegui atualizar agora; seus dados locais foram mantidos.',true); }
+    try { const ok=await loadCloudData(); if(ok)setAuthMessage('Sincronização concluída.'); return ok; }
+    catch { setAuthMessage('Não consegui atualizar agora; seus dados locais foram mantidos.',true); return false; }
     finally { authBusy=false; updateAuthUI(); }
+  }
+  async function refreshAndSync() {
+    const button=$('refreshSyncBtn');
+    if(button.disabled)return;
+    button.disabled=true;button.setAttribute('aria-busy','true');
+    if(!session?.user?.id){showToast('Entre na conta para sincronizar. Atualizando…');setTimeout(()=>window.location.reload(),1200);return;}
+    const ok=await syncNow();
+    if(ok){window.location.reload();return;}
+    button.disabled=false;button.removeAttribute('aria-busy');
   }
   async function initializeAuth() {
     updateAuthUI();
@@ -1074,6 +1091,7 @@
   $('signupBtn').addEventListener('click',signUp);
   $('logoutBtn').addEventListener('click',signOut);
   $('syncNowBtn').addEventListener('click',syncNow);
+  $('refreshSyncBtn').addEventListener('click',refreshAndSync);
   $('exportBtn').addEventListener('click',exportBackup);
   document.addEventListener('dragend',()=>{handleDragEnd();noteDragId='';clearDropStyles();});
   document.addEventListener('pointerdown',startPointerDrag,true);

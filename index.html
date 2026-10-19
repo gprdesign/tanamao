@@ -651,6 +651,15 @@
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
     .day-task-list .task-card--compact { padding-top:2px; padding-bottom:2px; }
     .day-task-list .task-card--compact .task-touch-handle { height:24px; }
+    .task-actions { align-items:center; justify-content:flex-end; gap:2px; }
+    .task-actions .task-menu { align-self:center; }
+    .task-card--compact .task-touch-handle,.task-card--tile .task-touch-handle { width:24px; height:26px; margin:0; border-radius:6px; }
+    .task-card--compact .task-title-row .tag-dot,.task-card--tile .task-title-row .tag-dot { margin-top:0; }
+    .refresh-sync-btn { position:fixed; z-index:21; right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(148px + env(safe-area-inset-bottom,0px)); display:grid; place-items:center; width:48px; height:48px; padding:0; border:1px solid #8299c6; border-radius:50%; background:rgba(35,51,78,.96); color:#e7eeff; box-shadow:0 6px 20px #0008,inset 0 1px 0 #ffffff24; font-size:1.75rem; line-height:1; }
+    body:not([data-page="tasks"]) .refresh-sync-btn { bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
+    .refresh-sync-btn span { display:block; }
+    .refresh-sync-btn[aria-busy="true"] span { animation:refresh-rotate .8s linear infinite; }
+    @keyframes refresh-rotate { to { transform:rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -707,6 +716,8 @@
 
   <nav class="week-dock" id="weekDock" aria-label="Navegar entre semanas"><button class="btn ghost" id="prevWeekBtn" type="button" aria-label="Semana anterior">‹</button><strong id="weekLabel" aria-live="polite"></strong><button class="btn ghost" id="todayBtn" type="button">HOJE</button><button class="btn ghost" id="nextWeekBtn" type="button" aria-label="Próxima semana">›</button></nav>
 
+  <button class="refresh-sync-btn" id="refreshSyncBtn" type="button" aria-label="Atualizar página e sincronizar conta" title="Atualizar e sincronizar"><span aria-hidden="true">↻</span></button>
+
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
     <button class="nav-btn" type="button" data-page="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span>Home</span></button>
@@ -726,7 +737,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=60" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=60',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=61" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=61',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
