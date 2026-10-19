@@ -615,7 +615,7 @@
     floatingActionMenu=menu;requestAnimationFrame(()=>menu.querySelector('button')?.focus());
   }
   function captureActionMenuClick(event) {
-    const summary=event.target.closest('.task-menu>summary,.note-menu>summary');
+    const summary=event.target.closest('.note-menu>summary');
     if(summary){event.preventDefault();event.stopPropagation();openFloatingActionMenu(summary.parentElement);return;}
     if(floatingActionMenu&&!event.target.closest('.floating-action-menu'))closeFloatingActionMenu();
   }
