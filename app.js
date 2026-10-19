@@ -53,6 +53,7 @@
   let privateNotesMode = false;
   let privateNoteDirty = false;
   let privateHiddenAt = 0;
+  let pendingPrivateMoveId = '';
   let tags = [];
   let calendarEvents = readStored(CALENDAR_EVENTS_KEY,[]);
   if(!Array.isArray(calendarEvents))calendarEvents=[];
@@ -250,7 +251,7 @@
     setup.hidden=Boolean(privateVault);unlock.hidden=!privateVault||privateNotesUnlocked;opened.hidden=!privateNotesUnlocked;
     if(!privateNotesUnlocked){list.innerHTML='';$('privateNoteForm').hidden=true;return;}
     const ordered=privateNotes.filter(note=>!note.deletedAt).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
-    list.innerHTML=ordered.length?ordered.map(note=>`<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${escapeHTML(note.content)}</p></button><div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`).join(''):'<p class="empty">Nenhuma nota privada.</p>';
+    list.innerHTML=ordered.length?ordered.map(note=>{const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',tagIds=Array.isArray(note.tagIds)?note.tagIds:[],tagsHtml=tagIds.map(id=>tags.find(tag=>tag.id===id&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');return `<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${escapeHTML(note.content)}</p></button>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`;}).join(''):'<p class="empty">Nenhuma nota privada.</p>';
   }
   function renderNotesMode() {
     $('normalNotesView').hidden=privateNotesMode;$('privateNotesView').hidden=!privateNotesMode;
@@ -260,6 +261,7 @@
   }
   function setNotesMode(mode) {
     const wantPrivate=mode==='private';
+    if(!wantPrivate&&pendingPrivateMoveId)pendingPrivateMoveId='';
     if(!wantPrivate&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setNotesMode('public');});return;}
     if(!wantPrivate&&privateNotesUnlocked)void lockPrivateNotes();
     privateNotesMode=wantPrivate;renderNotesMode();
@@ -363,6 +365,7 @@
   function setPage(page) {
     if (!['home','tasks','log','notes','settings'].includes(page)) return;
     const previous=currentPage, oldIndex=['home','tasks','log','notes','settings'].indexOf(previous), newIndex=['home','tasks','log','notes','settings'].indexOf(page);
+    if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
     if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
     if(page!=='notes'&&privateNotesUnlocked)void lockPrivateNotes();
     currentPage=page;
@@ -603,7 +606,7 @@
     try {
       const salt=crypto.getRandomValues(new Uint8Array(16)),key=await derivePrivateKey(password,salt),check=await encryptPrivateValue(key,'TNM private vault v1');
       privateVault={salt:bytesToBase64(salt),verifierIv:check.iv,verifierCiphertext:check.ciphertext,ownerId:'',updatedAt:nowISO()};
-      privateCryptoKey=currentPage==='notes'&&privateNotesMode?key:null;privateNotesUnlocked=Boolean(privateCryptoKey);privateNotes=[];$('privateSetupPassword').value='';persistPrivateVault();setPrivateStatus(privateNotesUnlocked?'Cofre criado e desbloqueado neste aparelho.':'Cofre criado. Desbloqueie para acessar.');renderPrivateNotes();
+      privateCryptoKey=currentPage==='notes'&&privateNotesMode?key:null;privateNotesUnlocked=Boolean(privateCryptoKey);privateNotes=[];$('privateSetupPassword').value='';persistPrivateVault();setPrivateStatus(privateNotesUnlocked?'Cofre criado e desbloqueado neste aparelho.':'Cofre criado. Desbloqueie para acessar.');renderPrivateNotes();if(privateNotesUnlocked&&pendingPrivateMoveId)await completePendingPrivateMove();
     } catch { setPrivateStatus('Não consegui criar o cofre com a criptografia deste aparelho.',true); }
   }
   async function loadDecryptedPrivateNotes(key=privateCryptoKey) {
@@ -623,7 +626,7 @@
       const check=await decryptPrivateValue(key,privateVault.verifierIv,privateVault.verifierCiphertext);
       if(check!=='TNM private vault v1')throw new Error('wrong password');
       if(currentPage!=='notes'||!privateNotesMode){setPrivateStatus('Volte para Notas privadas para desbloquear.');return;}
-      privateNotes=await loadDecryptedPrivateNotes(key);privateCryptoKey=key;privateNotesUnlocked=true;setPrivateStatus('Cofre desbloqueado.');renderPrivateNotes();
+      privateNotes=await loadDecryptedPrivateNotes(key);privateCryptoKey=key;privateNotesUnlocked=true;setPrivateStatus('Cofre desbloqueado.');renderPrivateNotes();if(pendingPrivateMoveId)await completePendingPrivateMove();
     } catch { privateCryptoKey=null;privateNotes=[];privateNotesUnlocked=false;setPrivateStatus('Senha incorreta. Não há recuperação se ela for esquecida.',true);renderPrivateNotes(); }
   }
   async function lockPrivateNotes() {
@@ -632,21 +635,50 @@
     const form=$('privateNoteForm');if(form){form.reset();form.hidden=true;}
     if($('privateNoteId'))$('privateNoteId').value='';renderPrivateNotes();return true;
   }
+  function requestPrivateMove(noteId) {
+    const source=notes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!source)return;
+    const dialog=$('noteDialog');
+    if(dialog.open&&$('noteId').value===source.id){
+      if(noteDialogDirty){if(!saveNote({preventDefault(){}},true))return;}
+      else dialog.close();
+    }
+    pendingPrivateMoveId=source.id;setNotesMode('private');
+    if(privateNotesUnlocked)void completePendingPrivateMove();
+    else showToast(privateVault?'Desbloqueie o cofre para trancar esta nota.':'Configure o cofre para trancar esta nota.');
+  }
+  async function completePendingPrivateMove() {
+    const source=notes.find(item=>item.id===pendingPrivateMoveId&&!item.deletedAt),key=privateCryptoKey;
+    if(!source||!privateNotesUnlocked||!key)return false;
+    const oldRows=privateCipherRows,oldPrivateNotes=privateNotes,oldDeletedAt=source.deletedAt,oldUpdatedAt=source.updatedAt,now=nowISO();
+    const data={title:source.title||'',content:source.content||'',link:source.link||'',tagIds:Array.isArray(source.tagIds)?[...source.tagIds]:[],isPinned:Boolean(source.isPinned),sortOrder:Number(source.sortOrder)||0};
+    try {
+      const encrypted=await encryptPrivateValue(key,data);
+      if(!privateNotesUnlocked||privateCryptoKey!==key)return false;
+      const id=makeId(),row={id,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:source.createdAt||now,updatedAt:now,deletedAt:null};
+      privateCipherRows=oldRows.concat(row);privateNotes=oldPrivateNotes.concat({...data,id,createdAt:row.createdAt,updatedAt:now,deletedAt:null});
+      persistPrivateVault(false);source.deletedAt=now;source.updatedAt=now;saveNotes(false);
+      pendingPrivateMoveId='';scheduleSync();renderPrivateNotes();showToast('Nota trancada no cofre privado.');return true;
+    } catch {
+      privateCipherRows=oldRows;privateNotes=oldPrivateNotes;source.deletedAt=oldDeletedAt;source.updatedAt=oldUpdatedAt;
+      try{persistPrivateVault(false);localStorage.setItem(NOTES_KEY,JSON.stringify(notes));}catch{}
+      setPrivateStatus('Não consegui trancar a nota. Ela continua em Notas abertas.',true);renderNotes();renderPrivateNotes();return false;
+    }
+  }
   function openPrivateNoteEditor(noteId='') {
     if(!privateNotesUnlocked){showToast('Desbloqueie as Notas privadas primeiro.');return;}
     if(privateNoteDirty){void savePrivateNote({preventDefault(){}},false).then(saved=>{if(saved)openPrivateNoteEditor(noteId);});return;}
     const note=noteId?privateNotes.find(item=>item.id===String(noteId)&&!item.deletedAt):null;
-    privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteId').value=note?.id||'';$('privateNoteTitle').value=note?.title||'';$('privateNoteContent').value=note?.content||'';$('privateNoteForm').hidden=false;$('privateNoteTitle').focus();
+    privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteId').value=note?.id||'';$('privateNoteTitle').value=note?.title||'';$('privateNoteContent').value=note?.content||'';$('privateNoteForm').hidden=false;
   }
   async function savePrivateNote(event,close=true,allowEmpty=false) {
     event?.preventDefault?.();if(!privateNotesUnlocked||!privateCryptoKey)return false;
     const title=$('privateNoteTitle').value.trim(),content=$('privateNoteContent').value.trim();
     if(!title&&!content){if(allowEmpty){privateNoteDirty=false;return true;}setPrivateStatus('Preencha o título ou conteúdo.',true);return false;}
     try {
-      const id=$('privateNoteId').value||makeId(),old=privateCipherRows.find(item=>item.id===id&&!item.deletedAt),now=nowISO();
-      const data={title,content},key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
+      const id=$('privateNoteId').value||makeId(),old=privateCipherRows.find(item=>item.id===id&&!item.deletedAt),oldNote=privateNotes.find(item=>item.id===id&&!item.deletedAt),now=nowISO();
+      const data={title,content,link:oldNote?.link||'',tagIds:Array.isArray(oldNote?.tagIds)?oldNote.tagIds:[],isPinned:Boolean(oldNote?.isPinned),sortOrder:Number(oldNote?.sortOrder)||0},key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
       if(!privateNotesUnlocked||privateCryptoKey!==key)return false;
-      const row={id,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:old?.createdAt||now,updatedAt:now,deletedAt:null};
+      const row={id,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:old?.createdAt||oldNote?.createdAt||now,updatedAt:now,deletedAt:null};
       privateCipherRows=privateCipherRows.filter(item=>item.id!==id).concat(row);privateNotes=privateNotes.filter(item=>item.id!==id).concat({...data,id,createdAt:row.createdAt,updatedAt:now,deletedAt:null});
       privateNoteDirty=false;$('privateNoteId').value=id;persistPrivateVault();
       if(close){$('privateNoteForm').reset();$('privateNoteForm').hidden=true;$('privateNoteId').value='';}
@@ -656,7 +688,7 @@
   async function duplicatePrivateNote(noteId) {
     const source=privateNotes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!source||!privateCryptoKey)return;
     try {
-      const now=nowISO(),data={title:source.title?`${source.title.slice(0,132)} (cópia)`: '',content:source.content},id=makeId(),key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
+      const now=nowISO(),data={title:source.title?`${source.title.slice(0,132)} (cópia)`: '',content:source.content,link:source.link||'',tagIds:Array.isArray(source.tagIds)?source.tagIds:[],isPinned:Boolean(source.isPinned),sortOrder:Number(source.sortOrder)||0},id=makeId(),key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
       if(!privateNotesUnlocked||privateCryptoKey!==key)return;
       const row={id,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:now,updatedAt:now,deletedAt:null};privateCipherRows.push(row);privateNotes.unshift({...data,id,createdAt:now,updatedAt:now,deletedAt:null});persistPrivateVault();renderPrivateNotes();showToast('Nota privada duplicada.');
     } catch { setPrivateStatus('Não consegui duplicar a nota privada.',true); }
@@ -679,7 +711,7 @@
       const body=note.title?(note.content?`<p>${escapeHTML(note.content)}</p>`:''):`<p class="note-card-content--titleless">${escapeHTML(note.content)}</p>`;
       const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota';
       const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'';
-      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-pin-btn" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}" aria-label="${pinLabel}" title="${pinLabel}">📌</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-duplicate-note="${id}">DUPLICAR NOTA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button></article>`;
+      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-pin-btn" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}" aria-label="${pinLabel}" title="${pinLabel}">📌</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action menu-edit" type="button" data-duplicate-note="${id}">DUPLICAR NOTA</button><button class="menu-action" type="button" data-lock-note="${id}">TRANCAR 🔒</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button></article>`;
     }).join('') : '<div class="empty">Nenhuma nota para as tags selecionadas.</div>';
     renderFilterButton(); renderDialogLists();
   }
@@ -725,7 +757,6 @@
     $('executionDate').value=task?.executionDate || suggestedDate || '';setLinkAttachment('task',task?.link||'');
     $('deleteTaskBtn').classList.toggle('hidden',!task);
     $('taskDialog').showModal();
-    $('taskTitle').focus();
   }
   function closeTaskDialog() { taskDialogDirty=false;if ($('taskDialog').open) $('taskDialog').close(); }
   function savePopupBeforeClose(dialog) {
@@ -917,6 +948,7 @@
   function handleNotesClick(event) {
     if(event.target.closest('[data-touch-drag-note]')){event.preventDefault();return;}
     if(event.target.closest('a'))return;
+    const lock=event.target.closest('[data-lock-note]');if(lock){requestPrivateMove(lock.dataset.lockNote);return;}
     const pin=event.target.closest('[data-pin-note]');if(pin){toggleNotePin(pin.dataset.pinNote);return;}
     const duplicate=event.target.closest('[data-duplicate-note]');if(duplicate){duplicateNote(duplicate.dataset.duplicateNote);return;}
     const move=event.target.closest('[data-move-note]');
@@ -1022,9 +1054,10 @@
     $('noteForm').reset();$('noteId').value=note?.id || '';
     $('noteDialogTitle').textContent=note?'Editar nota':'Nova nota';
     $('deleteNoteBtn').classList.toggle('hidden',!note);
+    $('lockNoteBtn').classList.toggle('hidden',!note);
     $('noteTitle').value=note?.title || ''; $('noteContent').value=note?.content || '';
     renderNoteTagChoices(note?.tagIds||[]);$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';setLinkAttachment('note',note?.link||'');
-    $('noteDialog').showModal(); $('noteTitle').focus();
+    $('noteDialog').showModal();
   }
   function saveNote(event,close=true) {
     event?.preventDefault?.();
@@ -1413,6 +1446,7 @@
   $('noteLinkRemove').addEventListener('click',()=>clearLinkAttachment('note'));
   $('closeNoteDialog').addEventListener('click',closeNoteDialogSafely);
   $('deleteNoteBtn').addEventListener('click',softDeleteNoteFromDialog);
+  $('lockNoteBtn').addEventListener('click',()=>requestPrivateMove($('noteId').value));
   $('loginBtn').addEventListener('click',signIn);
   $('signupBtn').addEventListener('click',signUp);
   $('logoutBtn').addEventListener('click',signOut);
@@ -1438,8 +1472,7 @@
   $('privateCancelEditBtn').addEventListener('click',()=>{privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteForm').hidden=true;$('privateNoteId').value='';});
   $('privateNotesList').addEventListener('click',handlePrivateNotesClick);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&privateNotesUnlocked)privateHiddenAt=Date.now();else if(privateHiddenAt&&Date.now()-privateHiddenAt>=5*60*1000)lockPrivateNotes();});
-  $('scrollNotesTopBtn').addEventListener('click',()=>$('notesPage').scrollTo({top:0,behavior:'smooth'}));
-  $('scrollNotesBottomBtn').addEventListener('click',()=>$('notesPage').scrollTo({top:$('notesPage').scrollHeight,behavior:'smooth'}));
+
   $('exportBtn').addEventListener('click',exportBackup);
   document.addEventListener('dragend',()=>{handleDragEnd();noteDragId='';clearDropStyles();});
   document.addEventListener('pointerdown',startPointerDrag,true);
