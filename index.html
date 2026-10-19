@@ -159,9 +159,9 @@
     /* Compact full-screen home and weekly overview. Full task lists open in dialogs. */
     body { overflow:hidden; }
     body[data-page="notes"],body[data-page="settings"] { overflow-y:auto; }
-    .wrap { display:flex; flex-direction:column; height:100dvh; min-height:0; overflow:hidden; padding:10px 14px calc(76px + env(safe-area-inset-bottom,0px)); }
+    .wrap { display:flex; flex-direction:column; height:var(--app-zoom-height,100dvh); min-height:0; overflow:hidden; padding:10px 14px calc(76px + env(safe-area-inset-bottom,0px)); }
     body[data-page="tasks"] .wrap { padding-bottom:calc(132px + env(safe-area-inset-bottom,0px)); }
-    body[data-page="notes"] .wrap,body[data-page="settings"] .wrap { display:block; height:auto; min-height:100dvh; overflow:visible; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="notes"] .wrap,body[data-page="settings"] .wrap { display:block; height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
     .app-header { flex:none; gap:8px; margin:0 0 10px; }
     .brand { gap:9px; }
     .brand-icon { width:42px; height:42px; flex:none; object-fit:cover; border-radius:12px; }
@@ -358,7 +358,7 @@
     #planningBtn[aria-expanded="true"],#planningBtn { color:#ffd166; }
     #completedBtn[aria-expanded="true"] { color:#8fe0b5; }
     body[data-page="tasks"].planner-expanded { overflow-y:auto; }
-    body[data-page="tasks"].planner-expanded .wrap { height:auto; min-height:100dvh; overflow:visible; }
+    body[data-page="tasks"].planner-expanded .wrap { height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; }
     body[data-page="tasks"].planner-expanded #tasksPage.active { overflow:visible; }
     body[data-page="tasks"].planner-expanded .week-grid { flex:none; min-height:350px; grid-template-rows:repeat(4,minmax(74px,1fr)); }
     body[data-page="tasks"].planner-expanded .planner-panel:not([hidden]) { max-height:none; overflow:visible; }
@@ -453,8 +453,8 @@
     .note-card-top { min-height:30px; }
     .note-menu > summary { width:33px; height:33px; font-size:1.3rem; }
     .note-tag-pill { padding:4px 7px; font-size:.66rem; }
-    .note-card { max-height:320px; }
-    .note-card-body { max-height:210px; }
+    .note-card { max-height:280px; }
+    .note-card-body { max-height:180px; }
     .panel { padding:17px; border-radius:16px; }
     .panel h3 { font-size:1.12rem; }
     .field { gap:7px; margin-bottom:15px; }
@@ -557,17 +557,18 @@
       .task-touch-handle .drag-grip { display:block; font-size:1rem; line-height:1; transform:rotate(90deg); }
       .note-touch-handle { width:34px; height:36px; font-size:1.1rem; }
     }
-    .note-card { max-height:320px; }
+    .note-card { max-height:280px; }
     .note-card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; min-height:34px; margin:0 0 5px; }
     .note-card-title { flex:1; min-width:0; margin:1px 0 0 !important; line-height:1.2; overflow-wrap:anywhere; }
     .note-card-title-placeholder { flex:1; }
     .note-card-controls { display:flex; flex:none; align-items:center; gap:3px; }
     .note-card-controls .note-menu { flex:none; }
     .note-card-controls .note-menu > summary { width:34px; height:34px; }
+    .note-card-body { max-height:180px; }
     .note-card.is-pinned { border-color:#9b7935; }
     .note-link-row,.item-link { display:inline-flex; align-items:center; gap:5px; margin-top:8px; color:#a9c4ff; font-size:.78rem; font-weight:750; text-decoration:none; overflow-wrap:anywhere; }
     .item-link:hover { text-decoration:underline; }
-    .note-card-body { max-height:210px; }
+    .note-card-body { max-height:180px; }
     .planner-section-buttons .planning-box { color:#ffd166; }
     .planner-section-buttons .completed-box { color:#8fe0b5; border-color:#397653; background:linear-gradient(145deg,#183b2d,#162a2a); }
     .planner-section-buttons .completed-box span { color:inherit; }
@@ -643,7 +644,7 @@
       .task-touch-handle { width:28px; height:34px; }
       .task-touch-handle .drag-grip { font-size:.9rem; }
       .task-card--tile .task-touch-handle { width:18px; height:26px; }
-      .note-card { max-height:360px; padding-bottom:12px; }
+      .note-card { max-height:320px; padding-bottom:12px; }
       .note-card .note-touch-handle { display:grid; position:relative; right:auto; bottom:auto; z-index:1; width:36px; height:36px; margin:7px 0 0 auto; place-items:center; padding:0; border:1px solid #52617b; border-radius:10px; background:rgba(16,23,41,.94); color:#cbd5ea; font-size:1rem; touch-action:none; }
     }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
@@ -814,7 +815,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=72" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=72',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=73" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=73',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

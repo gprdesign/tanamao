@@ -341,7 +341,9 @@
     renderAll();
   }
   function applyZoom() {
-    document.documentElement.style.setProperty('--app-zoom',String(zoomLevel));
+    const root=document.documentElement,viewportHeight=window.visualViewport?.height||root.clientHeight||window.innerHeight;
+    root.style.setProperty('--app-zoom',String(zoomLevel));
+    root.style.setProperty('--app-zoom-height',`${Math.ceil(viewportHeight/zoomLevel)}px`);
     document.querySelectorAll('[data-zoom-value]').forEach(node=>node.textContent=`${Math.round(zoomLevel*100)}%`);
   }
   function changeZoom(direction) {
@@ -1467,6 +1469,8 @@
   document.querySelectorAll('.refresh-sync-action').forEach(button=>button.addEventListener('click',refreshAndSync));
   $('headerSettingsBtn').addEventListener('click',()=>setPage('settings'));
   document.querySelectorAll('[data-zoom-action]').forEach(button=>button.addEventListener('click',()=>changeZoom(button.dataset.zoomAction)));
+  window.addEventListener('resize',applyZoom,{passive:true});
+  window.visualViewport?.addEventListener('resize',applyZoom,{passive:true});
   $('logForm').addEventListener('submit',saveLogFromForm);
   document.querySelectorAll('[data-log-range]').forEach(button=>button.addEventListener('click',()=>setLogRange(button.dataset.logRange)));
   $('addSummaryTimeBtn').addEventListener('click',addSummaryTime);
