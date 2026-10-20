@@ -49,6 +49,10 @@
   privateCipherRows=privateCipherRows.map(normalizePrivateRow).filter(Boolean);
   let privateCryptoKey = null;
   let privateNotes = [];
+  let privateLogs = [];
+  const unlockedLogIds = new Set();
+  let pendingLogLockId = '';
+  let pendingLogUnlockId = '';
   let privateNotesUnlocked = false;
   let privateNotesMode = false;
   let privateNoteDirty = false;
@@ -141,7 +145,7 @@
   function saveTags(schedule=true) {
     tags=ensureDefaultTags(tags);
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
-    renderTasks(); renderHome(); renderFilterButton();
+    renderTasks(); renderHome(); renderFilterButton(); renderLogs();
     if (schedule) scheduleSync();
   }
   function loadLocalData() {
@@ -202,9 +206,9 @@
   }
   function normalizeLog(value) {
     if(!value||typeof value!=='object')return null;
-    const content=String(value.content??value.log_text??value.text??'').trim().slice(0,20000);
-    if(!content)return null;
-    return {id:String(value.id||makeId()),content,createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
+    const isLocked=Boolean(value.isLocked??value.is_locked),content=String(value.content??value.log_text??value.text??'').trim().slice(0,20000);
+    if(!content&&!isLocked)return null;
+    return {id:String(value.id||makeId()),content:isLocked?'':content,isLocked,tagId:String(value.tagId??value.tag_id??''),createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
   }
   function normalizeNote(value) {
     if (!value || typeof value !== 'object') return null;
@@ -250,7 +254,7 @@
     if(!setup||!unlock||!opened||!list)return;
     setup.hidden=Boolean(privateVault);unlock.hidden=!privateVault||privateNotesUnlocked;opened.hidden=!privateNotesUnlocked;
     if(!privateNotesUnlocked){list.innerHTML='';$('privateNoteForm').hidden=true;return;}
-    const ordered=privateNotes.filter(note=>!note.deletedAt).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    const ordered=privateNotes.filter(note=>!note.deletedAt&&note.kind!=='log').sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
     list.innerHTML=ordered.length?ordered.map(note=>{const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',tagIds=Array.isArray(note.tagIds)?note.tagIds:[],tagsHtml=tagIds.map(id=>tags.find(tag=>tag.id===id&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');return `<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${escapeHTML(note.content)}</p></button>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`;}).join(''):'<p class="empty">Nenhuma nota privada.</p>';
   }
   function renderNotesMode() {
@@ -368,8 +372,10 @@
     if (!['home','tasks','log','notes','settings'].includes(page)) return;
     const previous=currentPage, oldIndex=['home','tasks','log','notes','settings'].indexOf(previous), newIndex=['home','tasks','log','notes','settings'].indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
-    if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
-    if(page!=='notes'&&privateNotesUnlocked)void lockPrivateNotes();
+    if(!['notes','log'].includes(page)){pendingLogLockId='';pendingLogUnlockId='';}
+    if(page==='log'&&privateNotesUnlocked&&privateNoteDirty){void savePrivateNote({preventDefault(){}},false).then(saved=>{if(saved)setPage(page);});return;}
+    if(!['notes','log'].includes(page)&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
+    if(!['notes','log'].includes(page)&&privateNotesUnlocked)void lockPrivateNotes();
     currentPage=page;
     localStorage.setItem(PAGE_KEY,page);
     document.body.dataset.page=page;
@@ -586,21 +592,91 @@
     const shortDate=date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
     return `🕑[${duration}] ${content} ➡️ ${time} - ${relative}${weekdayTitle}, ${shortDate}`;
   }
+  function renderLogTagOptions(selected='') {
+    const options=`<option value="">SEM TAG</option>${tags.filter(tag=>!tag.deletedAt).map(tag=>`<option value="${escapeHTML(tag.id)}" ${tag.id===selected?'selected':''}>${escapeHTML(tag.name)}</option>`).join('')}`;
+    const input=$('logTagSelect');if(input)input.innerHTML=options;
+    return options;
+  }
   function renderLogs() {
     const list=$('logsList');if(!list)return;
+    renderLogTagOptions($('logTagSelect')?.value||'');
     const cutoff=logRange==='all'?0:Date.now()-({ '7d':7,'30d':30,'12w':84 }[logRange]||7)*86400000;
     const visible=logs.filter(log=>!log.deletedAt&&Date.parse(log.createdAt)>=cutoff).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
     document.querySelectorAll('[data-log-range]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.logRange===logRange)));
-    list.innerHTML=visible.length?visible.map(log=>`<article class="log-entry"><p>${escapeHTML(logTimestampLabel(log.createdAt,log.content))}</p></article>`).join(''):'<p class="empty">Nenhum registro neste período.</p>';
+    list.innerHTML=visible.length?visible.map(log=>{
+      const id=escapeHTML(log.id),tag=tags.find(item=>item.id===log.tagId&&!item.deletedAt),opened=Boolean(log.isLocked&&unlockedLogIds.has(log.id)),privateLog=opened?privateLogs.find(item=>item.id===log.id):null;
+      const content=log.isLocked?(privateLog?.content||'🔒 Registro trancado'):log.content;
+      const tagBadge=tag?`<span class="log-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`:'';
+      const lockAction=!log.isLocked?'lock':opened?'hide':'unlock',lockLabel=lockAction==='unlock'?'DESTRANCAR 🔒':'TRANCAR 🔒';
+      const tagOptions=`<option value="">SEM TAG</option>${tags.filter(item=>!item.deletedAt).map(item=>`<option value="${escapeHTML(item.id)}" ${item.id===log.tagId?'selected':''}>${escapeHTML(item.name)}</option>`).join('')}`;
+      return `<article class="log-entry" data-log-id="${id}"><p>${escapeHTML(logTimestampLabel(log.createdAt,content))}</p><div class="log-entry-footer">${tagBadge}<div class="log-entry-actions"><button class="log-action" type="button" data-log-action="tag" aria-label="Adicionar ou alterar tag do log">＋TAG</button><select class="log-tag-select" data-log-tag-select="${id}" aria-label="Tag deste log" hidden>${tagOptions}</select><button class="log-action" type="button" data-log-action="${lockAction}" data-log-id="${id}">${lockLabel}</button><button class="log-action log-action-delete" type="button" data-log-action="delete" data-log-id="${id}">EXCLUIR</button></div></div></article>`;
+    }).join(''):'<p class="empty">Nenhum registro neste período.</p>';
   }
   function saveLogFromForm(event) {
     event.preventDefault();const content=$('logText').value.trim();if(!content)return;
-    const now=nowISO();logs.unshift({id:makeId(),content,createdAt:now,updatedAt:now,deletedAt:null});
-    $('logText').value='';saveLogs();showToast('Registro salvo.');
+    const tagId=$('logTagSelect').value,now=nowISO();logs.unshift({id:makeId(),content,tagId,isLocked:false,createdAt:now,updatedAt:now,deletedAt:null});
+    $('logText').value='';$('logTagSelect').value='';saveLogs();showToast('Registro salvo.');
   }
   function setLogRange(range) {
     if(!['7d','30d','12w','all'].includes(range))return;
     logRange=range;localStorage.setItem(LOG_RANGE_KEY,range);renderLogs();
+  }
+  function requestLogVaultAccess(logId,action) {
+    if(action==='lock')pendingLogLockId=String(logId);else pendingLogUnlockId=String(logId);
+    pendingPrivateMoveId='';setNotesMode('private');setPage('notes');
+    showToast(privateVault?'Desbloqueie o cofre em Notas privadas; depois volto ao Log.':'Configure o cofre em Notas privadas para proteger os logs.');
+  }
+  function privateLogCipherId(logId) { return `tnm-log:${String(logId)}`; }
+  async function completePendingLogLock() {
+    const id=pendingLogLockId,log=logs.find(item=>item.id===id&&!item.deletedAt),key=privateCryptoKey;
+    if(!id||!log||!key||!privateNotesUnlocked)return false;
+    const now=nowISO(),cipherId=privateLogCipherId(id);
+    try {
+      const encrypted=await encryptPrivateValue(key,{kind:'log',logId:id,content:log.content,createdAt:log.createdAt});
+      if(!privateNotesUnlocked||privateCryptoKey!==key)return false;
+      const previous=privateCipherRows.find(item=>item.id===cipherId);
+      const row={id:cipherId,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:log.createdAt||previous?.createdAt||now,updatedAt:now,deletedAt:null};
+      privateCipherRows=privateCipherRows.filter(item=>item.id!==cipherId).concat(row);
+      privateLogs=privateLogs.filter(item=>item.id!==id).concat({id,content:log.content,createdAt:log.createdAt});
+      log.content='';log.isLocked=true;log.updatedAt=now;unlockedLogIds.delete(id);pendingLogLockId='';
+      persistPrivateVault(false);saveLogs(false);createAutomaticBackup(false);scheduleSync();renderLogs();setPage('log');showToast('Log trancado no cofre privado.');return true;
+    } catch { pendingLogLockId='';setPrivateStatus('Não consegui criptografar o log; o registro original foi mantido.',true);showToast('Não consegui trancar o log. O texto foi mantido.');return false; }
+  }
+  async function unlockLog(logId) {
+    const id=String(logId),log=logs.find(item=>item.id===id&&!item.deletedAt);
+    if(!log?.isLocked)return;
+    if(!privateNotesUnlocked||!privateCryptoKey){requestLogVaultAccess(id,'unlock');return;}
+    try {
+      let entry=privateLogs.find(item=>item.id===id);
+      if(!entry){const row=privateCipherRows.find(item=>item.id===privateLogCipherId(id)&&!item.deletedAt);if(!row)throw new Error('missing cipher');const data=await decryptPrivateValue(privateCryptoKey,row.iv,row.ciphertext);if(data?.kind!=='log'||data.logId!==id)throw new Error('invalid log');entry={id,content:String(data.content||''),createdAt:String(data.createdAt||row.createdAt)};privateLogs.push(entry);}
+      unlockedLogIds.add(id);renderLogs();
+    } catch { showToast('Não consegui abrir este log. Confira a senha e a sincronização do cofre.'); }
+  }
+  function deleteLog(logId) {
+    const id=String(logId),log=logs.find(item=>item.id===id&&!item.deletedAt);if(!log||!window.confirm('Excluir este registro do Log?'))return;
+    const now=nowISO();log.deletedAt=now;log.updatedAt=now;unlockedLogIds.delete(id);privateLogs=privateLogs.filter(item=>item.id!==id);
+    if(log.isLocked){const row=privateCipherRows.find(item=>item.id===privateLogCipherId(id));if(row){row.iv='';row.ciphertext='';row.deletedAt=now;row.updatedAt=now;}persistPrivateVault(false);}
+    saveLogs();showToast('Registro excluído.');
+  }
+  function handleLogsClick(event) {
+    const toggle=event.target.closest('[data-log-action="tag"]');
+    if(toggle){const select=toggle.parentElement.querySelector('[data-log-tag-select]');if(select){select.hidden=!select.hidden;if(!select.hidden)select.focus();}return;}
+    const button=event.target.closest('[data-log-action]');if(!button)return;
+    const id=button.dataset.logId,action=button.dataset.logAction;
+    if(action==='delete'){deleteLog(id);return;}
+    if(action==='lock'){
+      if(privateNotesUnlocked&&privateCryptoKey){pendingLogLockId=id;void completePendingLogLock();}
+      else requestLogVaultAccess(id,'lock');
+      return;
+    }
+    if(action==='unlock'){void unlockLog(id);return;}
+    if(action==='hide'){unlockedLogIds.delete(id);renderLogs();}
+  }
+  function handleLogTagChange(event) {
+    const select=event.target.closest('[data-log-tag-select]');if(!select)return;
+    const log=logs.find(item=>item.id===select.dataset.logTagSelect&&!item.deletedAt);if(!log)return;
+    const tagId=select.value;if(tagId&&!tags.some(item=>item.id===tagId&&!item.deletedAt)){showToast('Essa tag não está disponível.');renderLogs();return;}
+    log.tagId=tagId;log.updatedAt=nowISO();saveLogs();showToast(tagId?'Tag vinculada ao log.':'Tag removida do log.');
   }
   function setPrivateStatus(message,isError=false) {
     const node=$('privateStatus');if(!node)return;
@@ -612,7 +688,7 @@
     try {
       const salt=crypto.getRandomValues(new Uint8Array(16)),key=await derivePrivateKey(password,salt),check=await encryptPrivateValue(key,'TNM private vault v1');
       privateVault={salt:bytesToBase64(salt),verifierIv:check.iv,verifierCiphertext:check.ciphertext,ownerId:'',updatedAt:nowISO()};
-      privateCryptoKey=currentPage==='notes'&&privateNotesMode?key:null;privateNotesUnlocked=Boolean(privateCryptoKey);privateNotes=[];$('privateSetupPassword').value='';persistPrivateVault();setPrivateStatus(privateNotesUnlocked?'Cofre criado e desbloqueado neste aparelho.':'Cofre criado. Desbloqueie para acessar.');renderPrivateNotes();if(privateNotesUnlocked&&pendingPrivateMoveId)await completePendingPrivateMove();
+      privateCryptoKey=currentPage==='notes'&&privateNotesMode?key:null;privateNotesUnlocked=Boolean(privateCryptoKey);privateNotes=[];privateLogs=[];unlockedLogIds.clear();$('privateSetupPassword').value='';persistPrivateVault();setPrivateStatus(privateNotesUnlocked?'Cofre criado e desbloqueado neste aparelho.':'Cofre criado. Desbloqueie para acessar.');renderPrivateNotes();if(privateNotesUnlocked&&pendingPrivateMoveId)await completePendingPrivateMove();if(privateNotesUnlocked&&pendingLogLockId)await completePendingLogLock();
     } catch { setPrivateStatus('Não consegui criar o cofre com a criptografia deste aparelho.',true); }
   }
   async function loadDecryptedPrivateNotes(key=privateCryptoKey) {
@@ -623,6 +699,11 @@
     }
     return result.sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
   }
+  function setDecryptedVaultItems(items) {
+    privateNotes=items.filter(item=>item.kind!=='log');
+    privateLogs=items.filter(item=>item.kind==='log').map(item=>({id:String(item.logId||''),content:String(item.content||''),createdAt:String(item.createdAt||''),cipherId:String(item.id||'')})).filter(item=>item.id);
+    unlockedLogIds.clear();
+  }
   async function unlockPrivateVault(event) {
     event.preventDefault();if(!privateVault)return;
     if(session?.user?.id&&privateVault.ownerId&&privateVault.ownerId!==session.user.id){setPrivateStatus('Este cofre está vinculado a outra conta. Entre na conta original.',true);return;}
@@ -632,14 +713,14 @@
       const check=await decryptPrivateValue(key,privateVault.verifierIv,privateVault.verifierCiphertext);
       if(check!=='TNM private vault v1')throw new Error('wrong password');
       if(currentPage!=='notes'||!privateNotesMode){setPrivateStatus('Volte para Notas privadas para desbloquear.');return;}
-      privateNotes=await loadDecryptedPrivateNotes(key);privateCryptoKey=key;privateNotesUnlocked=true;setPrivateStatus('Cofre desbloqueado.');renderPrivateNotes();if(pendingPrivateMoveId)await completePendingPrivateMove();
-    } catch { privateCryptoKey=null;privateNotes=[];privateNotesUnlocked=false;setPrivateStatus('Senha incorreta. Não há recuperação se ela for esquecida.',true);renderPrivateNotes(); }
+      const decrypted=await loadDecryptedPrivateNotes(key);setDecryptedVaultItems(decrypted);privateCryptoKey=key;privateNotesUnlocked=true;setPrivateStatus('Cofre desbloqueado.');renderPrivateNotes();if(pendingPrivateMoveId)await completePendingPrivateMove();if(pendingLogLockId)await completePendingLogLock();else if(pendingLogUnlockId){const id=pendingLogUnlockId;pendingLogUnlockId='';if(privateLogs.some(item=>item.id===id))unlockedLogIds.add(id);else showToast('Não encontrei a cópia criptografada deste log.');setPage('log');renderLogs();}
+    } catch { privateCryptoKey=null;privateNotes=[];privateLogs=[];unlockedLogIds.clear();privateNotesUnlocked=false;setPrivateStatus('Senha incorreta. Não há recuperação se ela for esquecida.',true);renderPrivateNotes(); }
   }
   async function lockPrivateNotes() {
     if(privateNoteDirty){const saved=await savePrivateNote({preventDefault(){}},false,true);if(!saved)return false;}
-    privateCryptoKey=null;privateNotes=[];privateNotesUnlocked=false;privateNoteDirty=false;privateHiddenAt=0;setPrivateStatus('Cofre bloqueado.');
+    privateCryptoKey=null;privateNotes=[];privateLogs=[];unlockedLogIds.clear();privateNotesUnlocked=false;privateNoteDirty=false;privateHiddenAt=0;setPrivateStatus('Cofre bloqueado.');
     const form=$('privateNoteForm');if(form){form.reset();form.hidden=true;}
-    if($('privateNoteId'))$('privateNoteId').value='';renderPrivateNotes();return true;
+    if($('privateNoteId'))$('privateNoteId').value='';renderPrivateNotes();renderLogs();return true;
   }
   function requestPrivateMove(noteId) {
     const source=notes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!source)return;
@@ -1209,8 +1290,8 @@
   function rowToPrivateNote(row) { return normalizePrivateRow({id:row.id,iv:row.iv,ciphertext:row.ciphertext,created_at:row.created_at,updated_at:row.updated_at,deleted_at:row.deleted_at}); }
   function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,link_url:note.link||'',is_pinned:Boolean(note.isPinned),tag_ids:note.tagIds||[],sort_order:Number(note.sortOrder)||0,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
   function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
-  function logToRow(log) { return {id:log.id,owner_id:session.user.id,content:log.content,planner_version:1,created_at:log.createdAt,updated_at:log.updatedAt,deleted_at:log.deletedAt}; }
-  function rowToLog(row) { return normalizeLog({id:row.id,content:row.content,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
+  function logToRow(log) { return {id:log.id,owner_id:session.user.id,content:log.isLocked?'🔒 Registro trancado':log.content,tag_id:log.tagId||null,is_locked:Boolean(log.isLocked),planner_version:1,created_at:log.createdAt,updated_at:log.updatedAt,deleted_at:log.deletedAt}; }
+  function rowToLog(row) { return normalizeLog({id:row.id,content:row.content,tag_id:row.tag_id,is_locked:row.is_locked,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
   function mergeById(local,remote) {
     const map=new Map();
     for (const item of [...remote,...local]) {
@@ -1255,7 +1336,7 @@
     if(privateVault)localStorage.setItem(PRIVATE_VAULT_KEY,JSON.stringify(privateVault));else localStorage.removeItem(PRIVATE_VAULT_KEY);
     localStorage.setItem(PRIVATE_ROWS_KEY,JSON.stringify(privateCipherRows));
     if(foreignLocalVault&&privateNotesUnlocked)await lockPrivateNotes();
-    else if(privateNotesUnlocked&&privateCryptoKey)privateNotes=await loadDecryptedPrivateNotes();
+    else if(privateNotesUnlocked&&privateCryptoKey)setDecryptedVaultItems(await loadDecryptedPrivateNotes());
     const synced=await syncCloudAndWait();
     renderAll(); createAutomaticBackup(false); updateAuthUI();
     return synced;
@@ -1472,6 +1553,8 @@
   window.addEventListener('resize',applyZoom,{passive:true});
   window.visualViewport?.addEventListener('resize',applyZoom,{passive:true});
   $('logForm').addEventListener('submit',saveLogFromForm);
+  $('logsList').addEventListener('click',handleLogsClick);
+  $('logsList').addEventListener('change',handleLogTagChange);
   document.querySelectorAll('[data-log-range]').forEach(button=>button.addEventListener('click',()=>setLogRange(button.dataset.logRange)));
   $('addSummaryTimeBtn').addEventListener('click',addSummaryTime);
   $('summaryTimesList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-summary-time]');if(button)removeSummaryTime(button.dataset.removeSummaryTime);});

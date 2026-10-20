@@ -76,6 +76,8 @@ create table if not exists public.nmm_logs (
   id text primary key,
   owner_id uuid not null references auth.users(id) on delete cascade,
   content text not null check (length(trim(content)) > 0),
+  tag_id text,
+  is_locked boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,

@@ -690,14 +690,21 @@
     @keyframes today-flash { 50% { border-color:#a3c0ff; box-shadow:0 0 0 2px #8fb2ff66,0 0 18px #769fff55; } }
     body[data-page="tasks"] .refresh-sync-btn,body[data-page="notes"] .refresh-sync-btn { display:none !important; }
     .refresh-sync-btn { bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
-    .log-form { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:7px; margin-bottom:10px; }
+    .log-form { display:grid; grid-template-columns:minmax(0,1fr) minmax(130px,180px) auto; align-items:end; gap:7px; margin-bottom:10px; }
     .log-form textarea { min-height:54px; max-height:130px; margin:0; }
+    .log-form select { min-width:0; }
     .log-ranges { display:flex; gap:5px; margin-bottom:10px; overflow-x:auto; }
     .log-ranges button { flex:none; padding:5px 8px; border:1px solid #52617b; border-radius:999px; background:#111827; color:var(--muted); font-size:.62rem; font-weight:800; }
     .log-ranges button[aria-pressed="true"] { border-color:var(--accent); background:#243452; color:var(--text); }
     .logs-list { display:grid; align-content:start; gap:6px; }
     .log-entry { min-width:0; padding:8px 10px; border-left:3px solid #718fcd; border-radius:7px 10px 10px 7px; background:rgba(20,27,45,.72); }
     .log-entry p { margin:0; overflow-wrap:anywhere; font-size:.72rem; line-height:1.35; }
+    .log-entry-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:7px; margin-top:7px; }
+    .log-tag-pill { display:inline-flex; flex:none; padding:3px 7px; border:1px solid var(--tag-color,#8bafff); border-radius:999px; color:var(--tag-color,#8bafff); font-size:.58rem; font-weight:850; }
+    .log-entry-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:5px; }
+    .log-action { display:inline-flex; align-items:center; justify-content:center; min-height:29px; padding:4px 8px; border:1px solid #53627e; border-radius:8px; background:#19253b; color:var(--text); font-size:.58rem; font-weight:850; white-space:nowrap; }
+    .log-action-delete { border-color:#a94958; color:#ffc5cb; }
+    .log-tag-select { width:auto; min-width:112px; min-height:30px; padding:4px 7px; font-size:.62rem; }
     .settings-stack { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:10px; }
     .settings-stack > :last-child { grid-column:1 / -1; }
     @media(max-width:560px) { .settings-stack { grid-template-columns:1fr; } .settings-stack > :last-child { grid-column:auto; } }
@@ -740,6 +747,27 @@
       .week-arrow-horizontal { display:none; }
       .week-arrow-vertical { display:inline; }
     }
+    @media(max-width:600px) {
+      .log-form { grid-template-columns:minmax(0,1fr) auto; }
+      .log-form textarea { grid-column:1 / -1; }
+      .log-form select { grid-column:1; }
+      .log-entry-footer { align-items:flex-start; }
+      .log-entry-actions { justify-content:flex-start; }
+    }
+    @media(min-width:1100px) {
+      html { font-size:calc(18px + 2pt); }
+      body { font-size:calc(16px + 2pt); }
+      #homePage .home-week-lists { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      #homePage .home-day-columns { display:contents; }
+      .app-dialog { width:min(82vw,1080px); max-width:calc(100vw - 48px); }
+    }
+    @media(orientation:landscape) and (min-width:700px) and (max-width:1099px) and (min-height:600px) {
+      html { font-size:calc(20px + 2pt); }
+      body { font-size:calc(16px + 2pt); }
+      #homePage .home-week-lists { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      #homePage .home-day-columns { display:contents; }
+      .app-dialog { width:min(82vw,1080px); max-width:calc(100vw - 48px); }
+    }
   </style>
 </head>
 <body>
@@ -779,7 +807,7 @@
 
     <section id="logPage" class="page" aria-label="Log de eventos">
       <div class="page-heading"><div><h2>LOG DE EVENTOS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
-      <form id="logForm" class="log-form"><textarea id="logText" maxlength="20000" rows="2" required aria-label="Texto do registro" placeholder="Escreva um registro…"></textarea><button class="btn primary" type="submit">REGISTRAR</button></form>
+      <form id="logForm" class="log-form"><textarea id="logText" maxlength="20000" rows="2" required aria-label="Texto do registro" placeholder="Escreva um registro…"></textarea><select id="logTagSelect" aria-label="Tag do registro"><option value="">SEM TAG</option></select><button class="btn primary" type="submit">REGISTRAR</button></form>
       <div class="log-ranges" role="group" aria-label="Período do log"><button type="button" data-log-range="7d" aria-pressed="true">7 DIAS</button><button type="button" data-log-range="30d" aria-pressed="false">30 DIAS</button><button type="button" data-log-range="12w" aria-pressed="false">12 SEMANAS</button><button type="button" data-log-range="all" aria-pressed="false">TUDO</button></div>
       <div id="logsList" class="logs-list" aria-live="polite"></div>
     </section>
@@ -834,7 +862,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=77" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=77',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=78" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=78',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
