@@ -12,6 +12,7 @@ create table if not exists public.nmm_tasks (
   release_date date,
   due_date date,
   execution_date date,
+  recurrence jsonb,
   area text not null default 'vida' check (area in ('vida', 'trabalho', 'outros')),
   tag_id text not null,
   sort_order integer not null default 0,

@@ -174,15 +174,26 @@
     notes=Array.isArray(storedNotes) ? storedNotes.map(normalizeNote).filter(Boolean) : [];
     logs=Array.isArray(storedLogs) ? storedLogs.map(normalizeLog).filter(Boolean) : [];
   }
+  function normalizeRecurrence(value,taskDate='',taskId='') {
+    if(!value||typeof value!=='object')return null;
+    const frequency=['daily','weekly','monthly','yearly'].includes(String(value.frequency))?String(value.frequency):'';
+    const rawInterval=Number(value.interval??1),interval=Number.isInteger(rawInterval)?Math.min(999,Math.max(1,rawInterval)):1;
+    const anchorDate=isDateKey(value.anchorDate)?String(value.anchorDate):isDateKey(taskDate)?String(taskDate):'';
+    if(!frequency||!anchorDate)return null;
+    const weekdays=Array.isArray(value.weekdays)?Array.from(new Set(value.weekdays.map(Number).filter(day=>Number.isInteger(day)&&day>=1&&day<=7))).sort((a,b)=>a-b):[];
+    if(frequency==='weekly'&&!weekdays.length)weekdays.push(getIsoWeekday(anchorDate));
+    return {frequency,interval,weekdays:frequency==='weekly'?weekdays:[],anchorDate,until:isDateKey(value.until)?String(value.until):null,seriesId:String(value.seriesId||taskId||'')};
+  }
   function normalizeTask(value) {
     if (!value || typeof value !== 'object' || !String(value.title || '').trim()) return null;
     const legacyArea=value.area==='outros' ? 'outro' : (['vida','trabalho'].includes(value.area) ? value.area : 'vida');
-    const storedTag=value.tagId || value.tag_id;
+    const storedTag=value.tagId || value.tag_id,id=String(value.id||makeId()),rawDate=value.executionDate||value.execution_date;
+    const executionDate=isDateKey(rawDate)?String(rawDate):null;
     return {
-      id:String(value.id || makeId()), title:String(value.title).trim().slice(0,180),
+      id, title:String(value.title).trim().slice(0,180),
       content:String(value.content ?? value.details ?? '').slice(0,20000),link:normalizeLink(value.link ?? value.link_url ?? ''),
-      tagId:String(storedTag==='outros' ? 'outro' : (storedTag || legacyArea)),
-      executionDate:isDateKey(value.executionDate || value.execution_date) ? String(value.executionDate || value.execution_date) : null,
+      tagId:String(storedTag==='outros' ? 'outro' : (storedTag || legacyArea)),executionDate,
+      recurrence:normalizeRecurrence(value.recurrence,executionDate,id),
       sortOrder:Number.isFinite(Number(value.sortOrder ?? value.sort_order)) ? Number(value.sortOrder ?? value.sort_order) : 0,
       createdAt:String(value.createdAt || value.created_at || nowISO()), updatedAt:String(value.updatedAt || value.updated_at || value.createdAt || value.created_at || nowISO()),
       completedAt:value.completedAt || value.completed_at ? String(value.completedAt || value.completed_at) : null,
@@ -341,6 +352,35 @@
     date.setDate(date.getDate()+Number(amount || 0));
     return dateKey(date);
   }
+  function getIsoWeekday(key) { const day=(dateAtNoon(key)||new Date()).getDay();return day||7; }
+  function dateOrdinal(key) { const [year,month,day]=String(key).split('-').map(Number);return Math.floor(Date.UTC(year,month-1,day)/86400000); }
+  function recurrenceDateInMonth(monthIndex,day) {
+    const year=Math.floor(monthIndex/12),month=((monthIndex%12)+12)%12,lastDay=new Date(year,month+1,0).getDate();
+    return dateKey(new Date(year,month,Math.min(day,lastDay),12));
+  }
+  function nextRecurrenceDate(currentDate,recurrence) {
+    const rule=normalizeRecurrence(recurrence,currentDate,recurrence?.seriesId);if(!rule||!isDateKey(currentDate))return null;
+    const baseDate=currentDate>todayKey()?currentDate:todayKey();let next='';
+    if(rule.frequency==='daily'){
+      const delta=dateOrdinal(baseDate)-dateOrdinal(rule.anchorDate),steps=Math.max(0,Math.floor(delta/rule.interval)+1);
+      next=addDays(rule.anchorDate,steps*rule.interval);if(next<=baseDate)next=addDays(next,rule.interval);
+    }else if(rule.frequency==='weekly'){
+      const anchorWeek=startOfWeek(rule.anchorDate),limit=rule.interval*7+7;
+      for(let offset=1;offset<=limit;offset++){
+        const candidate=addDays(baseDate,offset),weekDelta=(dateOrdinal(startOfWeek(candidate))-dateOrdinal(anchorWeek))/7;
+        if(weekDelta>=0&&weekDelta%rule.interval===0&&rule.weekdays.includes(getIsoWeekday(candidate))){next=candidate;break;}
+      }
+    }else if(rule.frequency==='monthly'){
+      const anchor=dateAtNoon(rule.anchorDate),base=dateAtNoon(baseDate),anchorMonth=anchor.getFullYear()*12+anchor.getMonth(),baseMonth=base.getFullYear()*12+base.getMonth();
+      let step=Math.max(0,Math.floor((baseMonth-anchorMonth)/rule.interval)+1);next=recurrenceDateInMonth(anchorMonth+step*rule.interval,anchor.getDate());
+      if(next<=baseDate)next=recurrenceDateInMonth(anchorMonth+(step+1)*rule.interval,anchor.getDate());
+    }else if(rule.frequency==='yearly'){
+      const anchor=dateAtNoon(rule.anchorDate),base=dateAtNoon(baseDate);let step=Math.max(0,Math.floor((base.getFullYear()-anchor.getFullYear())/rule.interval)+1);
+      let year=anchor.getFullYear()+step*rule.interval;next=recurrenceDateInMonth(year*12+anchor.getMonth(),anchor.getDate());
+      if(next<=baseDate){year+=rule.interval;next=recurrenceDateInMonth(year*12+anchor.getMonth(),anchor.getDate());}
+    }
+    return next&&(!rule.until||next<=rule.until)?next:null;
+  }
   function startOfWeek(key) {
     const date=dateAtNoon(key) || new Date();
     const offset=(date.getDay()+6)%7;
@@ -459,6 +499,26 @@
     addNoteTagToSelection(tag.id);input.value='';$('noteTagMessage').textContent=existed?`A tag ${tag.name} já existia e foi selecionada.`:`Tag ${tag.name} criada e selecionada.`;
   }
   function nextTaskOrder(date) { return Math.max(-1,...tasks.filter(item=>!item.deletedAt&&!item.completedAt&&(item.executionDate||'')===(date||'')).map(item=>Number(item.sortOrder)||0))+1; }
+  function updateTaskRecurrenceUI(prefillWeekly=false) {
+    const frequency=$('taskRecurrence').value,options=$('recurrenceOptions'),weeklyField=$('recurrenceWeekdaysField');
+    options.hidden=!frequency;weeklyField.hidden=frequency!=='weekly';
+    $('recurrenceUnit').textContent=({daily:'dia(s)',weekly:'semana(s)',monthly:'mês(es)',yearly:'ano(s)'})[frequency]||'';
+    if(prefillWeekly&&frequency==='weekly'){
+      const boxes=Array.from(document.querySelectorAll('[name="recurrenceWeekday"]'));
+      if(!boxes.some(box=>box.checked)){const date=$('executionDate').value||todayKey(),weekday=getIsoWeekday(date),selected=boxes.find(box=>Number(box.value)===weekday);if(selected)selected.checked=true;}
+    }
+  }
+  function recurrenceFromTaskForm(existing,savedId,date) {
+    const frequency=$('taskRecurrence').value;if(!frequency)return {value:null,error:''};
+    if(!date)return {value:null,error:'Escolha a primeira data de execução para uma tarefa recorrente.'};
+    const interval=Number($('recurrenceInterval').value),until=$('recurrenceUntil').value||null;
+    if(!Number.isInteger(interval)||interval<1||interval>999)return {value:null,error:'O intervalo precisa ser um número entre 1 e 999.'};
+    if(until&&(!isDateKey(until)||until<date))return {value:null,error:'A data final precisa ser igual ou posterior à primeira ocorrência.'};
+    const weekdays=Array.from(document.querySelectorAll('[name="recurrenceWeekday"]:checked')).map(box=>Number(box.value));
+    if(frequency==='weekly'&&!weekdays.length)return {value:null,error:'Selecione ao menos um dia da semana.'};
+    const previous=existing?.recurrence,anchorDate=previous?.frequency===frequency&&isDateKey(previous.anchorDate)?previous.anchorDate:date;
+    return {value:normalizeRecurrence({frequency,interval,weekdays,anchorDate,until,seriesId:previous?.seriesId||existing?.id||savedId},date,savedId),error:''};
+  }
 
   function tagDot(tagId) {
     const tag=getTag(tagId);
@@ -481,8 +541,8 @@
     const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':''].filter(Boolean).join(' ');
     const linked=options.linked?'task-link':'';
     const tag=getTag(task.tagId),taskTag=tagDot(task.tagId),taskHandle=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:'';
-    return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
-      <div class="task-main"><div class="task-title-row">${taskTag}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
+    return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}${task.recurrence?' · Tarefa recorrente':''}">
+      <div class="task-main"><div class="task-title-row">${taskTag}${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span>':''}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
       <div class="task-actions">${taskMenu(task,options.canMove!==false)}${taskHandle}</div>
     </article>`;
   }
@@ -615,7 +675,7 @@
   }
   function renderHomeTaskList(id,list) {
     const node=$(id);
-    node.innerHTML=list.length?list.map(task=>{const tag=getTag(task.tagId),late=task.executionDate<todayKey();return `<article class="home-task-row${late?' is-late':''}"><div class="home-task-main"><span class="home-item-date">${escapeHTML(homeDateLabel(task.executionDate))}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button><span class="home-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span></div></article>`;}).join(''):'<div class="empty">Sem tarefas.</div>';
+    node.innerHTML=list.length?list.map(task=>{const tag=getTag(task.tagId),late=task.executionDate<todayKey();return `<article class="home-task-row${late?' is-late':''}"><div class="home-task-main"><span class="home-item-date">${escapeHTML(homeDateLabel(task.executionDate))}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span> ':''}${escapeHTML(task.title)}</button><span class="home-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span></div></article>`;}).join(''):'<div class="empty">Sem tarefas.</div>';
   }
   function renderHomeEvents() {
     const node=$('homeUpcomingEventsList');if(!node)return;
@@ -906,6 +966,8 @@
     $('taskTitle').value=task?.title || '';$('taskContent').value=task?.content || '';
     renderTaskTagOptions(task?.tagId || filterTagIds[0] || localStorage.getItem(LAST_TAG_KEY) || 'vida');
     $('executionDate').value=task?.executionDate || suggestedDate || '';setLinkAttachment('task',task?.link||'');
+    const recurrence=task?.recurrence||null;$('taskRecurrence').value=recurrence?.frequency||'';$('recurrenceInterval').value=String(recurrence?.interval||1);$('recurrenceUntil').value=recurrence?.until||'';
+    document.querySelectorAll('[name="recurrenceWeekday"]').forEach(box=>{box.checked=Boolean(recurrence?.weekdays?.includes(Number(box.value)));});updateTaskRecurrenceUI(false);
     $('deleteTaskBtn').classList.toggle('hidden',!task);
     $('taskDialog').showModal();
   }
@@ -939,25 +1001,22 @@
   }
   function saveTaskFromForm(event,close=true) {
     event?.preventDefault?.();
-    const title=$('taskTitle').value.trim(),content=$('taskContent').value.trim(),link=normalizeLink($('taskLink').value);
-    const tagId=$('taskTag').value;
-    const date=$('executionDate').value || null;
-    if (!title || !tags.some(tag=>tag.id===tagId && !tag.deletedAt) || (date && !isDateKey(date))) { showToast('Confira o título, a tag e a data da tarefa.');return false; }
-    const id=$('taskId').value;
-    const existing=id ? tasks.find(task=>task.id===id && !task.deletedAt) : null;
-    const now=nowISO(),savedId=existing?.id||makeId();
-    if (existing) {
-      if ((existing.executionDate||'')!==(date||'')) existing.sortOrder=nextTaskOrder(date);
-      existing.title=title;existing.content=content;existing.link=link;existing.tagId=tagId;existing.executionDate=date;existing.updatedAt=now;
-    } else {
-      tasks.push({id:savedId,title,content,link,tagId,executionDate:date,sortOrder:nextTaskOrder(date),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
-    }
+    const title=$('taskTitle').value.trim(),content=$('taskContent').value.trim(),link=normalizeLink($('taskLink').value),tagId=$('taskTag').value,date=$('executionDate').value||null;
+    const id=$('taskId').value,existing=id?tasks.find(task=>task.id===id&&!task.deletedAt):null,now=nowISO(),savedId=existing?.id||makeId();
+    const recurrenceResult=recurrenceFromTaskForm(existing,savedId,date);
+    if(recurrenceResult.error){showToast(recurrenceResult.error);return false;}
+    if(!title||!tags.some(tag=>tag.id===tagId&&!tag.deletedAt)||(date&&!isDateKey(date))){showToast('Confira o título, a tag e a data da tarefa.');return false;}
+    const recurrence=recurrenceResult.value;
+    if(existing){
+      if((existing.executionDate||'')!==(date||''))existing.sortOrder=nextTaskOrder(date);
+      existing.title=title;existing.content=content;existing.link=link;existing.tagId=tagId;existing.executionDate=date;existing.recurrence=recurrence;existing.updatedAt=now;
+    }else tasks.push({id:savedId,title,content,link,tagId,executionDate:date,recurrence,sortOrder:nextTaskOrder(date),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
     $('taskId').value=savedId;
     if(!close){$('taskDialogTitle').textContent='Editar tarefa';$('deleteTaskBtn').classList.remove('hidden');}
     localStorage.setItem(LAST_TAG_KEY,tagId);
-    if (date && date>=todayKey()) setWeek(date);
+    if(date&&date>=todayKey())setWeek(date);
     taskDialogDirty=false;if(close)closeTaskDialog();saveTasks();
-    if (!date) togglePlannerSection('planning',true);
+    if(!date)togglePlannerSection('planning',true);
     showToast(close?'Tarefa salva.':existing?'Tarefa atualizada.':'Tarefa adicionada.',close?3000:2600);return true;
   }
   function softDeleteTask() { softDeleteTaskById($('taskId').value); }
@@ -967,12 +1026,23 @@
     task.deletedAt=nowISO(); task.updatedAt=task.deletedAt;
     closeTaskDialog(); saveTasks(); showToast('Tarefa excluída.');
   }
+  function createNextTaskOccurrence(task) {
+    if(!task.recurrence)return null;
+    const rule=normalizeRecurrence(task.recurrence,task.executionDate,task.id),currentDate=task.executionDate||rule?.anchorDate,nextDate=rule&&currentDate?nextRecurrenceDate(currentDate,rule):null;
+    if(!nextDate)return null;
+    const seriesId=rule.seriesId||task.id;
+    if(tasks.some(item=>item.recurrence?.seriesId===seriesId&&item.executionDate===nextDate))return null;
+    const now=nowISO(),id=makeId(),recurrence={...rule,seriesId};
+    tasks.push({id,title:task.title,content:task.content,link:task.link,tagId:task.tagId,executionDate:nextDate,recurrence,sortOrder:nextTaskOrder(nextDate),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
+    return nextDate;
+  }
   function toggleComplete(taskId,complete) {
-    const task=tasks.find(item=>item.id===String(taskId) && !item.deletedAt);
-    if (!task) return;
-    task.completedAt=complete ? nowISO() : null;
-    task.updatedAt=nowISO();
-    saveTasks();
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task)return null;
+    const wasCompleted=Boolean(task.completedAt);task.completedAt=complete?nowISO():null;task.updatedAt=nowISO();
+    const nextDate=complete&&!wasCompleted?createNextTaskOccurrence(task):null;saveTasks();return nextDate;
+  }
+  function showTaskCompletionToast(nextDate) {
+    showToast(nextDate?`Tarefa concluída. Próxima ocorrência: ${formatDate(nextDate,{weekday:'short',day:'2-digit',month:'2-digit'})}.`:'Tarefa concluída.');
   }
   function setTaskDate(taskId,date) {
     const task=tasks.find(item=>item.id===String(taskId) && !item.deletedAt && !item.completedAt);
@@ -1027,7 +1097,7 @@
   function handleTaskClick(event) {
     if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();return;}
     const completion=event.target.closest('[data-toggle-complete-task]');
-    if(completion){const complete=completion.dataset.complete==='true';toggleComplete(completion.dataset.toggleCompleteTask,complete);showToast(complete?'Tarefa concluída.':'Tarefa reaberta.');return;}
+    if(completion){const complete=completion.dataset.complete==='true',nextDate=toggleComplete(completion.dataset.toggleCompleteTask,complete);if(complete)showTaskCompletionToast(nextDate);else showToast('Tarefa reaberta.');return;}
     const move=event.target.closest('[data-move-task]');
     if (move) { moveTask(move.dataset.moveTask,move.dataset.direction); return; }
     const remove=event.target.closest('[data-delete-task]');
@@ -1102,7 +1172,7 @@
   function performTaskDrop(id,target) {
     if(!target)return;
     const targetCard=target.closest('.task-card[data-task-id]'),completed=target.closest('#completedPanel,#completedList,#completedBtn'),day=target.closest('.day-column[data-date]'),overdueColumn=target.closest('.day-column[data-kind="overdue"]'),planning=target.closest('#planningPanel,#planningList,#planningBtn'),dayList=target.closest('#dayDialogList');
-    if(completed){const task=tasks.find(item=>item.id===String(id)&&!item.deletedAt&&!item.completedAt);if(task){toggleComplete(id,true);showToast('Tarefa concluída.');}return;}
+    if(completed){const task=tasks.find(item=>item.id===String(id)&&!item.deletedAt&&!item.completedAt);if(task){const nextDate=toggleComplete(id,true);showTaskCompletionToast(nextDate);}return;}
     if(overdueColumn||dayList&&activeDayKind==='all-overdue')reorderOverdueTaskBefore(id,targetCard?.dataset.taskId||'');
     else if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
     else if(day)appendTaskToBucket(id,day.dataset.date);
@@ -1349,10 +1419,10 @@
     }
   }
   function taskToRow(task) {
-    return {id:task.id,owner_id:session.user.id,title:task.title,details:task.content||'',link_url:task.link||'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,tag_id:task.tagId,sort_order:Number(task.sortOrder)||0,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
+    return {id:task.id,owner_id:session.user.id,title:task.title,details:task.content||'',link_url:task.link||'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,recurrence:task.recurrence||null,tag_id:task.tagId,sort_order:Number(task.sortOrder)||0,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
   }
   function rowToTask(row) {
-    return normalizeTask({id:row.id,title:row.title,content:row.details,link_url:row.link_url,tagId:row.tag_id,area:row.area,executionDate:row.execution_date,sortOrder:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
+    return normalizeTask({id:row.id,title:row.title,content:row.details,link_url:row.link_url,tagId:row.tag_id,area:row.area,executionDate:row.execution_date,recurrence:row.recurrence,sortOrder:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
   }
   function tagToRow(tag) { return {owner_id:session.user.id,id:tag.id,name:tag.name,color:tag.color,created_at:tag.createdAt,updated_at:tag.updatedAt,deleted_at:tag.deletedAt,planner_version:1}; }
   function rowToTag(row) { return normalizeTag({id:row.id,name:row.name,color:row.color,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
@@ -1582,6 +1652,7 @@
   $('taskForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'task'));
   $('taskForm').addEventListener('input',()=>{taskDialogDirty=true;});
   $('taskForm').addEventListener('change',()=>{taskDialogDirty=true;});
+  $('taskRecurrence').addEventListener('change',()=>updateTaskRecurrenceUI(true));
   $('taskLinkToggle').addEventListener('click',()=>toggleLinkAttachment('task'));
   $('taskLinkRemove').addEventListener('click',()=>clearLinkAttachment('task'));
   $('closeTaskDialog').addEventListener('click',closeTaskDialogSafely);
