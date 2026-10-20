@@ -375,11 +375,11 @@
 
     .main-nav { position:fixed; isolation:isolate; }
     .week-dock #weekLabel { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .nav-indicator { position:absolute; z-index:0; top:5px; bottom:5px; left:6px; width:calc((100% - 24px)/4); border-radius:10px; background:#202b42; box-shadow:inset 0 1px 0 #ffffff20; transition:transform .42s cubic-bezier(.22,1,.36,1),width .25s ease; pointer-events:none; }
+    .nav-indicator { position:absolute; z-index:0; top:5px; bottom:5px; left:6px; width:calc((100% - 24px)/4); border-radius:10px; background:#202b42; box-shadow:inset 0 1px 0 #ffffff20; transition:left .32s cubic-bezier(.22,1,.36,1),width .25s ease; pointer-events:none; }
     .nav-btn { position:relative; z-index:1; background:transparent !important; transition:color .22s ease,transform .22s ease; }
     .nav-btn[aria-current="page"] { color:var(--text); }
-    .page.page-enter { animation:page-enter .32s cubic-bezier(.22,.75,.25,1) both; }
-    @keyframes page-enter { from { opacity:0; transform:translateX(var(--page-shift,12px)); filter:blur(2px); } to { opacity:1; transform:translateX(0); filter:blur(0); } }
+    .page.page-enter { animation:page-enter .24s ease-out both; }
+    @keyframes page-enter { from { opacity:0; } to { opacity:1; } }
     dialog[open] { animation:dialog-in .22s cubic-bezier(.22,.75,.25,1) both; }
     @keyframes dialog-in { from { opacity:0; transform:translateY(8px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
     /* Interface ampliada para leitura confortável em celular e tablet. */
@@ -671,7 +671,7 @@
     .header-settings-btn { width:40px; padding:5px !important; font-size:1rem !important; }
     .dialog-save-actions { display:flex; justify-content:space-between; align-items:center; }
     .btn.danger { border-color:#a94958; color:#ffc5cb; }
-    .sub-dock { z-index:19; bottom:calc(82px + env(safe-area-inset-bottom,0px)); width:min(640px,calc(100% - 20px)); min-height:48px; padding:5px 7px; gap:4px; justify-content:space-between; }
+    .sub-dock { z-index:19; bottom:calc(100px + env(safe-area-inset-bottom,0px)); width:min(640px,calc(100% - 20px)); min-height:48px; padding:5px 7px; gap:4px; justify-content:space-between; }
     body:not([data-page="tasks"]) #weekDock { display:none !important; }
     body:not([data-page="notes"]) #notesDock { display:none !important; }
     body[data-page="notes"] #notesDock { display:flex !important; }
@@ -807,13 +807,42 @@
       body[data-page="tasks"] #weekDock { position:static !important; display:flex !important; grid-column:2; grid-row:1; flex-direction:column; align-items:stretch; justify-content:space-between; width:108px !important; height:auto; }
       #notesList { grid-template-columns:repeat(4,minmax(0,1fr)) !important; gap:12px !important; }
     }
+    /* Reserve the full bottom dock area and keep scrollable pages reachable. */
+    .wrap { padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="notes"] .wrap,body[data-page="tasks"] .wrap,body[data-page="tasks"].planner-expanded .wrap { padding-bottom:calc(152px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="settings"] .wrap,body[data-page="log"] .wrap { height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="log"] { overflow-x:hidden; overflow-y:auto; }
+    .nav-indicator[hidden] { display:none; }
+    .tag-manager-add { display:grid; grid-template-columns:minmax(0,1fr) 64px auto; align-items:end; gap:8px; }
+    .tag-manager-add .field { min-width:0; margin:0; }
+    .tag-manager-add input[type="color"] { width:100%; min-height:42px; height:42px; padding:4px; }
+    .tag-manager-list { display:grid; gap:7px; max-height:52dvh; margin-top:8px; overflow-y:auto; }
+    .tag-manager-row { display:grid; grid-template-columns:40px minmax(0,1fr) auto; align-items:center; gap:7px; padding:7px; border:1px solid var(--line); border-radius:10px; background:#101729; }
+    .tag-manager-row input[type="color"] { width:40px; min-height:38px; height:38px; padding:3px; }
+    .tag-manager-row input[type="text"] { min-width:0; min-height:38px; padding:6px 8px; }
+    .tag-manager-row .btn { min-height:38px; padding:5px 8px; }
+    .note-format-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin:-2px 0 6px; }
+    .note-format-toolbar button { display:grid; place-items:center; width:34px; min-height:34px; padding:0; border:1px solid #53627e; border-radius:8px; background:#19253b; color:var(--text); }
+    .note-format-toolbar span { color:var(--muted); font-size:.68rem; }
+    .log-action[hidden] { display:none !important; }
+    @media (min-width:1100px), (orientation:landscape) and (min-width:700px) and (min-height:600px) {
+      body[data-page="tasks"] .wrap { padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
+    }
+    @media (max-width:380px) {
+      .header-actions { gap:4px; }
+      .header-actions .btn { padding-right:6px; padding-left:6px; font-size:.7rem; }
+      .tag-manager-add { grid-template-columns:minmax(0,1fr) 48px auto; gap:5px; }
+      .tag-manager-row { grid-template-columns:34px minmax(0,1fr) auto; gap:5px; }
+      .tag-manager-row input[type="color"] { width:34px; }
+      .tag-manager-row .btn { padding-right:6px; padding-left:6px; }
+    }
   </style>
 </head>
 <body>
   <main class="wrap">
     <header class="app-header">
       <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div><h1>Tá na mão!</h1><p>Seu planner semanal</p></div></div>
-      <div class="header-actions"><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
+      <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
     </header>
 
     <section id="homePage" class="page active" aria-label="Início">
@@ -858,7 +887,7 @@
       <section id="privateNotesView" class="private-notes-view" hidden>
         <section id="privateSetupPanel" class="panel" hidden><h3>Criar cofre privado</h3><p class="muted">O conteúdo será criptografado neste aparelho antes de sincronizar. Se esquecer a senha, não há recuperação.</p><form id="privateSetupForm"><div class="field"><label for="privateSetupPassword">Senha (mínimo 8 caracteres)</label><input id="privateSetupPassword" type="password" minlength="8" autocomplete="new-password" required></div><button class="btn primary" type="submit">Criar cofre</button></form></section>
         <section id="privateUnlockPanel" class="panel" hidden><h3>Desbloquear notas privadas</h3><form id="privateUnlockForm"><div class="field"><label for="privateUnlockPassword">Senha do cofre</label><input id="privateUnlockPassword" type="password" autocomplete="current-password" required></div><button class="btn primary" type="submit">Desbloquear</button></form><p class="muted">A senha nunca é salva. Sem ela, o conteúdo criptografado não pode ser recuperado.</p></section>
-        <section id="privateUnlockedPanel" hidden><div class="private-notes-toolbar"><h3>Notas privadas</h3><div><button class="btn small" id="privateNewNoteBtn" type="button">＋ Nota privada</button><button class="btn small" id="privateLockBtn" type="button">Bloquear</button></div></div><form id="privateNoteForm" class="private-note-editor" hidden><input id="privateNoteId" type="hidden"><div class="field"><label for="privateNoteTitle">Título</label><input id="privateNoteTitle" maxlength="140"></div><div class="field"><label for="privateNoteContent">Conteúdo</label><textarea id="privateNoteContent" maxlength="20000"></textarea></div><div class="form-actions dialog-save-actions"><button class="btn" id="privateCancelEditBtn" type="button">Cancelar</button><button class="btn primary" type="submit">Salvar privada</button></div></form><div id="privateNotesList" class="private-notes-list"></div></section>
+        <section id="privateUnlockedPanel" hidden><div class="private-notes-toolbar"><h3>Notas privadas</h3><div><button class="btn small" id="privateNewNoteBtn" type="button">＋ Nota privada</button><button class="btn small" id="privateLockBtn" type="button">Bloquear</button></div></div><form id="privateNoteForm" class="private-note-editor" hidden><input id="privateNoteId" type="hidden"><div class="field"><label for="privateNoteTitle">Título</label><input id="privateNoteTitle" maxlength="140"></div><div class="field"><label for="privateNoteContent">Conteúdo</label><div class="note-format-toolbar" role="group" aria-label="Formatar conteúdo"><button type="button" data-note-format="bold" data-format-target="privateNoteContent" aria-label="Negrito (Ctrl+B)" title="Negrito · Ctrl+B"><strong>B</strong></button><button type="button" data-note-format="italic" data-format-target="privateNoteContent" aria-label="Itálico (Ctrl+I)" title="Itálico · Ctrl+I"><em>I</em></button><button type="button" data-note-format="underline" data-format-target="privateNoteContent" aria-label="Sublinhado (Ctrl+U)" title="Sublinhado · Ctrl+U"><u>U</u></button><span>Ctrl+B / Ctrl+I / Ctrl+U</span></div><textarea id="privateNoteContent" maxlength="20000"></textarea></div><div class="form-actions dialog-save-actions"><button class="btn" id="privateCancelEditBtn" type="button">Cancelar</button><button class="btn primary" type="submit">Salvar privada</button></div></form><div id="privateNotesList" class="private-notes-list"></div></section>
         <p class="status-text" id="privateStatus" aria-live="polite"></p>
       </section>
     </section>
@@ -885,7 +914,7 @@
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
     <button class="nav-btn" type="button" data-page="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span>RESUMO</span></button>
-    <button class="nav-btn" type="button" data-page="tasks"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span>MINHA SEMANA</span></button>
+    <button class="nav-btn" type="button" data-page="tasks"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span>PLANNER</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
     <button class="nav-btn" type="button" data-page="log"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5v5l3.5 2"></path></svg></span><span>LOG</span></button>
   </nav>
@@ -893,15 +922,16 @@
   <dialog id="taskDialog" class="app-dialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><div class="field"><label for="taskContent">Conteúdo <span class="muted">(opcional)</span></label><textarea id="taskContent" maxlength="20000" placeholder="Detalhes da tarefa…"></textarea></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="taskLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="taskLinkWrap" hidden><div><label for="taskLink">Endereço do link</label><input id="taskLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="taskLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Sem data, fica em Planejar. Enter no título vai para Conteúdo; Enter no conteúdo cria linha. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions dialog-save-actions"><button class="btn danger" id="deleteTaskBtn" type="button">Excluir</button><button class="btn primary" type="submit">Salvar</button></div></form></dialog>
 
   <dialog id="filterDialog" class="app-dialog"><div class="dialog-head"><h2>Filtros</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">As mesmas tags aparecem em todas as páginas, mas a seleção vale somente para a página aberta.</p><div class="filter-tag-list" id="filterTagList"></div><button class="btn small" id="clearFiltersBtn" type="button">Limpar seleção</button><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
+  <dialog id="tagManagerDialog" class="app-dialog"><div class="dialog-head"><h2>Gerenciar tags</h2><button class="btn ghost small" id="closeTagManager" type="button" aria-label="Fechar">✕</button></div><form id="tagManagerAddForm" class="tag-manager-add"><div class="field"><label for="managedTagName">Nova tag</label><input id="managedTagName" maxlength="32" required placeholder="Nome da tag"></div><div class="field"><label for="managedTagColor">Cor</label><input id="managedTagColor" type="color" value="#8bafff" aria-label="Cor da nova tag"></div><button class="btn primary small" type="submit">＋ ADC</button></form><p class="tag-status" id="tagManagerStatus" aria-live="polite"></p><div id="tagManagerList" class="tag-manager-list"></div></dialog>
 
   <dialog id="dayDialog" class="app-dialog"><div class="dialog-head"><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint" id="dayDialogHint" hidden></p><div class="form-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
 
 
-  <dialog id="noteDialog" class="app-dialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título (opcional)</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><span class="field-label">Tags</span><div class="note-tag-list" id="noteTagChoices"></div><button class="btn small note-new-tag-toggle" id="noteNewTagToggle" type="button" aria-expanded="false">＋ Nova tag</button><div class="note-new-tag-row" id="noteNewTagRow" hidden><input id="noteNewTagName" maxlength="32" placeholder="Nome da tag"><button class="btn primary small" id="noteNewTagAdd" type="button">Criar tag</button></div><p class="tag-status" id="noteTagMessage" aria-live="polite"></p></div><div class="field"><label for="noteContent">Conteúdo (opcional)</label><textarea id="noteContent" maxlength="20000" placeholder="Escreva sua nota…"></textarea></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="noteLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="noteLinkWrap" hidden><div><label for="noteLink">Endereço do link</label><input id="noteLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="noteLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Preencha título, conteúdo ou os dois. Enter no título vai para Conteúdo; Enter no conteúdo cria linha. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions dialog-save-actions"><button class="btn danger hidden" id="deleteNoteBtn" type="button">Excluir</button><button class="btn small hidden" id="lockNoteBtn" type="button">Trancar 🔒</button><button class="btn primary" type="submit">Salvar nota</button></div></form></dialog>
+  <dialog id="noteDialog" class="app-dialog"><form id="noteForm"><div class="dialog-head"><h2 id="noteDialogTitle">Nova nota</h2><button class="btn ghost small" id="closeNoteDialog" type="button" aria-label="Fechar">✕</button></div><input id="noteId" type="hidden"><div class="field"><label for="noteTitle">Título (opcional)</label><input id="noteTitle" maxlength="140" placeholder="Título da nota"></div><div class="field"><span class="field-label">Tags</span><div class="note-tag-list" id="noteTagChoices"></div><button class="btn small note-new-tag-toggle" id="noteNewTagToggle" type="button" aria-expanded="false">＋ Nova tag</button><div class="note-new-tag-row" id="noteNewTagRow" hidden><input id="noteNewTagName" maxlength="32" placeholder="Nome da tag"><button class="btn primary small" id="noteNewTagAdd" type="button">Criar tag</button></div><p class="tag-status" id="noteTagMessage" aria-live="polite"></p></div><div class="field"><label for="noteContent">Conteúdo (opcional)</label><div class="note-format-toolbar" role="group" aria-label="Formatar conteúdo"><button type="button" data-note-format="bold" data-format-target="noteContent" aria-label="Negrito (Ctrl+B)" title="Negrito · Ctrl+B"><strong>B</strong></button><button type="button" data-note-format="italic" data-format-target="noteContent" aria-label="Itálico (Ctrl+I)" title="Itálico · Ctrl+I"><em>I</em></button><button type="button" data-note-format="underline" data-format-target="noteContent" aria-label="Sublinhado (Ctrl+U)" title="Sublinhado · Ctrl+U"><u>U</u></button><span>Ctrl+B / Ctrl+I / Ctrl+U</span></div><textarea id="noteContent" maxlength="20000" placeholder="Escreva sua nota…"></textarea></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="noteLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="noteLinkWrap" hidden><div><label for="noteLink">Endereço do link</label><input id="noteLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="noteLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Preencha título, conteúdo ou os dois. Enter no título vai para Conteúdo; Enter no conteúdo cria linha. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions dialog-save-actions"><button class="btn danger hidden" id="deleteNoteBtn" type="button">Excluir</button><button class="btn small hidden" id="lockNoteBtn" type="button">Trancar 🔒</button><button class="btn primary" type="submit">Salvar nota</button></div></form></dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=83" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=83',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=84" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=84',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

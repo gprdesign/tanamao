@@ -55,6 +55,7 @@
   const unlockedLogIds = new Set();
   let pendingLogLockId = '';
   let pendingLogUnlockId = '';
+  let pendingLogAddTagId = '';
   let privateNotesUnlocked = false;
   let privateNotesMode = false;
   let privateNoteDirty = false;
@@ -274,7 +275,7 @@
     setup.hidden=Boolean(privateVault);unlock.hidden=!privateVault||privateNotesUnlocked;opened.hidden=!privateNotesUnlocked;
     if(!privateNotesUnlocked){list.innerHTML='';$('privateNoteForm').hidden=true;return;}
     const ordered=privateNotes.filter(note=>!note.deletedAt&&note.kind!=='log'&&hasSelectedTag(note.tagIds||[],'notes')).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
-    list.innerHTML=ordered.length?ordered.map(note=>{const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',tagIds=Array.isArray(note.tagIds)?note.tagIds:[],tagsHtml=tagIds.map(id=>tags.find(tag=>tag.id===id&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');return `<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${escapeHTML(note.content)}</p></button>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`;}).join(''):'<p class="empty">Nenhuma nota privada.</p>';
+    list.innerHTML=ordered.length?ordered.map(note=>{const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',tagIds=Array.isArray(note.tagIds)?note.tagIds:[],tagsHtml=tagIds.map(id=>tags.find(tag=>tag.id===id&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');return `<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${formatNoteContent(note.content)}</p></button>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`;}).join(''):'<p class="empty">Nenhuma nota privada.</p>';
   }
   function renderNotesMode() {
     $('normalNotesView').hidden=privateNotesMode;$('privateNotesView').hidden=!privateNotesMode;
@@ -306,6 +307,18 @@
   function renderSettings() { renderSummarySettings(); }
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  }
+  function formatNoteContent(value) {
+    return escapeHTML(value).replace(/\*\*([\s\S]+?)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/__([\s\S]+?)__/g,'<u>$1</u>');
+  }
+  function applyNoteFormat(fieldId,format) {
+    const field=$(fieldId),markers={bold:['**','**'],italic:['*','*'],underline:['__','__']}[format];if(!field||!markers)return;
+    const start=field.selectionStart??field.value.length,end=field.selectionEnd??start,selected=field.value.slice(start,end),content=selected||'texto';
+    field.setRangeText(`${markers[0]}${content}${markers[1]}`,start,end,'select');field.setSelectionRange(start+markers[0].length,start+markers[0].length+content.length);field.focus();field.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  function noteFormatShortcut(event) {
+    if(!(event.ctrlKey||event.metaKey)||event.altKey)return '';
+    return ({b:'bold',i:'italic',u:'underline'})[String(event.key||'').toLowerCase()]||'';
   }
   function isDateKey(value) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return false;
@@ -381,11 +394,11 @@
     toastTimer=setTimeout(()=>node.classList.add('hidden'),duration);
   }
   function updateNavIndicator(page=currentPage) {
-    const nav=document.querySelector('.main-nav'), indicator=$('navIndicator'), buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]'));
-    const index=buttons.findIndex(button=>button.dataset.page===page);
-    if (!nav||!indicator||index<0||!buttons[0]) return;
-    const first=buttons[0].getBoundingClientRect(),target=buttons[index].getBoundingClientRect();
-    indicator.style.width=`${target.width}px`;indicator.style.transform=`translateX(${target.left-first.left}px)`;
+    const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]'));
+    if(!indicator)return;
+    const target=buttons.find(button=>button.dataset.page===page);
+    if(!target){indicator.hidden=true;return;}
+    indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
     if (!['home','tasks','log','notes','settings'].includes(page)) return;
@@ -528,6 +541,30 @@
     const now=nowISO(), tag={id:makeId(),name,color:randomTagColor(),createdAt:now,updatedAt:now,deletedAt:null};
     tags.push(tag); setTagFilter(tag.id,false); saveTags(); renderFilterTagList(); $('newTagName').value=''; $('tagMessage').textContent=`Tag ${tag.name} criada com cor automática.`;
   }
+  function renderTagManager() {
+    const list=$('tagManagerList');if(!list)return;
+    const active=tags.filter(tag=>!tag.deletedAt).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+    list.innerHTML=active.length?active.map(tag=>`<form class="tag-manager-row" data-edit-tag="${escapeHTML(tag.id)}"><input type="color" name="color" value="${escapeHTML(tag.color)}" aria-label="Cor da tag ${escapeHTML(tag.name)}"><input type="text" name="name" maxlength="32" value="${escapeHTML(tag.name)}" aria-label="Nome da tag ${escapeHTML(tag.name)}" required><button class="btn small" type="submit">SALVAR</button></form>`).join(''):'<p class="empty">Nenhuma tag cadastrada.</p>';
+  }
+  function openTagManager(logId='') {
+    pendingLogAddTagId=String(logId||'');$('tagManagerStatus').textContent='';$('managedTagName').value='';$('managedTagColor').value=randomTagColor();renderTagManager();$('tagManagerDialog').showModal();
+  }
+  function addManagedTag(event) {
+    event.preventDefault();const raw=$('managedTagName').value.trim().replace(/\s+/g,' ');if(!raw)return;
+    const name=raw.normalize('NFKC').toLocaleUpperCase('pt-BR').slice(0,32),existing=tags.find(tag=>!tag.deletedAt&&tag.name.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR'));
+    if(existing){const pending=logs.find(log=>log.id===pendingLogAddTagId&&!log.deletedAt);if(pending){pending.tagId=existing.id;pending.updatedAt=nowISO();pendingLogAddTagId='';saveLogs();}$('tagManagerStatus').textContent='Essa tag já existe.';return;}
+    const now=nowISO(),tag={id:makeId(),name,color:validTagColor($('managedTagColor').value)?$('managedTagColor').value:randomTagColor(),createdAt:now,updatedAt:now,deletedAt:null};tags.push(tag);
+    const pending=logs.find(log=>log.id===pendingLogAddTagId&&!log.deletedAt);if(pending){pending.tagId=tag.id;pending.updatedAt=now;pendingLogAddTagId='';}
+    saveTags();if(pending)saveLogs(false);$('managedTagName').value='';$('managedTagColor').value=randomTagColor();$('tagManagerStatus').textContent=pending?'Tag criada e vinculada ao log.':`Tag ${tag.name} criada.`;renderTagManager();
+  }
+  function saveManagedTag(event) {
+    event.preventDefault();const form=event.target.closest('form[data-edit-tag]');if(!form)return;const tag=tags.find(item=>item.id===form.dataset.editTag&&!item.deletedAt);if(!tag)return;
+    const nameInput=form.querySelector('[name="name"]'),colorInput=form.querySelector('[name="color"]'),raw=nameInput.value.trim().replace(/\s+/g,' '),name=raw.normalize('NFKC').toLocaleUpperCase('pt-BR').slice(0,32),color=colorInput.value;
+    if(!name){$('tagManagerStatus').textContent='Digite um nome para a tag.';return;}
+    const duplicate=tags.find(item=>item.id!==tag.id&&!item.deletedAt&&item.name.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR'));
+    if(duplicate){$('tagManagerStatus').textContent='Já existe outra tag com esse nome.';return;}
+    tag.name=name;if(validTagColor(color))tag.color=color;tag.updatedAt=nowISO();saveTags();renderTagManager();$('tagManagerStatus').textContent=`Tag ${tag.name} atualizada.`;
+  }
   function renderTasks() {
     const all=visibleTasks('tasks'), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
     const overdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
@@ -628,7 +665,7 @@
       const meta=logTimestampLabel(log.createdAt,'').replace(/\s+➡️\s+/,' · '),tagBadge=tag?`<span class="log-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`:'<span class="log-tag-pill log-no-tag">SEM TAG</span>';
       const lockAction=!log.isLocked?'lock':opened?'hide':'unlock',lockLabel=lockAction==='unlock'?'DESTRANCAR 🔒':'TRANCAR 🔒';
       const tagOptions=`<option value="">SEM TAG</option>${tags.filter(item=>!item.deletedAt).map(item=>`<option value="${escapeHTML(item.id)}" ${item.id===log.tagId?'selected':''}>${escapeHTML(item.name)}</option>`).join('')}`;
-      return `<article class="log-entry" data-log-id="${id}"><time class="log-date" datetime="${escapeHTML(log.createdAt)}"><strong>${day}</strong><span>${escapeHTML(month)}</span><small>${year}</small></time><div class="log-axis" style="--log-dot:${escapeHTML(tag?.color||'#73d6a2')}" aria-hidden="true"><span class="log-dot"></span></div><div class="log-card"><div class="log-card-header">${tagBadge}<span class="log-time-meta">${escapeHTML(meta)}</span></div><p class="log-content">${escapeHTML(content)}</p><div class="log-entry-footer"><div class="log-entry-actions"><button class="log-action" type="button" data-log-action="tag" aria-label="Adicionar ou alterar tag do log">＋TAG</button><select class="log-tag-select" data-log-tag-select="${id}" aria-label="Tag deste log" hidden>${tagOptions}</select><button class="log-action" type="button" data-log-action="${lockAction}" data-log-id="${id}">${lockLabel}</button><button class="log-action log-action-delete" type="button" data-log-action="delete" data-log-id="${id}">EXCLUIR</button></div></div></div></article>`;
+      return `<article class="log-entry" data-log-id="${id}"><time class="log-date" datetime="${escapeHTML(log.createdAt)}"><strong>${day}</strong><span>${escapeHTML(month)}</span><small>${year}</small></time><div class="log-axis" style="--log-dot:${escapeHTML(tag?.color||'#73d6a2')}" aria-hidden="true"><span class="log-dot"></span></div><div class="log-card"><div class="log-card-header">${tagBadge}<span class="log-time-meta">${escapeHTML(meta)}</span></div><p class="log-content">${escapeHTML(content)}</p><div class="log-entry-footer"><div class="log-entry-actions"><button class="log-action" type="button" data-log-action="tag" aria-label="Adicionar ou alterar tag do log">＋TAG</button><select class="log-tag-select" data-log-tag-select="${id}" aria-label="Tag deste log" hidden>${tagOptions}</select><button class="log-action log-add-tag" type="button" data-log-action="add-tag" data-log-id="${id}" hidden>＋ ADC</button><button class="log-action" type="button" data-log-action="${lockAction}" data-log-id="${id}">${lockLabel}</button><button class="log-action log-action-delete" type="button" data-log-action="delete" data-log-id="${id}">EXCLUIR</button></div></div></div></article>`;
     }).join(''):'<p class="empty">Nenhum registro neste período.</p>';
   }
   function saveLogFromForm(event) {
@@ -679,9 +716,10 @@
   }
   function handleLogsClick(event) {
     const toggle=event.target.closest('[data-log-action="tag"]');
-    if(toggle){const select=toggle.parentElement.querySelector('[data-log-tag-select]');if(select){select.hidden=!select.hidden;if(!select.hidden)select.focus();}return;}
+    if(toggle){const select=toggle.parentElement.querySelector('[data-log-tag-select]'),add=toggle.parentElement.querySelector('[data-log-action="add-tag"]');if(select){const open=select.hidden;select.hidden=!open;if(add)add.hidden=!open;if(open)select.focus();}return;}
     const button=event.target.closest('[data-log-action]');if(!button)return;
     const id=button.dataset.logId,action=button.dataset.logAction;
+    if(action==='add-tag'){openTagManager(id);return;}
     if(action==='delete'){deleteLog(id);return;}
     if(action==='lock'){
       if(privateNotesUnlocked&&privateCryptoKey){pendingLogLockId=id;void completePendingLogLock();}
@@ -814,7 +852,7 @@
     $('notesList').innerHTML=active.length ? active.map(note=>{
       const id=escapeHTML(note.id),tagsHtml=(note.tagIds||[]).map(tagId=>tags.find(tag=>tag.id===tagId&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');
       const title=note.title?`<h3 class="note-card-title">${escapeHTML(note.title)}</h3>`:'<span class="note-card-title-placeholder" aria-hidden="true"></span>';
-      const body=note.title?(note.content?`<p>${escapeHTML(note.content)}</p>`:''):`<p class="note-card-content--titleless">${escapeHTML(note.content)}</p>`;
+      const body=note.title?(note.content?`<p>${formatNoteContent(note.content)}</p>`:''):`<p class="note-card-content--titleless">${formatNoteContent(note.content)}</p>`;
       const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota';
       const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',footer=link||tagsHtml?`<footer class="note-card-footer">${link||'<span class="note-card-footer-spacer" aria-hidden="true"></span>'}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</footer>`:'';
       return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}">${pinLabel}</button><button class="menu-action menu-edit" type="button" data-duplicate-note="${id}">DUPLICAR NOTA</button><button class="menu-action" type="button" data-lock-note="${id}">TRANCAR 🔒</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${footer}</article>`;
@@ -1195,6 +1233,9 @@
     noteDialogDirty=false;if(close)$('noteDialog').close();saveNotes();showToast(close?'Nota salva.':note?'Nota atualizada.':'Nota adicionada.',close?3000:2600);return true;
   }
   function handlePopupKeyboard(event,kind) {
+    if(kind==='note'&&event.target.id==='noteContent'){
+      const format=noteFormatShortcut(event);if(format){event.preventDefault();applyNoteFormat('noteContent',format);return;}
+    }
     if(event.key!=='Enter')return;
     const titleId=kind==='task'?'taskTitle':'noteTitle',contentId=kind==='task'?'taskContent':'noteContent';
     if(!(event.ctrlKey||event.metaKey)){
@@ -1517,6 +1558,12 @@
     const button=event.target.closest('button[data-filter-tag]'); if(button)setTagFilter(button.dataset.filterTag,true);
   });
   $('tagForm').addEventListener('submit',createTag);
+  $('headerTagsBtn').addEventListener('click',()=>openTagManager());
+  $('closeTagManager').addEventListener('click',()=>$('tagManagerDialog').close());
+  $('tagManagerDialog').addEventListener('close',()=>{pendingLogAddTagId='';});
+  $('tagManagerAddForm').addEventListener('submit',addManagedTag);
+  $('tagManagerList').addEventListener('submit',saveManagedTag);
+  document.querySelectorAll('[data-note-format]').forEach(button=>button.addEventListener('click',()=>applyNoteFormat(button.dataset.formatTarget,button.dataset.noteFormat)));
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]'); if (button) setPage(button.dataset.page);
   });
@@ -1589,6 +1636,7 @@
   $('privateNoteForm').addEventListener('submit',event=>{void savePrivateNote(event);});
   $('privateNoteForm').addEventListener('input',()=>{privateNoteDirty=true;});
   $('privateNoteForm').addEventListener('change',()=>{privateNoteDirty=true;});
+  $('privateNoteForm').addEventListener('keydown',event=>{if(event.target.id!=='privateNoteContent')return;const format=noteFormatShortcut(event);if(format){event.preventDefault();applyNoteFormat('privateNoteContent',format);}});
   $('privateNewNoteBtn').addEventListener('click',()=>openPrivateNoteEditor());
   $('privateLockBtn').addEventListener('click',()=>{void lockPrivateNotes();});
   $('privateCancelEditBtn').addEventListener('click',()=>{privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteForm').hidden=true;$('privateNoteId').value='';});
