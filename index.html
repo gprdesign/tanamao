@@ -161,7 +161,11 @@
     body[data-page="notes"],body[data-page="settings"] { overflow-y:auto; }
     .wrap { display:flex; flex-direction:column; height:var(--app-zoom-height,100dvh); min-height:0; overflow:hidden; padding:10px 14px calc(76px + env(safe-area-inset-bottom,0px)); }
     body[data-page="tasks"] .wrap { padding-bottom:calc(132px + env(safe-area-inset-bottom,0px)); }
-    body[data-page="notes"] .wrap,body[data-page="settings"] .wrap { display:block; height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="notes"] .wrap { display:flex; flex-direction:column; height:var(--app-zoom-height,100dvh); min-height:0; overflow:hidden; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="settings"] .wrap { display:block; height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="notes"] #notesPage.active { display:flex; flex:1; flex-direction:column; min-height:0; overflow:hidden; }
+    body[data-page="notes"] #notesPage .page-heading,body[data-page="notes"] #notesPage .notes-mode-tabs { flex:none; }
+    body[data-page="notes"] #normalNotesView,body[data-page="notes"] #privateNotesView { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
     .app-header { flex:none; gap:8px; margin:0 0 10px; }
     .brand { gap:9px; }
     .brand-icon { width:42px; height:42px; flex:none; object-fit:cover; border-radius:12px; }
@@ -645,7 +649,7 @@
       .task-touch-handle .drag-grip { font-size:.9rem; }
       .task-card--tile .task-touch-handle { width:18px; height:26px; }
       .note-card { max-height:320px; padding-bottom:12px; }
-      .note-card .note-touch-handle { display:grid; position:relative; right:auto; bottom:auto; z-index:1; width:36px; height:36px; margin:7px 0 0 auto; place-items:center; padding:0; border:1px solid #52617b; border-radius:10px; background:rgba(16,23,41,.94); color:#cbd5ea; font-size:1rem; touch-action:none; }
+      .note-card .note-card-controls .note-touch-handle { display:grid; position:static; z-index:1; flex:none; width:30px; height:30px; margin:0; place-items:center; padding:0; border:1px solid #52617b; border-radius:8px; background:#101729; color:#cbd5ea; font-size:1rem; line-height:1; cursor:grab; touch-action:none; }
     }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
     .day-task-list .task-card--compact { padding-top:1px; padding-bottom:1px; }
@@ -815,7 +819,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=73" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=73',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=74" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=74',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
