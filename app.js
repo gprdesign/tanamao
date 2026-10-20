@@ -440,8 +440,8 @@
     return `Concluída às ${time} · ${days===0?'hoje · há 0 dias':days===1?'há 1 dia':`há ${days} dias`}`;
   }
   function taskMenu(task,canMove=true) {
-    const id=escapeHTML(task.id), move=canMove&&!task.completedAt;
-    return `<details class="task-menu"><summary aria-label="Mais ações para ${escapeHTML(task.title)}" title="Mais ações">⋮</summary><div class="task-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-task="${id}">EDITAR</button>${move?`<button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="up">↑ SUBIR</button><button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="down">↓ DESCER</button>`:''}<button class="menu-action menu-delete" type="button" data-delete-task="${id}">EXCLUIR</button></div></details>`;
+    const id=escapeHTML(task.id), move=canMove&&!task.completedAt,completionAction=task.completedAt?'false':'true',completionLabel=task.completedAt?'REABRIR':'CONCLUIR';
+    return `<details class="task-menu"><summary aria-label="Mais ações para ${escapeHTML(task.title)}" title="Mais ações">⋮</summary><div class="task-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-task="${id}">EDITAR</button><button class="menu-action" type="button" data-toggle-complete-task="${id}" data-complete="${completionAction}">${completionLabel}</button>${move?`<button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="up">↑ SUBIR</button><button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="down">↓ DESCER</button>`:''}<button class="menu-action menu-delete" type="button" data-delete-task="${id}">EXCLUIR</button></div></details>`;
   }
   function taskCard(task,options={}) {
     const complete=Boolean(task.completedAt), late=!complete&&(options.late ?? Boolean(task.executionDate&&task.executionDate<todayKey())), draggable=!complete&&options.draggable!==false;
@@ -449,7 +449,6 @@
     const linked=options.linked?'task-link':'';
     const tag=getTag(task.tagId),taskTag=tagDot(task.tagId),taskHandle=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:'';
     return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}">
-      <input class="task-check" type="checkbox" data-complete-task="${escapeHTML(task.id)}" ${complete?'checked':''} aria-label="${complete?'Reabrir':'Concluir'}: ${escapeHTML(task.title)}">
       <div class="task-main"><div class="task-title-row">${taskTag}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
       <div class="task-actions">${taskMenu(task,options.canMove!==false)}${taskHandle}</div>
     </article>`;
@@ -951,6 +950,8 @@
   }
   function handleTaskClick(event) {
     if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();return;}
+    const completion=event.target.closest('[data-toggle-complete-task]');
+    if(completion){const complete=completion.dataset.complete==='true';toggleComplete(completion.dataset.toggleCompleteTask,complete);showToast(complete?'Tarefa concluída.':'Tarefa reaberta.');return;}
     const move=event.target.closest('[data-move-task]');
     if (move) { moveTask(move.dataset.moveTask,move.dataset.direction); return; }
     const remove=event.target.closest('[data-delete-task]');
@@ -981,7 +982,7 @@
     menu.addEventListener('click',event=>{
       const action=event.target.closest('button'); if(!action)return;
       event.preventDefault();event.stopPropagation();
-      if(action.matches('[data-edit-task],[data-move-task],[data-delete-task]'))handleTaskClick(event);
+      if(action.matches('[data-edit-task],[data-toggle-complete-task],[data-move-task],[data-delete-task]'))handleTaskClick(event);
       else handleNotesClick(event);
       closeFloatingActionMenu();
     });
@@ -1006,13 +1007,9 @@
     if(summary){event.preventDefault();event.stopPropagation();openFloatingActionMenu(summary.parentElement);return;}
     if(floatingActionMenu&&!event.target.closest('.floating-action-menu'))closeFloatingActionMenu();
   }
-  function handleTaskChange(event) {
-    const check=event.target.closest('input[data-complete-task]');
-    if (check) toggleComplete(check.dataset.completeTask,check.checked);
-  }
   function handleDragStart(event) {
     const card=event.target.closest('.task-card[data-task-id]');
-    if (!card || event.target.closest('input[data-complete-task],.task-menu')) { event.preventDefault(); return; }
+    if (!card || event.target.closest('.task-menu')) { event.preventDefault(); return; }
     const task=tasks.find(item=>item.id===card.dataset.taskId && !item.completedAt && !item.deletedAt);
     if (!task) { event.preventDefault(); return; }
     dragTaskId=task.id; card.classList.add('is-dragging');
@@ -1022,13 +1019,14 @@
   function handleDragOver(event) {
     if (!dragTaskId) return;
     const targetCard=event.target.closest('.task-card[data-task-id]');
-    const destination=event.target.closest('.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#dayDialogList');
+    const destination=event.target.closest('.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
     if(!targetCard&&!destination)return;
     event.preventDefault();(targetCard||destination)?.classList.add('drop-active');
   }
   function performTaskDrop(id,target) {
     if(!target)return;
-    const targetCard=target.closest('.task-card[data-task-id]'),day=target.closest('.day-column[data-date]'),overdueColumn=target.closest('.day-column[data-kind="overdue"]'),planning=target.closest('#planningPanel'),dayList=target.closest('#dayDialogList');
+    const targetCard=target.closest('.task-card[data-task-id]'),completed=target.closest('#completedPanel,#completedList,#completedBtn'),day=target.closest('.day-column[data-date]'),overdueColumn=target.closest('.day-column[data-kind="overdue"]'),planning=target.closest('#planningPanel,#planningList,#planningBtn'),dayList=target.closest('#dayDialogList');
+    if(completed){const task=tasks.find(item=>item.id===String(id)&&!item.deletedAt&&!item.completedAt);if(task){toggleComplete(id,true);showToast('Tarefa concluída.');}return;}
     if(overdueColumn||dayList&&activeDayKind==='all-overdue')reorderOverdueTaskBefore(id,targetCard?.dataset.taskId||'');
     else if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
     else if(day)appendTaskToBucket(id,day.dataset.date);
@@ -1038,7 +1036,7 @@
   function handleDrop(event) {
     if(!dragTaskId)return;
     const id=dragTaskId;dragTaskId='';clearDropStyles();
-    if(!event.target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#dayDialogList'))return;
+    if(!event.target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList'))return;
     event.preventDefault();performTaskDrop(id,event.target);
   }
   function handleDragEnd() { dragTaskId=''; clearDropStyles(); }
@@ -1094,7 +1092,7 @@
   function updateDragHighlight(drag,target) {
     document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
     if(!target)return;
-    const destination=drag.kind==='task'?target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#dayDialogList'):target.closest('.note-card[data-note-id]');
+    const destination=drag.kind==='task'?target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList'):target.closest('.note-card[data-note-id]');
     if(destination&&destination!==drag.card)destination.classList.add('drop-active');
   }
   function finishDragAt(drag,target,cancel=false) {
@@ -1505,15 +1503,11 @@
   $('closeTaskDialog').addEventListener('click',closeTaskDialogSafely);
   $('deleteTaskBtn').addEventListener('click',softDeleteTask);
   $('weekGrid').addEventListener('click',handleTaskClick);
-  $('weekGrid').addEventListener('change',handleTaskChange);
   $('homePage').addEventListener('click',handleTaskClick);
   $('dayDialogList').addEventListener('click',handleTaskClick);
   $('planningList').addEventListener('click',handleTaskClick);
   $('completedList').addEventListener('click',handleTaskClick);
-  $('dayDialogList').addEventListener('change',handleTaskChange);
-  $('planningList').addEventListener('change',handleTaskChange);
-  $('completedList').addEventListener('change',handleTaskChange);
-  for (const node of [$('weekGrid'),$('dayDialogList'),$('planningPanel')]) {
+  for (const node of [$('weekGrid'),$('dayDialogList'),$('planningPanel'),$('planningBtn'),$('completedPanel'),$('completedBtn')]) {
     node.addEventListener('dragstart',handleDragStart);
     node.addEventListener('dragover',handleDragOver);
     node.addEventListener('drop',handleDrop);

@@ -92,11 +92,10 @@
     .day-column[data-kind="overdue"] .day-task-list { max-height:420px; overflow:auto; overscroll-behavior:contain; }
     .day-task-list { display:grid; align-content:start; gap:7px; min-height:58px; }
     .day-empty { display:grid; flex:1; min-height:52px; place-items:center; color:#8490a6; font-size:.72rem; text-align:center; }
-    .task-card { display:grid; grid-template-columns:20px minmax(0,1fr) auto; align-items:start; gap:6px; min-width:0; padding:8px; border:1px solid #34415b; border-radius:10px; background:#101729; cursor:grab; }
+    .task-card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:6px; min-width:0; padding:8px; border:1px solid #34415b; border-radius:10px; background:#101729; cursor:grab; }
     .task-card:hover { border-color:#657ba7; background:#172239; }
     .task-card.is-dragging { opacity:.45; }
     .task-card.is-drop-target { box-shadow:inset 0 0 0 2px var(--accent); }
-    .task-check { width:17px; height:17px; margin:1px 0 0; accent-color:var(--green); cursor:pointer; }
     .task-title { min-width:0; overflow-wrap:anywhere; font-size:.82rem; font-weight:700; line-height:1.3; }
     .task-date { display:block; margin-top:3px; color:var(--muted); font-size:.67rem; }
     .task-actions { display:flex; gap:2px; }
@@ -150,8 +149,7 @@
       .day-column { min-height:128px; padding:7px; }
       .day-heading strong { font-size:.7rem; }
       .day-heading time { font-size:.64rem; }
-      .task-card { grid-template-columns:17px minmax(0,1fr) 24px; gap:4px; padding:6px; }
-      .task-check { width:15px; height:15px; }
+      .task-card { grid-template-columns:minmax(0,1fr) 24px; gap:4px; padding:6px; }
       .task-title { font-size:.74rem; }
       .icon-btn { width:24px; height:24px; }
       .note-list { grid-template-columns:1fr; }
@@ -334,8 +332,7 @@
 
     .day-column { overflow:hidden; }
     .day-task-list { flex:1; min-height:0; max-height:none; overflow-y:auto; gap:3px; overscroll-behavior:contain; scrollbar-width:thin; }
-    .day-task-list .task-card--compact { grid-template-columns:14px minmax(0,1fr) auto; gap:3px; padding:4px 5px; border-radius:8px; }
-    .task-card--compact .task-check { width:13px; height:13px; margin-top:2px; }
+    .day-task-list .task-card--compact { grid-template-columns:minmax(0,1fr) auto; gap:3px; padding:4px 5px; border-radius:8px; }
     .task-card--compact .task-title-row { gap:4px; }
     .task-card--compact .task-title-row .tag-dot { width:7px; height:7px; margin-top:3px; }
     .task-card--compact .task-open,.task-card--tile .task-open { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; font-size:.62rem; line-height:1.15; }
@@ -352,8 +349,7 @@
     .planner-panel { flex:none; max-height:35dvh; margin-top:4px; padding:6px; overflow:auto; border:1px solid #ffffff20; border-radius:12px; background:rgba(17,24,39,.72); overscroll-behavior:contain; }
     .planner-panel[hidden] { display:none !important; }
     .task-tile-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
-    .task-tile-grid .task-card--tile { grid-template-columns:14px minmax(0,1fr) auto; align-items:center; gap:4px; min-height:46px; padding:5px; }
-    .task-card--tile .task-check { width:13px; height:13px; }
+    .task-tile-grid .task-card--tile { grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:4px; min-height:46px; padding:5px; }
     .task-card--tile .task-title-row { gap:4px; }
     .task-card--tile .task-title-row .tag-dot { width:7px; height:7px; margin-top:2px; }
     .task-card--tile .task-open { font-size:.64rem; line-height:1.15; }
@@ -426,8 +422,7 @@
     .day-task-list { gap:5px; }
     .day-empty { padding:5px 0; font-size:.72rem; }
     .day-add { width:24px; height:24px; }
-    .day-task-list .task-card--compact { grid-template-columns:16px minmax(0,1fr) auto; gap:4px; padding:6px; border-radius:9px; }
-    .task-card--compact .task-check { width:15px; height:15px; }
+    .day-task-list .task-card--compact { grid-template-columns:minmax(0,1fr) auto; gap:4px; padding:6px; border-radius:9px; }
     .task-card--compact .task-title-row { gap:5px; }
     .task-card--compact .task-title-row .tag-dot { width:8px; height:8px; }
     .task-card--compact .task-open { font-size:.70rem; line-height:1.2; }
@@ -436,8 +431,7 @@
     .planner-section-btn { min-height:40px; margin-top:6px; padding:8px 12px; font-size:.82rem; }
     .planner-panel { margin-top:6px; padding:8px; border-radius:13px; }
     .task-tile-grid { gap:7px; }
-    .task-tile-grid .task-card--tile { grid-template-columns:15px minmax(0,1fr) auto; min-height:54px; padding:6px; }
-    .task-card--tile .task-check { width:14px; height:14px; }
+    .task-tile-grid .task-card--tile { grid-template-columns:minmax(0,1fr) auto; min-height:54px; padding:6px; }
     .task-card--tile .task-title-row { gap:5px; }
     .task-card--tile .task-title-row .tag-dot { width:8px; height:8px; }
     .task-card--tile .task-open { font-size:.70rem; line-height:1.2; }
@@ -510,8 +504,7 @@
       .week-dock { width:calc(100% - 24px); gap:5px; }
       .week-dock .btn { padding:5px 7px; }
       .day-column { padding:7px 7px; }
-      .day-task-list .task-card--compact { grid-template-columns:14px minmax(0,1fr) auto; gap:3px; padding:5px; }
-      .task-card--compact .task-check { width:14px; height:14px; }
+      .day-task-list .task-card--compact { grid-template-columns:minmax(0,1fr) auto; gap:3px; padding:5px; }
       .task-card--compact .task-open { font-size:.67rem; }
       .home-task-row { gap:6px; padding:6px 7px; }
       .home-item-open { font-size:.76rem; }
@@ -629,7 +622,6 @@
     .task-card .task-main,.task-card .task-title-row { min-width:0; }
     .task-card .task-title-row { align-items:center; }
     .task-card--compact { align-items:center; }
-    .task-card--compact .task-check { align-self:center; margin:0; }
     .task-card--compact .task-main,.task-card--compact .task-actions { align-self:center; }
     .task-card--compact .task-actions { align-items:center; }
     .task-card .task-open { display:block !important; flex:1 1 0; min-width:0; width:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap !important; overflow-wrap:normal; word-break:normal; -webkit-line-clamp:unset !important; }
@@ -884,7 +876,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=79" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=79',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=80" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=80',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
