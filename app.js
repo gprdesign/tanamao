@@ -1014,6 +1014,11 @@
     const peers=tasks.filter(item=>!item.deletedAt&&!item.completedAt&&item.id!==taskId&&(item.executionDate||'')===(date||'')).sort(taskOrder);
     peers.push(task);peers.forEach((item,i)=>{item.sortOrder=i;item.updatedAt=nowISO();});saveTasks();
   }
+  function handleDayAreaDoubleClick(event) {
+    const column=event.target.closest('.day-column');
+    if(!column||!event.currentTarget.contains(column)||event.target.closest('.day-head-row,.task-card,button,a,input,select,textarea,details,[data-touch-drag-task]'))return;
+    const header=column.querySelector('[data-open-day]');if(header)openDayDialog(header.dataset.openDay);
+  }
   function handleTaskClick(event) {
     if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();return;}
     const completion=event.target.closest('[data-toggle-complete-task]');
@@ -1577,6 +1582,7 @@
   $('closeTaskDialog').addEventListener('click',closeTaskDialogSafely);
   $('deleteTaskBtn').addEventListener('click',softDeleteTask);
   $('weekGrid').addEventListener('click',handleTaskClick);
+  $('weekGrid').addEventListener('dblclick',handleDayAreaDoubleClick);
   $('homePage').addEventListener('click',handleTaskClick);
   $('dayDialogList').addEventListener('click',handleTaskClick);
   $('planningList').addEventListener('click',handleTaskClick);
