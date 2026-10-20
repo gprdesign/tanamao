@@ -659,8 +659,8 @@
     const selected=selectedPageTags('log'),visible=logs.filter(log=>!log.deletedAt&&Date.parse(log.createdAt)>=cutoff&&(!selected.length||selected.includes(log.tagId))).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
     document.querySelectorAll('[data-log-range]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.logRange===logRange)));
     list.innerHTML=visible.length?visible.map(log=>{
-      const id=escapeHTML(log.id),tag=tags.find(item=>item.id===log.tagId&&!item.deletedAt),opened=Boolean(log.isLocked&&unlockedLogIds.has(log.id)),privateLog=opened?privateLogs.find(item=>item.id===log.id):null;
-      const content=log.isLocked?(privateLog?.content||'🔒 Registro trancado'):log.content,date=new Date(log.createdAt),validDate=Number.isFinite(date.getTime());
+      const logId=String(log.id),id=escapeHTML(logId),tag=tags.find(item=>item.id===log.tagId&&!item.deletedAt),opened=Boolean(log.isLocked&&unlockedLogIds.has(logId)),privateLog=opened?getDecryptedPrivateLog(logId):null;
+      const content=log.isLocked?(privateLog?String(privateLog.content??''):'🔒 Registro trancado'):log.content,date=new Date(log.createdAt),validDate=Number.isFinite(date.getTime());
       const day=validDate?date.toLocaleDateString('pt-BR',{day:'2-digit'}):'--',month=validDate?date.toLocaleDateString('pt-BR',{month:'short'}).replace(/\./g,''):'',year=validDate?date.toLocaleDateString('pt-BR',{year:'2-digit'}):'';
       const meta=logTimestampLabel(log.createdAt,'').replace(/\s+➡️\s+/,' · '),tagBadge=tag?`<span class="log-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`:'<span class="log-tag-pill log-no-tag">SEM TAG</span>';
       const lockAction=!log.isLocked?'lock':opened?'hide':'unlock',lockLabel=lockAction==='unlock'?'DESTRANCAR 🔒':'TRANCAR 🔒';
@@ -678,11 +678,15 @@
     logRange=range;localStorage.setItem(LOG_RANGE_KEY,range);renderLogs();
   }
   function requestLogVaultAccess(logId,action) {
-    if(action==='lock')pendingLogLockId=String(logId);else pendingLogUnlockId=String(logId);
+    if(action==='lock'){pendingLogLockId=String(logId);pendingLogUnlockId='';}else{pendingLogUnlockId=String(logId);pendingLogLockId='';}
     pendingPrivateMoveId='';setNotesMode('private');setPage('notes');
     showToast(privateVault?'Desbloqueie o cofre em Notas privadas; depois volto ao Log.':'Configure o cofre em Notas privadas para proteger os logs.');
   }
   function privateLogCipherId(logId) { return `tnm-log:${String(logId)}`; }
+  function getDecryptedPrivateLog(logId) {
+    const id=String(logId||''),cipherId=privateLogCipherId(id);
+    return privateLogs.find(item=>String(item.cipherId||'')===cipherId)||privateLogs.find(item=>String(item.id||'')===id||String(item.id||'')===cipherId)||null;
+  }
   async function completePendingLogLock() {
     const id=pendingLogLockId,log=logs.find(item=>item.id===id&&!item.deletedAt),key=privateCryptoKey;
     if(!id||!log||!key||!privateNotesUnlocked)return false;
@@ -703,8 +707,8 @@
     if(!log?.isLocked)return;
     if(!privateNotesUnlocked||!privateCryptoKey){requestLogVaultAccess(id,'unlock');return;}
     try {
-      let entry=privateLogs.find(item=>item.id===id);
-      if(!entry){const row=privateCipherRows.find(item=>item.id===privateLogCipherId(id)&&!item.deletedAt);if(!row)throw new Error('missing cipher');const data=await decryptPrivateValue(privateCryptoKey,row.iv,row.ciphertext);if(data?.kind!=='log'||data.logId!==id)throw new Error('invalid log');entry={id,content:String(data.content||''),createdAt:String(data.createdAt||row.createdAt)};privateLogs.push(entry);}
+      let entry=getDecryptedPrivateLog(id);
+      if(!entry){const cipherId=privateLogCipherId(id),row=privateCipherRows.find(item=>item.id===cipherId&&!item.deletedAt);if(!row)throw new Error('missing cipher');const data=await decryptPrivateValue(privateCryptoKey,row.iv,row.ciphertext),rowLogId=String(row.id).startsWith('tnm-log:')?String(row.id).slice(8):String(data?.logId||'');if(!data||data.kind&&data.kind!=='log'||rowLogId!==id)throw new Error('invalid log');entry={id,content:String(typeof data==='string'?data:data.content??data.text??''),createdAt:String(data.createdAt||row.createdAt),cipherId:String(row.id)};privateLogs=privateLogs.filter(item=>String(item.id)!==id&&String(item.cipherId)!==cipherId).concat(entry);}
       unlockedLogIds.add(id);renderLogs();
     } catch { showToast('Não consegui abrir este log. Confira a senha e a sincronização do cofre.'); }
   }
@@ -751,14 +755,15 @@
   async function loadDecryptedPrivateNotes(key=privateCryptoKey) {
     const result=[];
     for(const row of privateCipherRows.filter(item=>!item.deletedAt)){
-      const data=await decryptPrivateValue(key,row.iv,row.ciphertext);
-      result.push({...data,id:row.id,createdAt:row.createdAt,updatedAt:row.updatedAt,deletedAt:null});
+      const data=await decryptPrivateValue(key,row.iv,row.ciphertext),value=data&&typeof data==='object'?data:typeof data==='string'?{content:data}:{};
+      result.push({...value,id:row.id,createdAt:row.createdAt,updatedAt:row.updatedAt,deletedAt:null});
     }
     return result.sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
   }
   function setDecryptedVaultItems(items) {
-    privateNotes=items.filter(item=>item.kind!=='log');
-    privateLogs=items.filter(item=>item.kind==='log').map(item=>({id:String(item.logId||''),content:String(item.content||''),createdAt:String(item.createdAt||''),cipherId:String(item.id||'')})).filter(item=>item.id);
+    const isLog=item=>item.kind==='log'||Boolean(item.logId)||String(item.id||'').startsWith('tnm-log:');
+    privateNotes=items.filter(item=>!isLog(item));
+    privateLogs=items.filter(isLog).map(item=>{const cipherId=String(item.id||''),rowLogId=cipherId.startsWith('tnm-log:')?cipherId.slice(8):'',id=rowLogId||String(item.logId||'');return id?{id,content:String(typeof item.content==='string'?item.content:item.text||''),createdAt:String(item.createdAt||''),cipherId}:null;}).filter(Boolean);
     unlockedLogIds.clear();
   }
   async function unlockPrivateVault(event) {
@@ -770,7 +775,7 @@
       const check=await decryptPrivateValue(key,privateVault.verifierIv,privateVault.verifierCiphertext);
       if(check!=='TNM private vault v1')throw new Error('wrong password');
       if(currentPage!=='notes'||!privateNotesMode){setPrivateStatus('Volte para Notas privadas para desbloquear.');return;}
-      const decrypted=await loadDecryptedPrivateNotes(key);setDecryptedVaultItems(decrypted);privateCryptoKey=key;privateNotesUnlocked=true;setPrivateStatus('Cofre desbloqueado.');renderPrivateNotes();if(pendingPrivateMoveId)await completePendingPrivateMove();if(pendingLogLockId)await completePendingLogLock();else if(pendingLogUnlockId){const id=pendingLogUnlockId;pendingLogUnlockId='';if(privateLogs.some(item=>item.id===id))unlockedLogIds.add(id);else showToast('Não encontrei a cópia criptografada deste log.');setPage('log');renderLogs();}
+      const decrypted=await loadDecryptedPrivateNotes(key);setDecryptedVaultItems(decrypted);privateCryptoKey=key;privateNotesUnlocked=true;setPrivateStatus('Cofre desbloqueado.');renderPrivateNotes();if(pendingPrivateMoveId)await completePendingPrivateMove();if(pendingLogLockId){const locked=await completePendingLogLock();if(!locked)pendingLogLockId='';}if(pendingLogUnlockId){const id=String(pendingLogUnlockId);pendingLogUnlockId='';if(getDecryptedPrivateLog(id))unlockedLogIds.add(id);else showToast('Não encontrei a cópia criptografada deste log.');setPage('log');renderLogs();}
     } catch { privateCryptoKey=null;privateNotes=[];privateLogs=[];unlockedLogIds.clear();privateNotesUnlocked=false;setPrivateStatus('Senha incorreta. Não há recuperação se ela for esquecida.',true);renderPrivateNotes(); }
   }
   async function lockPrivateNotes() {
