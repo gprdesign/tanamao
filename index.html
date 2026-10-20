@@ -725,9 +725,20 @@
     .private-note-card p { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:.72rem; }
     .private-note-actions { display:flex; justify-content:flex-end; gap:5px; margin-top:7px; }
     .private-note-actions button { min-height:28px; padding:4px 7px; border:1px solid #665b8d; border-radius:7px; background:#30274b; color:var(--text); font-size:.62rem; }
+    .week-board { display:flex; flex:1; flex-direction:column; min-height:0; }
+    .week-arrow-vertical { display:none; }
     @media (min-width:1100px), (orientation:landscape) and (min-width:700px) and (min-height:600px) {
-      body[data-page="tasks"] #weekGrid { grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); }
+      body[data-page="tasks"] #weekBoard { display:grid; flex:1; grid-template-columns:minmax(0,1fr) 54px; gap:10px; min-height:0; }
+      body[data-page="tasks"] #weekGrid { grid-column:1; grid-row:1; min-width:0; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); }
+      body[data-page="tasks"] #weekDock { position:static; display:flex !important; grid-column:2; grid-row:1; flex-direction:column; align-items:stretch; justify-content:space-between; gap:8px; width:54px; height:auto; min-height:0; padding:8px 5px; transform:none; border-radius:14px; }
+      body[data-page="tasks"] #weekDock #prevWeekBtn,body[data-page="tasks"] #weekDock #nextWeekBtn { width:100%; min-width:0; height:40px; min-height:40px; padding:0; font-size:1.25rem; line-height:1; }
+      body[data-page="tasks"] #weekDock #weekLabel { flex:none; width:100%; min-width:0; font-size:.64rem; line-height:1.15; text-align:center; white-space:normal; overflow-wrap:anywhere; }
+      body[data-page="tasks"] #weekDock #todayBtn { width:100%; min-width:0; min-height:48px; padding:6px 2px; font-size:.55rem; line-height:1.1; white-space:normal; }
+      body[data-page="tasks"] #weekDock .subdock-sync { width:100%; min-width:0; min-height:42px; padding:5px 2px; font-size:.5rem; line-height:1.1; white-space:normal; overflow-wrap:anywhere; }
+      body[data-page="tasks"].planner-expanded #weekBoard { flex:none; min-height:350px; }
       body[data-page="tasks"].planner-expanded #weekGrid { grid-template-rows:repeat(2,minmax(74px,1fr)); }
+      .week-arrow-horizontal { display:none; }
+      .week-arrow-vertical { display:inline; }
     }
   </style>
 </head>
@@ -763,7 +774,7 @@
       </div>
       <div class="planner-panel" id="planningPanel" hidden><div class="task-tile-grid" id="planningList"></div><button class="btn more-btn" id="planningMoreBtn" type="button">MAIS</button></div>
       <div class="planner-panel completed-panel" id="completedPanel" hidden><div class="task-tile-grid" id="completedList"></div><button class="btn more-btn" id="completedMoreBtn" type="button">MAIS</button></div>
-      <div class="week-grid" id="weekGrid" aria-label="Semana"></div>
+      <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="todayBtn" type="button">SEMANA ATUAL</button><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav></div>
     </section>
 
     <section id="logPage" class="page" aria-label="Log de eventos">
@@ -800,7 +811,6 @@
     </section>
   </main>
 
-  <nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior">‹</button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="todayBtn" type="button">SEMANA ATUAL</button><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana">›</button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav>
   <nav class="week-dock sub-dock notes-dock" id="notesDock" aria-label="Ações das notas"><button class="subdock-item subdock-add-note" id="notesDockAddBtn" type="button">＋ NOTA</button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav>
 
   <button class="refresh-sync-btn refresh-sync-action" id="refreshSyncBtn" type="button" aria-label="Atualizar página e sincronizar conta" title="Atualizar e sincronizar"><span aria-hidden="true">↻</span></button>
@@ -824,7 +834,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=76" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=76',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=77" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=77',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
