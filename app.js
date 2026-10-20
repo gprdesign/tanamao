@@ -15,6 +15,8 @@
   const RESET_KEY = 'tnm.weekly.reset.v1';
   const TAGS_KEY = 'tnm.weekly.tags.v1';
   const TAG_FILTER_KEY = 'tnm.weekly.filterTag.v1';
+  const PAGE_FILTERS_KEY = 'tnm.weekly.filterTagsByPage.v1';
+  const FILTER_PAGES = ['home','tasks','notes','log'];
   const LAST_TAG_KEY = 'tnm.weekly.lastTag.v1';
   const AUTO_BACKUP_KEY = 'tnm.weekly.autobackup.v1';
   const CALENDAR_EVENTS_KEY = 'tnm.weekly.calendarEvents.v1';
@@ -62,8 +64,9 @@
   let calendarEvents = readStored(CALENDAR_EVENTS_KEY,[]);
   if(!Array.isArray(calendarEvents))calendarEvents=[];
   let session = readStored(SESSION_KEY,null);
-  let filterTagIds = readFilterTags();
   let currentPage = ['home','tasks','log','notes','settings'].includes(localStorage.getItem(PAGE_KEY)) ? localStorage.getItem(PAGE_KEY) : 'home';
+  let pageTagFilters = loadPageFilters();
+  let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
   let weekStart = (()=>{const current=startOfWeek(todayKey()),saved=localStorage.getItem(WEEK_KEY),selected=saved?startOfWeek(saved):current;return selected<current?current:selected;})();
   let observedToday=todayKey();
@@ -98,6 +101,23 @@
     if (!raw) return [];
     try { const parsed=JSON.parse(raw); return Array.isArray(parsed)?parsed.map(String):[String(parsed)]; }
     catch { return [raw]; }
+  }
+  function filterPageKey(page=currentPage) { return FILTER_PAGES.includes(page)?page:'home'; }
+  function loadPageFilters() {
+    const saved=readStored(PAGE_FILTERS_KEY,null);
+    if(saved&&typeof saved==='object'&&!Array.isArray(saved))return Object.fromEntries(FILTER_PAGES.map(page=>[page,Array.isArray(saved[page])?Array.from(new Set(saved[page].map(String))):[]]));
+    const migrated={home:[],tasks:[],notes:readFilterTags(),log:[]};
+    localStorage.setItem(PAGE_FILTERS_KEY,JSON.stringify(migrated));return migrated;
+  }
+  function persistPageFilters() {
+    pageTagFilters[filterPageKey(currentPage)]=[...filterTagIds];
+    localStorage.setItem(PAGE_FILTERS_KEY,JSON.stringify(pageTagFilters));
+  }
+  function selectedPageTags(page=currentPage) { return pageTagFilters[filterPageKey(page)]||[]; }
+  function prunePageFilters() {
+    const activeIds=new Set(tags.filter(tag=>!tag.deletedAt).map(tag=>tag.id));
+    for(const page of FILTER_PAGES)pageTagFilters[page]=(pageTagFilters[page]||[]).filter(id=>activeIds.has(id));
+    filterTagIds=[...selectedPageTags(currentPage)];localStorage.setItem(PAGE_FILTERS_KEY,JSON.stringify(pageTagFilters));
   }
   function resetOldBrowserData() {
     if (localStorage.getItem(RESET_KEY) === 'done') return;
@@ -138,14 +158,13 @@
   function loadLocalTags() {
     const stored=readStored(TAGS_KEY,[]);
     tags=ensureDefaultTags(Array.isArray(stored)?stored.map(normalizeTag).filter(Boolean):[]);
-    filterTagIds=filterTagIds.filter(id=>tags.some(tag=>tag.id===id && !tag.deletedAt));
-    localStorage.setItem(TAG_FILTER_KEY,JSON.stringify(filterTagIds));
+    prunePageFilters();
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
   }
   function saveTags(schedule=true) {
-    tags=ensureDefaultTags(tags);
+    tags=ensureDefaultTags(tags);prunePageFilters();
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
-    renderTasks(); renderHome(); renderFilterButton(); renderLogs();
+    renderTasks(); renderHome(); renderNotes(); renderFilterButton(); renderLogs();
     if (schedule) scheduleSync();
   }
   function loadLocalData() {
@@ -254,7 +273,7 @@
     if(!setup||!unlock||!opened||!list)return;
     setup.hidden=Boolean(privateVault);unlock.hidden=!privateVault||privateNotesUnlocked;opened.hidden=!privateNotesUnlocked;
     if(!privateNotesUnlocked){list.innerHTML='';$('privateNoteForm').hidden=true;return;}
-    const ordered=privateNotes.filter(note=>!note.deletedAt&&note.kind!=='log').sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    const ordered=privateNotes.filter(note=>!note.deletedAt&&note.kind!=='log'&&hasSelectedTag(note.tagIds||[],'notes')).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
     list.innerHTML=ordered.length?ordered.map(note=>{const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',tagIds=Array.isArray(note.tagIds)?note.tagIds:[],tagsHtml=tagIds.map(id=>tags.find(tag=>tag.id===id&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');return `<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${escapeHTML(note.content)}</p></button>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`;}).join(''):'<p class="empty">Nenhuma nota privada.</p>';
   }
   function renderNotesMode() {
@@ -354,28 +373,29 @@
     zoomLevel=Math.min(1.25,Math.max(.8,Math.round((zoomLevel+(direction==='in'?.05:-.05))*100)/100));
     localStorage.setItem(ZOOM_KEY,String(zoomLevel));applyZoom();
   }
-  function showToast(message) {
+  function showToast(message,duration=2600) {
     const node=$('toast');
     node.textContent=String(message || '');
     node.classList.remove('hidden');
     clearTimeout(toastTimer);
-    toastTimer=setTimeout(()=>node.classList.add('hidden'),2600);
+    toastTimer=setTimeout(()=>node.classList.add('hidden'),duration);
   }
   function updateNavIndicator(page=currentPage) {
     const nav=document.querySelector('.main-nav'), indicator=$('navIndicator'), buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]'));
     const index=buttons.findIndex(button=>button.dataset.page===page);
     if (!nav||!indicator||index<0||!buttons[0]) return;
-    const step=buttons[0].getBoundingClientRect().width+4;
-    indicator.style.transform=`translateX(${index*step}px)`;
+    const first=buttons[0].getBoundingClientRect(),target=buttons[index].getBoundingClientRect();
+    indicator.style.width=`${target.width}px`;indicator.style.transform=`translateX(${target.left-first.left}px)`;
   }
   function setPage(page) {
     if (!['home','tasks','log','notes','settings'].includes(page)) return;
-    const previous=currentPage, oldIndex=['home','tasks','log','notes','settings'].indexOf(previous), newIndex=['home','tasks','log','notes','settings'].indexOf(page);
+    const pageOrder=['home','tasks','notes','log','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
     if(!['notes','log'].includes(page)){pendingLogLockId='';pendingLogUnlockId='';}
     if(page==='log'&&privateNotesUnlocked&&privateNoteDirty){void savePrivateNote({preventDefault(){}},false).then(saved=>{if(saved)setPage(page);});return;}
     if(!['notes','log'].includes(page)&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
     if(!['notes','log'].includes(page)&&privateNotesUnlocked)void lockPrivateNotes();
+    if(page!==currentPage){persistPageFilters();filterTagIds=[...selectedPageTags(page)];}
     currentPage=page;
     localStorage.setItem(PAGE_KEY,page);
     document.body.dataset.page=page;
@@ -391,17 +411,17 @@
       if (button.dataset.page===page) button.setAttribute('aria-current','page');
       else button.removeAttribute('aria-current');
     });
-    updateNavIndicator(page);
+    updateNavIndicator(page);renderFilterButton();
     if (page==='home') renderHome();
     if (page==='tasks') renderTasks();
     if (page==='notes') { renderNotes();renderNotesMode(); }
     if (page==='log') renderLogs();
     if (page==='settings') { updateAuthUI();renderSettings(); }
   }
-  function hasSelectedTag(tagIds) { return !filterTagIds.length || tagIds.some(id=>filterTagIds.includes(id)); }
-  function visibleTasks() { return tasks.filter(task=>!task.deletedAt && hasSelectedTag([task.tagId])); }
-  function visibleNotes() { return notes.filter(note=>!note.deletedAt && hasSelectedTag(note.tagIds || [])); }
-  function openTasks() { return visibleTasks().filter(task=>!task.completedAt); }
+  function hasSelectedTag(tagIds,page=filterPageKey(currentPage)) { const selected=selectedPageTags(page);return !selected.length||tagIds.some(id=>selected.includes(id)); }
+  function visibleTasks(page='tasks') { return tasks.filter(task=>!task.deletedAt&&hasSelectedTag([task.tagId],page)); }
+  function visibleNotes(page='notes') { return notes.filter(note=>!note.deletedAt&&hasSelectedTag(note.tagIds||[],'notes')); }
+  function openTasks(page='tasks') { return visibleTasks(page).filter(task=>!task.completedAt); }
   function taskOrder(a,b) {
     const dateDiff=String(a.executionDate || '9999-12-31').localeCompare(String(b.executionDate || '9999-12-31'));
     return dateDiff || Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.title).localeCompare(String(b.title),'pt-BR');
@@ -454,10 +474,10 @@
     </article>`;
   }
   function renderFilterButton() {
-    const names=filterTagIds.map(id=>getTag(id).name);
-    const summary=names.length ? names.join(' + ') : 'TODAS';
-    for (const node of document.querySelectorAll('[data-active-filter-summary]')) node.textContent=summary;
-    for (const button of document.querySelectorAll('[data-filter-open]')) button.setAttribute('aria-label',names.length ? `Filtrar por ${names.join(' e ')}` : 'Filtrar por tag; todas as tags');
+    const names=filterTagIds.map(id=>getTag(id).name),summary=names.length?names.join(' + '):'TODAS',active=names.length>0;
+    for(const node of document.querySelectorAll('[data-active-filter-summary]'))node.textContent=summary;
+    for(const button of document.querySelectorAll('[data-filter-open]'))button.setAttribute('aria-label',active?`Filtro desta página: ${names.join(' e ')}`:'Filtro desta página; todas as tags');
+    const button=$('headerFilterBtn');if(button){button.textContent=active?`FILTRO · ${names.length}`:'FILTRO';button.setAttribute('aria-pressed',String(active));button.hidden=currentPage==='settings';}
   }
   function renderTaskTagOptions(selectedId='') {
     const active=tags.filter(tag=>!tag.deletedAt);
@@ -476,8 +496,7 @@
       if (!toggle) filterTagIds=[tagId];
       else filterTagIds=filterTagIds.includes(tagId)?filterTagIds.filter(id=>id!==tagId):[...filterTagIds,tagId];
     }
-    localStorage.setItem(TAG_FILTER_KEY,JSON.stringify(filterTagIds));
-    renderFilterButton(); renderAll(); renderFilterTagList();
+    persistPageFilters();renderFilterButton();renderAll();renderFilterTagList();
   }
   function openFilterDialog() {
     $('tagMessage').textContent=''; $('newTagName').value='';
@@ -510,7 +529,7 @@
     tags.push(tag); setTagFilter(tag.id,false); saveTags(); renderFilterTagList(); $('newTagName').value=''; $('tagMessage').textContent=`Tag ${tag.name} criada com cor automática.`;
   }
   function renderTasks() {
-    const all=visibleTasks(), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
+    const all=visibleTasks('tasks'), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
     const overdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
     $('weekLabel').textContent=formatWeekRange(weekStart);
     const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
@@ -532,8 +551,8 @@
     renderPlannerPanels(); renderFilterButton(); renderDialogLists();
   }
   function renderPlannerPanels() {
-    const planning=visibleTasks().filter(task=>!task.completedAt&&!task.executionDate).sort(taskOrder);
-    const completed=visibleTasks().filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    const planning=visibleTasks('tasks').filter(task=>!task.completedAt&&!task.executionDate).sort(taskOrder);
+    const completed=visibleTasks('tasks').filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     $('planningPanel').hidden=expandedSection!=='planning'; $('completedPanel').hidden=expandedSection!=='completed';
     $('planningBtn').setAttribute('aria-expanded',String(expandedSection==='planning'));
     $('completedBtn').setAttribute('aria-expanded',String(expandedSection==='completed'));
@@ -572,7 +591,7 @@
     }).join(''):'<div class="empty">Nenhum evento próximo.</div>';
   }
   function renderHome() {
-    const open=visibleTasks().filter(task=>!task.completedAt),today=todayKey(),tomorrow=addDays(today,1);
+    const open=visibleTasks('home').filter(task=>!task.completedAt),today=todayKey(),tomorrow=addDays(today,1);
     const overdue=open.filter(task=>task.executionDate&&task.executionDate<today).sort(taskOrder);
     const todayTasks=open.filter(task=>task.executionDate===today).sort(taskOrder);
     const tomorrowTasks=open.filter(task=>task.executionDate===tomorrow).sort(taskOrder);
@@ -600,7 +619,7 @@
     const list=$('logsList');if(!list)return;
     renderLogTagOptions($('logTagSelect')?.value||'');
     const cutoff=logRange==='all'?0:Date.now()-({ '7d':7,'30d':30,'12w':84 }[logRange]||7)*86400000;
-    const visible=logs.filter(log=>!log.deletedAt&&Date.parse(log.createdAt)>=cutoff).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
+    const selected=selectedPageTags('log'),visible=logs.filter(log=>!log.deletedAt&&Date.parse(log.createdAt)>=cutoff&&(!selected.length||selected.includes(log.tagId))).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
     document.querySelectorAll('[data-log-range]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.logRange===logRange)));
     list.innerHTML=visible.length?visible.map(log=>{
       const id=escapeHTML(log.id),tag=tags.find(item=>item.id===log.tagId&&!item.deletedAt),opened=Boolean(log.isLocked&&unlockedLogIds.has(log.id)),privateLog=opened?privateLogs.find(item=>item.id===log.id):null;
@@ -791,14 +810,14 @@
     const remove=event.target.closest('[data-private-delete]');if(remove)deletePrivateNote(remove.dataset.privateDelete);
   }
   function renderNotes() {
-    const active=visibleNotes().sort(noteOrder);
+    const active=visibleNotes('notes').sort(noteOrder);
     $('notesList').innerHTML=active.length ? active.map(note=>{
       const id=escapeHTML(note.id),tagsHtml=(note.tagIds||[]).map(tagId=>tags.find(tag=>tag.id===tagId&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');
       const title=note.title?`<h3 class="note-card-title">${escapeHTML(note.title)}</h3>`:'<span class="note-card-title-placeholder" aria-hidden="true"></span>';
       const body=note.title?(note.content?`<p>${escapeHTML(note.content)}</p>`:''):`<p class="note-card-content--titleless">${escapeHTML(note.content)}</p>`;
       const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota';
-      const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'';
-      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}">${pinLabel}</button><button class="menu-action menu-edit" type="button" data-duplicate-note="${id}">DUPLICAR NOTA</button><button class="menu-action" type="button" data-lock-note="${id}">TRANCAR 🔒</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</article>`;
+      const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',footer=link||tagsHtml?`<footer class="note-card-footer">${link||'<span class="note-card-footer-spacer" aria-hidden="true"></span>'}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</footer>`:'';
+      return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}">${pinLabel}</button><button class="menu-action menu-edit" type="button" data-duplicate-note="${id}">DUPLICAR NOTA</button><button class="menu-action" type="button" data-lock-note="${id}">TRANCAR 🔒</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${footer}</article>`;
     }).join('') : '<div class="empty">Nenhuma nota para as tags selecionadas.</div>';
     renderFilterButton(); renderDialogLists();
   }
@@ -810,7 +829,8 @@
     note.updatedAt=nowISO();saveNotes();showToast(note.isPinned?'Nota fixada no topo.':'Nota desafixada.');
   }
   function renderDayDialog() {
-    const all=visibleTasks(),currentWeek=startOfWeek(todayKey()),today=todayKey();
+    const hint=$('dayDialogHint');hint.hidden=activeDayKind==='day';hint.textContent=activeDayKind==='overdue'?'Só aparecem aqui tarefas atrasadas de semanas anteriores à semana em exibição; as desta semana ficam nos dias correspondentes.':'Aqui aparecem todas as tarefas com data anterior a hoje.';
+    const all=visibleTasks('tasks'),currentWeek=startOfWeek(todayKey()),today=todayKey();
     const inDay=all.filter(task=>activeDayKind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:activeDayKind==='all-overdue'?task.executionDate&&task.executionDate<today:task.executionDate===activeDayDate);
     const open=inDay.filter(task=>!task.completedAt),completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     if(activeDayKind==='all-overdue')sortOverdueTasks(open);else open.sort(taskOrder);
@@ -864,8 +884,16 @@
     }
     return true;
   }
-  function closeTaskDialogSafely() { const dialog=$('taskDialog');if(savePopupBeforeClose(dialog)&&dialog.open)closeTaskDialog(); }
-  function closeNoteDialogSafely() { const dialog=$('noteDialog');if(savePopupBeforeClose(dialog)&&dialog.open)dialog.close(); }
+  function closeTaskDialogSafely() {
+    const dialog=$('taskDialog'),hasItem=Boolean($('taskId').value||$('taskTitle').value.trim()||$('taskContent').value.trim()||$('taskLink').value.trim());
+    if(!savePopupBeforeClose(dialog))return;
+    if(dialog.open){closeTaskDialog();if(hasItem)showToast('Tarefa salva.',3000);}
+  }
+  function closeNoteDialogSafely() {
+    const dialog=$('noteDialog'),hasItem=Boolean($('noteId').value||$('noteTitle').value.trim()||$('noteContent').value.trim()||$('noteLink').value.trim());
+    if(!savePopupBeforeClose(dialog))return;
+    if(dialog.open){dialog.close();if(hasItem)showToast('Nota salva.',3000);}
+  }
   function saveTaskFromForm(event,close=true) {
     event?.preventDefault?.();
     const title=$('taskTitle').value.trim(),content=$('taskContent').value.trim(),link=normalizeLink($('taskLink').value);
@@ -887,7 +915,7 @@
     if (date && date>=todayKey()) setWeek(date);
     taskDialogDirty=false;if(close)closeTaskDialog();saveTasks();
     if (!date) togglePlannerSection('planning',true);
-    showToast(existing?'Tarefa atualizada.':'Tarefa adicionada.');return true;
+    showToast(close?'Tarefa salva.':existing?'Tarefa atualizada.':'Tarefa adicionada.',close?3000:2600);return true;
   }
   function softDeleteTask() { softDeleteTaskById($('taskId').value); }
   function softDeleteTaskById(id) {
@@ -1164,7 +1192,7 @@
     else notes.unshift({id:savedId,title,content,link,isPinned:false,tagIds,sortOrder:Math.min(-1,...notes.map(item=>Number(item.sortOrder)||0)),createdAt:now,updatedAt:now,deletedAt:null});
     $('noteId').value=savedId;
     if(!close)$('noteDialogTitle').textContent='Editar nota';
-    noteDialogDirty=false;if(close)$('noteDialog').close();saveNotes();showToast(note?'Nota atualizada.':'Nota salva.');return true;
+    noteDialogDirty=false;if(close)$('noteDialog').close();saveNotes();showToast(close?'Nota salva.':note?'Nota atualizada.':'Nota adicionada.',close?3000:2600);return true;
   }
   function handlePopupKeyboard(event,kind) {
     if(event.key!=='Enter')return;
@@ -1178,7 +1206,7 @@
     const saved=kind==='task'?saveTaskFromForm({preventDefault(){}},close):saveNote({preventDefault(){}},close);
     if(kind==='task')lastTaskCtrlEnterAt=saved?(close?0:now):0;
     else lastNoteCtrlEnterAt=saved?(close?0:now):0;
-    if(saved)showToast(close?'Salvo e fechado.':'Salvo. Ctrl+Enter novamente em até 500 ms para fechar.');
+    if(saved)showToast(close?(kind==='task'?'Tarefa salva.':'Nota salva.'):'Salvo. Ctrl+Enter novamente em até 500 ms para fechar.',close?3000:2600);
   }
   function duplicateNote(noteId) {
     const source=notes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!source)return;
@@ -1312,8 +1340,7 @@
     ]);
     const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean), remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null,remoteVault=remoteVaultRows.length?rowToPrivateVault(remoteVaultRows[0]):null,remotePrivateNotes=remotePrivateRows.map(rowToPrivateNote).filter(Boolean);
     tags=ensureDefaultTags(mergeById(localTags,remoteTags).map(normalizeTag).filter(Boolean));
-    filterTagIds=filterTagIds.filter(id=>tags.some(tag=>tag.id===id&&!tag.deletedAt));
-    localStorage.setItem(TAG_FILTER_KEY,JSON.stringify(filterTagIds));
+    prunePageFilters();
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
     const localActiveTasks=localTasks.filter(item=>!item.deletedAt), localActiveNotes=localNotes.filter(item=>!item.deletedAt);
     const localActiveLogs=localLogs.filter(item=>!item.deletedAt);
@@ -1581,15 +1608,15 @@
   for(const dialog of document.querySelectorAll('dialog')){
     dialog.addEventListener('cancel',event=>{
       if(!['taskDialog','noteDialog'].includes(dialog.id))return;
-      event.preventDefault();if(!savePopupBeforeClose(dialog))return;
-      if(dialog.id==='taskDialog')closeTaskDialog();else if(dialog.open)dialog.close();
+      event.preventDefault();
+      if(dialog.id==='taskDialog')closeTaskDialogSafely();else closeNoteDialogSafely();
     });
     dialog.addEventListener('click',event=>{
       if(event.target!==dialog)return;
       const rect=dialog.getBoundingClientRect();
       if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom){
-        if(!savePopupBeforeClose(dialog))return;
-        closeFloatingActionMenu();if(dialog.open)dialog.close();
+        closeFloatingActionMenu();
+        if(dialog.id==='taskDialog')closeTaskDialogSafely();else if(dialog.id==='noteDialog')closeNoteDialogSafely();else if(dialog.open)dialog.close();
       }
     });
   }
