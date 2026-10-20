@@ -696,11 +696,22 @@
     .log-ranges { display:flex; gap:5px; margin-bottom:10px; overflow-x:auto; }
     .log-ranges button { flex:none; padding:5px 8px; border:1px solid #52617b; border-radius:999px; background:#111827; color:var(--muted); font-size:.62rem; font-weight:800; }
     .log-ranges button[aria-pressed="true"] { border-color:var(--accent); background:#243452; color:var(--text); }
-    .logs-list { display:grid; align-content:start; gap:6px; }
-    .log-entry { min-width:0; padding:8px 10px; border-left:3px solid #718fcd; border-radius:7px 10px 10px 7px; background:rgba(20,27,45,.72); }
-    .log-entry p { margin:0; overflow-wrap:anywhere; font-size:.72rem; line-height:1.35; }
-    .log-entry-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:7px; margin-top:7px; }
+    .logs-list { position:relative; display:grid; align-content:start; gap:0; }
+    .logs-list::before { content:''; position:absolute; z-index:0; top:10px; bottom:12px; left:calc(60px + 8px + 9px); width:2px; border-radius:2px; background:#465673; }
+    .log-entry { display:grid; grid-template-columns:60px 18px minmax(0,1fr); align-items:start; gap:8px; position:relative; min-width:0; padding:0 0 13px; border:0; border-radius:0; background:transparent; }
+    .log-date { grid-column:1; display:grid; justify-items:end; gap:1px; padding-top:8px; color:var(--muted); font-variant-numeric:tabular-nums; text-align:right; }
+    .log-date strong { color:var(--text); font-size:.78rem; line-height:1; }
+    .log-date span { font-size:.62rem; line-height:1.1; }
+    .log-date small { font-size:.54rem; line-height:1.1; }
+    .log-axis { grid-column:2; position:relative; z-index:1; display:flex; justify-content:center; min-height:100%; }
+    .log-dot { position:relative; z-index:2; width:12px; height:12px; margin-top:12px; border:2px solid #141b2d; border-radius:50%; background:var(--log-dot,#73d6a2); box-shadow:0 0 0 2px color-mix(in srgb,var(--log-dot,#73d6a2) 32%,transparent); }
+    .log-card { grid-column:3; min-width:0; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:rgba(20,27,45,.84); }
+    .log-card-header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:5px 8px; margin-bottom:7px; }
+    .log-time-meta { min-width:0; color:var(--muted); font-size:.59rem; line-height:1.3; }
+    .log-content { margin:0; overflow-wrap:anywhere; white-space:pre-wrap; font-size:.8rem; line-height:1.4; }
+    .log-entry-footer { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:7px; margin-top:9px; }
     .log-tag-pill { display:inline-flex; flex:none; padding:3px 7px; border:1px solid var(--tag-color,#8bafff); border-radius:999px; color:var(--tag-color,#8bafff); font-size:.58rem; font-weight:850; }
+    .log-no-tag { border-color:#53627e; color:var(--muted); }
     .log-entry-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:5px; }
     .log-action { display:inline-flex; align-items:center; justify-content:center; min-height:29px; padding:4px 8px; border:1px solid #53627e; border-radius:8px; background:#19253b; color:var(--text); font-size:.58rem; font-weight:850; white-space:nowrap; }
     .log-action-delete { border-color:#a94958; color:#ffc5cb; }
@@ -735,10 +746,10 @@
     .week-board { display:flex; flex:1; flex-direction:column; min-height:0; }
     .week-arrow-vertical { display:none; }
     @media (min-width:1100px), (orientation:landscape) and (min-width:700px) and (min-height:600px) {
-      body[data-page="tasks"] #weekBoard { display:grid; flex:1; grid-template-columns:minmax(0,1fr) 54px; gap:10px; min-height:0; }
+      body[data-page="tasks"] #weekBoard { display:grid; flex:1; grid-template-columns:minmax(0,1fr) 108px; gap:10px; min-height:0; }
       body[data-page="tasks"] #weekGrid { grid-column:1; grid-row:1; min-width:0; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); }
-      body[data-page="tasks"] #weekDock { position:static; display:flex !important; grid-column:2; grid-row:1; flex-direction:column; align-items:stretch; justify-content:space-between; gap:8px; width:54px; height:auto; min-height:0; padding:8px 5px; transform:none; border-radius:14px; }
-      body[data-page="tasks"] #weekDock #prevWeekBtn,body[data-page="tasks"] #weekDock #nextWeekBtn { width:100%; min-width:0; height:40px; min-height:40px; padding:0; font-size:1.25rem; line-height:1; }
+      body[data-page="tasks"] #weekDock { position:static; display:flex !important; grid-column:2; grid-row:1; flex-direction:column; align-items:stretch; justify-content:space-between; gap:8px; width:108px; height:auto; min-height:0; padding:8px 7px; transform:none; border-radius:14px; }
+      body[data-page="tasks"] #weekDock #prevWeekBtn,body[data-page="tasks"] #weekDock #nextWeekBtn { align-self:center; width:56px; min-width:56px; height:40px; min-height:40px; padding:0; font-size:1.25rem; line-height:1; }
       body[data-page="tasks"] #weekDock #weekLabel { flex:none; width:100%; min-width:0; font-size:.64rem; line-height:1.15; text-align:center; white-space:normal; overflow-wrap:anywhere; }
       body[data-page="tasks"] #weekDock #todayBtn { width:100%; min-width:0; min-height:48px; padding:6px 2px; font-size:.55rem; line-height:1.1; white-space:normal; }
       body[data-page="tasks"] #weekDock .subdock-sync { width:100%; min-width:0; min-height:42px; padding:5px 2px; font-size:.5rem; line-height:1.1; white-space:normal; overflow-wrap:anywhere; }
@@ -751,7 +762,18 @@
       .log-form { grid-template-columns:minmax(0,1fr) auto; }
       .log-form textarea { grid-column:1 / -1; }
       .log-form select { grid-column:1; }
-      .log-entry-footer { align-items:flex-start; }
+      .logs-list::before { left:calc(42px + 6px + 7px); }
+      .log-entry { grid-template-columns:42px 14px minmax(0,1fr); gap:6px; padding-bottom:11px; }
+      .log-date { padding-top:7px; }
+      .log-date strong { font-size:.72rem; }
+      .log-date span { font-size:.58rem; }
+      .log-date small { font-size:.5rem; }
+      .log-dot { width:10px; height:10px; margin-top:10px; }
+      .log-card { padding:8px 9px; }
+      .log-card-header { margin-bottom:6px; }
+      .log-time-meta { font-size:.54rem; }
+      .log-content { font-size:.75rem; }
+      .log-entry-footer { align-items:flex-start; justify-content:flex-start; margin-top:8px; }
       .log-entry-actions { justify-content:flex-start; }
     }
     @media(min-width:1100px) {
@@ -862,7 +884,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=78" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=78',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=79" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=79',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
