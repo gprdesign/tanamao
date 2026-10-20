@@ -81,6 +81,7 @@
   let pointerDrag = null;
   let activeDayKind = 'day';
   let activeDayDate = '';
+  let dayDialogTouchStart = null;
   let authBusy = false;
   let taskDialogDirty = false;
   let noteDialogDirty = false;
@@ -948,8 +949,23 @@
     activeDayDate=activeDayKind==='day'&&isDateKey(dayKey)?dayKey:'';
     if(activeDayKind==='day'&&!activeDayDate)return;
     $('dayDialogTitle').textContent=activeDayKind==='day'?formatDate(activeDayDate,{weekday:'long',day:'2-digit',month:'2-digit'}):'ATRASADO';
-    $('dayDialogAddBtn').hidden=activeDayKind!=='day';
+    $('dayDialogAddBtn').hidden=activeDayKind!=='day';$('dayDialogPrevBtn').hidden=activeDayKind!=='day';$('dayDialogNextBtn').hidden=activeDayKind!=='day';dayDialogTouchStart=null;
     renderDayDialog(); $('dayDialog').showModal();
+  }
+  function navigateDayDialog(offset) {
+    if(activeDayKind!=='day'||!isDateKey(activeDayDate))return;
+    activeDayDate=addDays(activeDayDate,offset);$('dayDialogTitle').textContent=formatDate(activeDayDate,{weekday:'long',day:'2-digit',month:'2-digit'});
+    if(startOfWeek(activeDayDate)!==weekStart){setWeek(activeDayDate);renderTasks();}else renderDayDialog();
+  }
+  function handleDayDialogTouchStart(event) {
+    if(activeDayKind!=='day'||!$('dayDialog').open||event.touches.length!==1||event.target.closest('button,a,input,select,textarea,details,[data-touch-drag-task]')){dayDialogTouchStart=null;return;}
+    const touch=event.touches[0];dayDialogTouchStart={x:touch.clientX,y:touch.clientY};
+  }
+  function handleDayDialogTouchEnd(event) {
+    const start=dayDialogTouchStart;dayDialogTouchStart=null;if(!start||activeDayKind!=='day'||!$('dayDialog').open)return;
+    const touch=event.changedTouches[0];if(!touch)return;const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
+    if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.25)return;
+    navigateDayDialog(dx<0?1:-1);
   }
   function setLinkAttachment(kind,value='') {
     const input=$(`${kind}Link`),wrap=$(`${kind}LinkWrap`),toggle=$(`${kind}LinkToggle`),url=normalizeLink(value);
@@ -1676,6 +1692,11 @@
   $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=6;renderTasks();});
   $('completedMoreBtn').addEventListener('click',()=>{completedVisibleLimit+=6;renderTasks();});
   $('dayDialogAddBtn').addEventListener('click',()=>{const date=activeDayKind==='day'?activeDayDate:'';$('dayDialog').close();openTaskDialog('',date);});
+  $('dayDialogPrevBtn').addEventListener('click',()=>navigateDayDialog(-1));
+  $('dayDialogNextBtn').addEventListener('click',()=>navigateDayDialog(1));
+  $('dayDialog').addEventListener('touchstart',handleDayDialogTouchStart,{passive:true});
+  $('dayDialog').addEventListener('touchend',handleDayDialogTouchEnd,{passive:true});
+  $('dayDialog').addEventListener('touchcancel',()=>{dayDialogTouchStart=null;},{passive:true});
   $('closeDayDialog').addEventListener('click',()=>$('dayDialog').close());
   $('notesList').addEventListener('click',handleNotesClick);
   $('notesList').addEventListener('keydown',handleNoteKey);
