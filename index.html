@@ -625,6 +625,9 @@
     .task-card--compact .task-main,.task-card--compact .task-actions { align-self:center; }
     .task-card--compact .task-actions { align-items:center; }
     .task-card .task-open { display:block !important; flex:1 1 0; min-width:0; width:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap !important; overflow-wrap:normal; word-break:normal; -webkit-line-clamp:unset !important; }
+    @media (min-width:1100px), (orientation:landscape) and (min-width:700px) and (min-height:600px) {
+      .task-card .task-open { display:-webkit-box !important; -webkit-box-orient:vertical; -webkit-line-clamp:2 !important; white-space:normal !important; text-overflow:ellipsis; overflow:hidden; overflow-wrap:anywhere; word-break:normal; }
+    }
     .task-touch-handle { width:24px; height:30px; color:var(--tag-color); }
     .task-touch-handle::after { content:none !important; }
     .task-touch-handle .drag-grip { display:block !important; color:var(--tag-color); font-size:.84rem; line-height:1; transform:none !important; white-space:nowrap; }
@@ -876,7 +879,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=80" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=80',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=81" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=81',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
