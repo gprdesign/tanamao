@@ -9,7 +9,7 @@ Planner semanal pessoal, minimalista, inspirado no Weeklo.
 - Adaptador local para próximos eventos, pronto para receber os eventos do Google Calendar futuramente.
 - Planner semanal mostra todas as tarefas em cada dia; arraste no mouse ou use o puxador de toque para reordenar e mudar a data.
 - Planejar e Concluídas ficam lado a lado e abrem painéis exclusivos na própria tela, em grades de 3×2 com botão MAIS.
-- Tarefas mantêm conteúdo, link e conclusão no armazenamento local e na sincronização.
+- Tarefas mantêm conteúdo, link, checklist de etapas e conclusão no armazenamento local e na sincronização.
 - Atrasadas ficam vermelhas; ao virar a semana, também aparecem como links para a tarefa original em ATRASADO, com REAGENDAR.
 - Filtros multitag para tarefas e notas; cada tarefa tem uma tag e notas aceitam várias. Tags podem ser criadas na janela de nota.
 - Notas aceitam link e PIN; notas fixadas ficam no topo e seguem sincronizadas.

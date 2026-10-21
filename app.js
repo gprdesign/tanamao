@@ -228,6 +228,13 @@
     if(frequency==='weekly'&&!weekdays.length)weekdays.push(getIsoWeekday(anchorDate));
     return {frequency,interval,weekdays:frequency==='weekly'?weekdays:[],anchorDate,until:isDateKey(value.until)?String(value.until):null,seriesId:String(value.seriesId||taskId||'')};
   }
+  function normalizeTaskSubtasks(value) {
+    if(!Array.isArray(value))return [];
+    return value.slice(0,50).map(item=>{
+      const raw=item&&typeof item==='object'?item:{text:item},text=String(raw.text??raw.title??'').trim().slice(0,180);
+      return text?{id:String(raw.id||makeId()),text,completed:raw.completed===true||raw.done===true||raw.checked===true}:null;
+    }).filter(Boolean);
+  }
   function normalizeTask(value) {
     if (!value || typeof value !== 'object' || !String(value.title || '').trim()) return null;
     const legacyArea=value.area==='outros' ? 'outro' : (['vida','trabalho'].includes(value.area) ? value.area : 'vida');
@@ -236,7 +243,7 @@
     return {
       id, title:String(value.title).trim().slice(0,180),
       content:String(value.content ?? value.details ?? '').slice(0,20000),link:normalizeLink(value.link ?? value.link_url ?? ''),
-      tagId:String(storedTag==='outros' ? 'outro' : (storedTag || legacyArea)),executionDate,
+      tagId:String(storedTag==='outros' ? 'outro' : (storedTag || legacyArea)),executionDate,subtasks:normalizeTaskSubtasks(value.subtasks),
       recurrence:normalizeRecurrence(value.recurrence,executionDate,id),
       sortOrder:Number.isFinite(Number(value.sortOrder ?? value.sort_order)) ? Number(value.sortOrder ?? value.sort_order) : 0,
       createdAt:String(value.createdAt || value.created_at || nowISO()), updatedAt:String(value.updatedAt || value.updated_at || value.createdAt || value.created_at || nowISO()),
@@ -1167,13 +1174,25 @@
   }
   function toggleLinkAttachment(kind) { $(`${kind}LinkWrap`).hidden=false;$(`${kind}LinkToggle`).hidden=true;$(`${kind}Link`).focus(); }
   function clearLinkAttachment(kind) { $(`${kind}Link`).value='';$(`${kind}LinkWrap`).hidden=true;$(`${kind}LinkToggle`).hidden=false; }
+  function readTaskChecklistDraft(includeEmpty=false) {
+    return Array.from($('taskChecklistList').querySelectorAll('[data-task-checklist-row]')).map(row=>({id:String(row.dataset.checklistId||makeId()),text:String(row.querySelector('[data-task-checklist-text]')?.value||'').trim().slice(0,180),completed:Boolean(row.querySelector('[data-task-checklist-done]')?.checked)})).filter(item=>includeEmpty||item.text).slice(0,50);
+  }
+  function renderTaskChecklist(items=[]) {
+    const list=$('taskChecklistList'),rows=Array.isArray(items)?items.slice(0,50):[];
+    list.innerHTML=rows.length?rows.map((item,index)=>`<div class="task-checklist-row${item.completed?' is-complete':''}" data-task-checklist-row data-checklist-id="${escapeHTML(item.id||makeId())}"><input type="checkbox" data-task-checklist-done aria-label="Marcar etapa ${index+1} como concluída" ${item.completed?'checked':''}><input type="text" data-task-checklist-text maxlength="180" value="${escapeHTML(item.text||'')}" placeholder="Etapa ${index+1}" aria-label="Texto da etapa ${index+1}"><button class="btn ghost small task-checklist-remove" type="button" data-remove-task-checklist-item aria-label="Remover etapa ${index+1}" title="Remover etapa">×</button></div>`).join(''):'<p class="task-checklist-empty">Nenhuma etapa adicionada.</p>';
+  }
+  function addTaskChecklistItem() {
+    const items=readTaskChecklistDraft(true);
+    if(items.length>=50){showToast('O checklist aceita até 50 etapas.');return;}
+    items.push({id:makeId(),text:'',completed:false});renderTaskChecklist(items);$('taskChecklistList').querySelector('[data-task-checklist-row]:last-child [data-task-checklist-text]')?.focus();taskDialogDirty=true;
+  }
   function openTaskDialog(taskId='',suggestedDate='') {
     taskDialogDirty=false;lastTaskCtrlEnterAt=0;
     const task=taskId ? tasks.find(item=>item.id===String(taskId) && !item.deletedAt) : null;
     $('taskForm').reset();
     $('taskId').value=task ? task.id : '';
     $('taskDialogTitle').textContent=task ? 'Editar tarefa' : 'Nova tarefa';
-    $('taskTitle').value=task?.title || '';$('taskContent').value=task?.content || '';
+    $('taskTitle').value=task?.title || '';$('taskContent').value=task?.content || '';renderTaskChecklist(task?.subtasks||[]);
     renderTaskTagOptions(task?.tagId || filterTagIds[0] || localStorage.getItem(LAST_TAG_KEY) || 'vida');
     $('executionDate').value=task?.executionDate || suggestedDate || '';setLinkAttachment('task',task?.link||'');
     const recurrence=task?.recurrence||null;$('taskRecurrence').value=recurrence?.frequency||'';$('recurrenceInterval').value=String(recurrence?.interval||1);$('recurrenceUntil').value=recurrence?.until||'';
@@ -1184,7 +1203,7 @@
   function closeTaskDialog() { taskDialogDirty=false;if ($('taskDialog').open) $('taskDialog').close(); }
   function savePopupBeforeClose(dialog) {
     if(dialog.id==='taskDialog'&&taskDialogDirty){
-      const hasText=$('taskTitle').value.trim()||$('taskContent').value.trim()||$('taskLink').value.trim();
+      const hasText=$('taskTitle').value.trim()||$('taskContent').value.trim()||$('taskLink').value.trim()||readTaskChecklistDraft().length;
       if(!hasText){taskDialogDirty=false;return true;}
       saveTaskFromForm({preventDefault(){}});
       if(dialog.open){showToast('Preencha o título da tarefa. Mantive o popup aberto para não perder o texto.');return false;}
@@ -1200,7 +1219,7 @@
     return true;
   }
   function closeTaskDialogSafely() {
-    const dialog=$('taskDialog'),hasItem=Boolean($('taskId').value||$('taskTitle').value.trim()||$('taskContent').value.trim()||$('taskLink').value.trim());
+    const dialog=$('taskDialog'),hasItem=Boolean($('taskId').value||$('taskTitle').value.trim()||$('taskContent').value.trim()||$('taskLink').value.trim()||readTaskChecklistDraft().length);
     if(!savePopupBeforeClose(dialog))return;
     if(dialog.open){closeTaskDialog();if(hasItem)showToast('Tarefa salva.',3000);}
   }
@@ -1211,7 +1230,7 @@
   }
   function saveTaskFromForm(event,close=true) {
     event?.preventDefault?.();
-    const title=$('taskTitle').value.trim(),content=$('taskContent').value.trim(),link=normalizeLink($('taskLink').value),tagId=$('taskTag').value,date=$('executionDate').value||null;
+    const title=$('taskTitle').value.trim(),content=$('taskContent').value.trim(),link=normalizeLink($('taskLink').value),tagId=$('taskTag').value,date=$('executionDate').value||null,subtasks=readTaskChecklistDraft();
     const id=$('taskId').value,existing=id?tasks.find(task=>task.id===id&&!task.deletedAt):null,now=nowISO(),savedId=existing?.id||makeId();
     const recurrenceResult=recurrenceFromTaskForm(existing,savedId,date);
     if(recurrenceResult.error){showToast(recurrenceResult.error);return false;}
@@ -1219,8 +1238,8 @@
     const recurrence=recurrenceResult.value;
     if(existing){
       if((existing.executionDate||'')!==(date||''))existing.sortOrder=nextTaskOrder(date);
-      existing.title=title;existing.content=content;existing.link=link;existing.tagId=tagId;existing.executionDate=date;existing.recurrence=recurrence;existing.updatedAt=now;
-    }else tasks.push({id:savedId,title,content,link,tagId,executionDate:date,recurrence,sortOrder:nextTaskOrder(date),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
+      existing.title=title;existing.content=content;existing.link=link;existing.tagId=tagId;existing.executionDate=date;existing.recurrence=recurrence;existing.subtasks=subtasks;existing.updatedAt=now;
+    }else tasks.push({id:savedId,title,content,link,tagId,executionDate:date,recurrence,subtasks,sortOrder:nextTaskOrder(date),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
     $('taskId').value=savedId;
     if(!close){$('taskDialogTitle').textContent='Editar tarefa';$('deleteTaskBtn').classList.remove('hidden');}
     localStorage.setItem(LAST_TAG_KEY,tagId);
@@ -1243,7 +1262,8 @@
     const seriesId=rule.seriesId||task.id;
     if(tasks.some(item=>item.recurrence?.seriesId===seriesId&&item.executionDate===nextDate))return null;
     const now=nowISO(),id=makeId(),recurrence={...rule,seriesId};
-    tasks.push({id,title:task.title,content:task.content,link:task.link,tagId:task.tagId,executionDate:nextDate,recurrence,sortOrder:nextTaskOrder(nextDate),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
+    const subtasks=normalizeTaskSubtasks(task.subtasks).map(item=>({id:makeId(),text:item.text,completed:false}));
+    tasks.push({id,title:task.title,content:task.content,link:task.link,tagId:task.tagId,executionDate:nextDate,recurrence,subtasks,sortOrder:nextTaskOrder(nextDate),createdAt:now,updatedAt:now,completedAt:null,deletedAt:null});
     return nextDate;
   }
   function toggleComplete(taskId,complete) {
@@ -1639,10 +1659,10 @@
     return true;
   }
   function taskToRow(task) {
-    return {id:task.id,owner_id:session.user.id,title:task.title,details:task.content||'',link_url:task.link||'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,recurrence:task.recurrence||null,tag_id:task.tagId,sort_order:Number(task.sortOrder)||0,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
+    return {id:task.id,owner_id:session.user.id,title:task.title,details:task.content||'',link_url:task.link||'',subtasks:normalizeTaskSubtasks(task.subtasks),status:'active',release_date:null,due_date:null,execution_date:task.executionDate,recurrence:task.recurrence||null,tag_id:task.tagId,sort_order:Number(task.sortOrder)||0,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
   }
   function rowToTask(row) {
-    return normalizeTask({id:row.id,title:row.title,content:row.details,link_url:row.link_url,tagId:row.tag_id,area:row.area,executionDate:row.execution_date,recurrence:row.recurrence,sortOrder:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
+    return normalizeTask({id:row.id,title:row.title,content:row.details,link_url:row.link_url,subtasks:row.subtasks,tagId:row.tag_id,area:row.area,executionDate:row.execution_date,recurrence:row.recurrence,sortOrder:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,completedAt:row.completed_at,deletedAt:row.deleted_at});
   }
   function tagToRow(tag) { return {owner_id:session.user.id,id:tag.id,name:tag.name,color:tag.color,created_at:tag.createdAt,updated_at:tag.updatedAt,deleted_at:tag.deletedAt,planner_version:1}; }
   function rowToTag(row) { return normalizeTag({id:row.id,name:row.name,color:row.color,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
@@ -1895,6 +1915,10 @@
   $('taskForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'task'));
   $('taskForm').addEventListener('input',()=>{taskDialogDirty=true;});
   $('taskForm').addEventListener('change',()=>{taskDialogDirty=true;});
+  $('taskChecklistAddBtn').addEventListener('click',addTaskChecklistItem);
+  $('taskChecklistList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-task-checklist-item]');if(!button)return;button.closest('[data-task-checklist-row]')?.remove();renderTaskChecklist(readTaskChecklistDraft(true));taskDialogDirty=true;});
+  $('taskChecklistList').addEventListener('change',event=>{const checkbox=event.target.closest('[data-task-checklist-done]');if(checkbox)checkbox.closest('[data-task-checklist-row]')?.classList.toggle('is-complete',checkbox.checked);});
+  $('taskChecklistList').addEventListener('keydown',event=>{if(event.target.matches('[data-task-checklist-text]')&&event.key==='Enter'&&!(event.ctrlKey||event.metaKey)&&!event.shiftKey){event.preventDefault();event.stopPropagation();addTaskChecklistItem();}});
   $('taskRecurrence').addEventListener('change',()=>updateTaskRecurrenceUI(true));
   $('taskLinkToggle').addEventListener('click',()=>toggleLinkAttachment('task'));
   $('taskLinkRemove').addEventListener('click',()=>clearLinkAttachment('task'));
