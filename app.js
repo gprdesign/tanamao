@@ -7,6 +7,9 @@
   const NOTES_KEY = 'tnm.weekly.notes.v1';
   const LOGS_KEY = 'tnm.weekly.logs.v1';
   const FINANCE_KEY = 'tnm.weekly.finance.v1';
+  const FINANCE_STATE_KEY = 'tnm.weekly.financeState.v1';
+  const FINANCE_ENTRY_TAG_ID = 'flow-entry';
+  const FINANCE_EXIT_TAG_ID = 'flow-exit';
   const FINANCE_MONTH_KEY = 'tnm.weekly.financeMonth.v1';
   const LOG_RANGE_KEY = 'tnm.weekly.logsRange.v1';
   const ZOOM_KEY = 'tnm.weekly.zoom.v1';
@@ -29,7 +32,9 @@
   const DEFAULT_TAGS = [
     {id:'vida',name:'VIDA',color:'#73d6a2',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'},
     {id:'trabalho',name:'TRABALHO',color:'#8bafff',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'},
-    {id:'outro',name:'OUTRO',color:'#ffc46b',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'}
+    {id:'outro',name:'OUTRO',color:'#ffc46b',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'},
+    {id:'flow-entry',name:'ENTRADA',color:'#73d6a2',createdAt:'2026-10-21T00:00:00.000Z',updatedAt:'2026-10-21T00:00:00.000Z'},
+    {id:'flow-exit',name:'SAÍDA',color:'#ff8b8b',createdAt:'2026-10-21T00:00:00.000Z',updatedAt:'2026-10-21T00:00:00.000Z'}
   ];
   const DAY_LABELS = ['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
   const LEGACY_KEYS = [
@@ -45,6 +50,7 @@
   let notes = [];
   let logs = readStored(LOGS_KEY,[]);
   let finances = [];
+  let financeState = normalizeFinanceState(readStored(FINANCE_STATE_KEY,{}));
   let financeMonth = /^\d{4}-\d{2}$/.test(localStorage.getItem(FINANCE_MONTH_KEY)||'')?localStorage.getItem(FINANCE_MONTH_KEY):todayKey().slice(0,7);
   if(!Array.isArray(logs))logs=[];
   let logRange = ['7d','30d','12w','all'].includes(localStorage.getItem(LOG_RANGE_KEY))?localStorage.getItem(LOG_RANGE_KEY):'7d';
@@ -185,7 +191,11 @@
   function getTag(tagId) { return tags.find(tag=>tag.id===String(tagId) && !tag.deletedAt) || tags.find(tag=>tag.id==='vida') || DEFAULT_TAGS[0]; }
   function ensureDefaultTags(list) {
     const map=new Map((Array.isArray(list)?list:[]).map(item=>[item.id,item]));
-    for (const item of DEFAULT_TAGS) if (!map.has(item.id)) map.set(item.id,{...item});
+    for (const item of DEFAULT_TAGS) {
+      const existing=map.get(item.id);
+      if(!existing)map.set(item.id,{...item});
+      else if(item.id===FINANCE_ENTRY_TAG_ID||item.id===FINANCE_EXIT_TAG_ID)map.set(item.id,{...existing,name:item.name,color:item.color,deletedAt:null});
+    }
     return Array.from(map.values()).map(normalizeTag).filter(Boolean);
   }
   function loadLocalTags() {
@@ -202,6 +212,7 @@
   }
   function loadLocalData() {
     const storedTasks=readStored(TASKS_KEY,[]),storedNotes=readStored(NOTES_KEY,[]),storedLogs=readStored(LOGS_KEY,[]),storedFinance=readStored(FINANCE_KEY,[]);
+    financeState=normalizeFinanceState(readStored(FINANCE_STATE_KEY,financeState));
     tasks=Array.isArray(storedTasks)?storedTasks.map(normalizeTask).filter(Boolean):[];
     notes=Array.isArray(storedNotes)?storedNotes.map(normalizeNote).filter(Boolean):[];
     logs=Array.isArray(storedLogs)?storedLogs.map(normalizeLog).filter(Boolean):[];
@@ -274,6 +285,12 @@
     if(!content&&!isLocked)return null;
     return {id:String(value.id||makeId()),content:isLocked?'':content,isLocked,tagId:String(value.tagId??value.tag_id??''),createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
   }
+  function normalizeFinanceState(value) {
+    const source=value&&typeof value==='object'?value:{};
+    const balanceRaw=source.accountBalance??source.account_balance,cashboxRaw=source.cashboxAmount??source.cashbox_amount;
+    const balanceNumber=balanceRaw===null||balanceRaw===undefined||balanceRaw===''?null:Number(balanceRaw),cashboxNumber=cashboxRaw===null||cashboxRaw===undefined||cashboxRaw===''?null:Number(cashboxRaw);
+    return {accountBalance:Number.isFinite(balanceNumber)?Math.round(balanceNumber*100)/100:null,balanceUpdatedAt:String(source.balanceUpdatedAt||source.balance_updated_at||''),cashboxAmount:Number.isFinite(cashboxNumber)?Math.round(cashboxNumber*100)/100:null,cashboxUpdatedAt:String(source.cashboxUpdatedAt||source.cashbox_updated_at||''),updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+  }
   function normalizeFinanceEntry(value) {
     if(!value||typeof value!=='object'||!String(value.title||'').trim())return null;
     const rawDate=value.date||value.movementDate||value.movement_date,date=isDateKey(rawDate)?String(rawDate):null;
@@ -292,7 +309,7 @@
       if(!seriesId)seriesId=String(rawRule.seriesId||value.id||'');
     }
     if(occurrenceNumber)occurrenceNumber=Math.max(1,Math.floor(occurrenceNumber));
-    return {id:String(value.id||makeId()),title:String(value.title).trim().slice(0,180),kind,amount,date,status,recurrence,seriesId,occurrenceNumber,installmentCount,createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
+    return {id:String(value.id||makeId()),title:String(value.title).trim().slice(0,180),kind,tagId:kind==='income'?FINANCE_ENTRY_TAG_ID:FINANCE_EXIT_TAG_ID,amount,date,status,recurrence,seriesId,occurrenceNumber,installmentCount,createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
   }
   function normalizeNote(value) {
     if (!value || typeof value !== 'object') return null;
@@ -323,6 +340,7 @@
     if(schedule)scheduleSync();
   }
   function saveFinanceEntries(schedule=true) {
+    finances=finances.map(normalizeFinanceEntry).filter(Boolean);
     localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);renderFinancePage();
     if(schedule)scheduleSync();
   }
@@ -514,7 +532,7 @@
     updateNavIndicator(page);renderFilterButton();
     if(page==='home')renderHome();
     if(page==='tasks')renderTasks();
-    if(page==='finance')renderFinancePage();
+    if(page==='finance'){renderFinancePage();void refreshFinanceCloudData();}
     if(page==='notes'){renderNotes();renderNotesMode();}
     if(page==='settings'){updateAuthUI();renderSettings();}
   }
@@ -653,7 +671,7 @@
   function renderTagManager() {
     const list=$('tagManagerList');if(!list)return;
     const active=tags.filter(tag=>!tag.deletedAt).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
-    list.innerHTML=active.length?active.map(tag=>`<form class="tag-manager-row" data-edit-tag="${escapeHTML(tag.id)}"><input type="color" name="color" value="${escapeHTML(tag.color)}" aria-label="Cor da tag ${escapeHTML(tag.name)}"><input type="text" name="name" maxlength="32" value="${escapeHTML(tag.name)}" aria-label="Nome da tag ${escapeHTML(tag.name)}" required><button class="btn small" type="submit">SALVAR</button></form>`).join(''):'<p class="empty">Nenhuma tag cadastrada.</p>';
+    list.innerHTML=active.length?active.map(tag=>`<form class="tag-manager-row" data-edit-tag="${escapeHTML(tag.id)}"><input type="color" name="color" value="${escapeHTML(tag.color)}" aria-label="Cor da tag ${escapeHTML(tag.name)}"><input type="text" name="name" maxlength="32" value="${escapeHTML(tag.name)}" aria-label="Nome da tag ${escapeHTML(tag.name)}" ${tag.id===FINANCE_ENTRY_TAG_ID||tag.id===FINANCE_EXIT_TAG_ID?'readonly':''} required><button class="btn small" type="submit">SALVAR</button></form>`).join(''):'<p class="empty">Nenhuma tag cadastrada.</p>';
   }
   function openTagManager(logId='') {
     pendingLogAddTagId=String(logId||'');$('tagManagerStatus').textContent='';$('managedTagName').value='';$('managedTagColor').value=randomTagColor();renderTagManager();$('tagManagerDialog').showModal();
@@ -787,6 +805,31 @@
     logRange=range;localStorage.setItem(LOG_RANGE_KEY,range);renderLogs();
   }
   function financeMoney(amount) { return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(amount)||0); }
+  function getNextPlannedIncome() {
+    const today=todayKey();
+    return finances.filter(entry=>!entry.deletedAt&&entry.kind==='income'&&entry.status==='planned'&&entry.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'))[0]||null;
+  }
+  function renderFinanceBudget() {
+    const balance=$('financeAccountBalance'),balanceUpdated=$('financeBalanceUpdated'),cashboxInput=$('financeCashboxInput'),cashboxValue=$('financeCashboxValue'),daily=$('financeDailyAllowance'),nextLabel=$('financeNextIncomeLabel');
+    if(!balance||!balanceUpdated||!cashboxInput||!cashboxValue||!daily||!nextLabel)return;
+    balance.textContent=financeState.accountBalance===null?'Aguardando saldo':financeMoney(financeState.accountBalance);
+    const updated=financeState.balanceUpdatedAt?new Date(financeState.balanceUpdatedAt):null,updatedValid=updated&&!Number.isNaN(updated.getTime()),stale=updatedValid&&Date.now()-updated.getTime()>2*60*60*1000;
+    balanceUpdated.textContent=updatedValid?`${stale?'Último saldo conhecido':'Consulta'} · ${updated.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'O Radar ainda não recebeu saldo.';
+    if(document.activeElement!==cashboxInput)cashboxInput.value=financeState.cashboxAmount===null?'':String(financeState.cashboxAmount);
+    cashboxValue.textContent=financeState.cashboxAmount===null?'Ainda não informado':financeMoney(financeState.cashboxAmount);
+    const next=getNextPlannedIncome();
+    if(!next){daily.textContent='—';nextLabel.textContent='Próximo recebimento: cadastre uma entrada prevista no TNM.';return;}
+    const nextDate=dateAtNoon(next.date),todayDate=dateAtNoon(todayKey()),rawDays=nextDate&&todayDate?Math.round((nextDate-todayDate)/86400000):0,days=Math.max(1,rawDays);
+    nextLabel.textContent=`Próxima entrada: ${nextDate?nextDate.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}):next.date} · ${days} ${days===1?'dia':'dias'}${rawDays===0?' (hoje)':''}`;
+    daily.textContent=financeState.accountBalance===null?'—':financeMoney(financeState.accountBalance/days);
+  }
+  async function saveFinanceCashbox() {
+    const raw=$('financeCashboxInput').value.trim();let amount=null;
+    if(raw!==''){const parsed=Number(raw);if(!Number.isFinite(parsed)||parsed<0){showToast('Informe um valor válido para a Caixinha de Contas.');return;}amount=Math.round(parsed*100)/100;}
+    const now=nowISO();financeState=normalizeFinanceState({...financeState,cashboxAmount:amount,cashboxUpdatedAt:now,updatedAt:now});localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));renderFinanceBudget();
+    if(session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast('Caixinha salva e sincronizada.');}catch{showToast('Salva neste aparelho; sincronização pendente.');}}
+    else showToast('Caixinha salva neste aparelho.');
+  }
   function financeDateForOccurrence(anchorDate,occurrenceNumber) {
     const anchor=dateAtNoon(anchorDate);if(!anchor)return anchorDate;
     return recurrenceDateInMonth(anchor.getFullYear()*12+anchor.getMonth()+Math.max(0,Number(occurrenceNumber||1)-1),anchor.getDate());
@@ -806,7 +849,7 @@
         if(installmentCount&&number>installmentCount)break;
         const date=financeDateForOccurrence(rule.anchorDate,number);if(!installmentCount&&date>horizonEnd)break;
         const now=nowISO(),recurrence={frequency:'monthly',anchorDate:rule.anchorDate,installmentCount,seriesStopped:false,seriesId};
-        finances.push({id:`${seriesId}:${number}`,title:source.title,kind:source.kind,amount:source.amount,date,status:'planned',recurrence,seriesId,occurrenceNumber:number,installmentCount,createdAt:now,updatedAt:now,deletedAt:null});changed=true;
+        finances.push({id:`${seriesId}:${number}`,title:source.title,kind:source.kind,tagId:source.kind==='income'?FINANCE_ENTRY_TAG_ID:FINANCE_EXIT_TAG_ID,amount:source.amount,date,status:'planned',recurrence,seriesId,occurrenceNumber:number,installmentCount,createdAt:now,updatedAt:now,deletedAt:null});changed=true;
       }
     }
     if(changed){localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);scheduleSync();}
@@ -814,7 +857,7 @@
   }
   function renderFinancePage() {
     const monthLabel=$('financeMonthLabel'),summary=$('financeSummary'),list=$('financeEntriesList');if(!monthLabel||!summary||!list)return;
-    ensureFinanceHorizon();
+    ensureFinanceHorizon();renderFinanceBudget();
     const monthDate=dateAtNoon(`${financeMonth}-01`)||new Date(),rawMonth=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
     monthLabel.textContent=rawMonth.charAt(0).toLocaleUpperCase('pt-BR')+rawMonth.slice(1);
     const entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===financeMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
@@ -826,7 +869,8 @@
     list.innerHTML=entries.length?entries.map(entry=>{
       const id=escapeHTML(entry.id),date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',amountLabel=`${entry.kind==='income'?'+':'−'} ${financeMoney(entry.amount)}`;
       const occurrenceLabel=entry.installmentCount?`Parcela ${entry.occurrenceNumber}/${entry.installmentCount}`:entry.recurrence?'Mensal':'';
-      return `<article class="finance-entry ${entry.kind} ${entry.status}" data-finance-id="${id}"><div class="finance-entry-date">${escapeHTML(dateLabel)}</div><div class="finance-entry-main"><strong>${escapeHTML(entry.title)}</strong><span>${entry.kind==='income'?'Entrada':'Saída'}${occurrenceLabel?` · ${escapeHTML(occurrenceLabel)}`:''}</span></div><div class="finance-entry-actions"><strong class="finance-amount ${entry.kind}">${escapeHTML(amountLabel)}</strong><button class="finance-status-pill ${entry.status}" type="button" data-finance-toggle-status="${id}" aria-label="${entry.status==='planned'?'Marcar como realizado':'Voltar para previsto'}">${entry.status==='planned'?'PREVISTO':'REALIZADO'}</button><button class="finance-icon-button" type="button" data-finance-edit="${id}" aria-label="Editar ${escapeHTML(entry.title)}" title="Editar">✎</button><button class="finance-icon-button danger" type="button" data-finance-delete="${id}" aria-label="Excluir ${escapeHTML(entry.title)}" title="Excluir">×</button></div></article>`;
+      const flowTag=tags.find(tag=>tag.id===entry.tagId&&!tag.deletedAt),flowLabel=flowTag?.name||(entry.kind==='income'?'ENTRADA':'SAÍDA');
+      return `<article class="finance-entry ${entry.kind} ${entry.status}" data-finance-id="${id}"><div class="finance-entry-date">${escapeHTML(dateLabel)}</div><div class="finance-entry-main"><strong>${escapeHTML(entry.title)}</strong><span><b class="finance-flow-tag ${entry.kind}">${escapeHTML(flowLabel)}</b>${occurrenceLabel?` · ${escapeHTML(occurrenceLabel)}`:''}</span></div><div class="finance-entry-actions"><strong class="finance-amount ${entry.kind}">${escapeHTML(amountLabel)}</strong><button class="finance-status-pill ${entry.status}" type="button" data-finance-toggle-status="${id}" aria-label="${entry.status==='planned'?'Marcar como realizado':'Voltar para previsto'}">${entry.status==='planned'?'PREVISTO':'REALIZADO'}</button><button class="finance-icon-button" type="button" data-finance-edit="${id}" aria-label="Editar ${escapeHTML(entry.title)}" title="Editar">✎</button><button class="finance-icon-button danger" type="button" data-finance-delete="${id}" aria-label="Excluir ${escapeHTML(entry.title)}" title="Excluir">×</button></div></article>`;
     }).join(''):'<p class="empty finance-empty">Nenhuma movimentação neste mês. Adicione entradas e saídas quando quiser.</p>';
   }
   function shiftFinanceMonth(amount) {
@@ -845,7 +889,7 @@
   }
   function makeFinanceOccurrence({title,kind,amount,date,status,seriesId,occurrenceNumber,installmentCount,anchorDate}) {
     const now=nowISO(),recurrence={frequency:'monthly',anchorDate,installmentCount:installmentCount||null,seriesStopped:false,seriesId};
-    return {id:occurrenceNumber===1?seriesId:`${seriesId}:${occurrenceNumber}`,title,kind,amount,date,status,recurrence,seriesId,occurrenceNumber,installmentCount:installmentCount||null,createdAt:now,updatedAt:now,deletedAt:null};
+    return {id:occurrenceNumber===1?seriesId:`${seriesId}:${occurrenceNumber}`,title,kind,tagId:kind==='income'?FINANCE_ENTRY_TAG_ID:FINANCE_EXIT_TAG_ID,amount,date,status,recurrence,seriesId,occurrenceNumber,installmentCount:installmentCount||null,createdAt:now,updatedAt:now,deletedAt:null};
   }
   function saveFinanceFromForm(event) {
     event?.preventDefault?.();
@@ -1585,6 +1629,15 @@
       offset+=1000;
     }
   }
+  async function syncFinanceCashboxState() {
+    if(!session?.user?.id||!CLOUD_READY||!financeState.cashboxUpdatedAt)return false;
+    const payload={cashbox_amount:financeState.cashboxAmount,cashbox_updated_at:financeState.cashboxUpdatedAt,updated_at:nowISO(),planner_version:1};
+    const path=`nmm_finance_state?owner_id=eq.${encodeURIComponent(session.user.id)}`;
+    const updated=await cloudRequest(path,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
+    if(Array.isArray(updated)&&updated.length)return true;
+    await cloudRequest('nmm_finance_state?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({owner_id:session.user.id,...payload})});
+    return true;
+  }
   function taskToRow(task) {
     return {id:task.id,owner_id:session.user.id,title:task.title,details:task.content||'',link_url:task.link||'',subtasks:[],status:'active',release_date:null,due_date:null,execution_date:task.executionDate,recurrence:task.recurrence||null,tag_id:task.tagId,sort_order:Number(task.sortOrder)||0,planner_version:1,estimate_minutes:60,reward:'',blocker:'',time_spent_seconds:0,created_at:task.createdAt,updated_at:task.updatedAt,completed_at:task.completedAt,completed_date:task.completedAt?dateKey(new Date(task.completedAt)):null,deleted_at:task.deletedAt};
   }
@@ -1607,8 +1660,9 @@
   function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,links:row.links,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function logToRow(log) { return {id:log.id,owner_id:session.user.id,content:log.isLocked?'🔒 Registro trancado':log.content,tag_id:log.tagId||null,is_locked:Boolean(log.isLocked),planner_version:1,created_at:log.createdAt,updated_at:log.updatedAt,deleted_at:log.deletedAt}; }
   function rowToLog(row) { return normalizeLog({id:row.id,content:row.content,tag_id:row.tag_id,is_locked:row.is_locked,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
-  function financeToRow(entry) { return {id:entry.id,owner_id:session.user.id,title:entry.title,direction:entry.kind,amount:entry.amount,movement_date:entry.date,status:entry.status,series_id:entry.seriesId||null,occurrence_number:entry.occurrenceNumber||null,installment_count:entry.installmentCount||null,recurrence:entry.recurrence||null,planner_version:1,created_at:entry.createdAt,updated_at:entry.updatedAt,deleted_at:entry.deletedAt}; }
-  function rowToFinance(row) { return normalizeFinanceEntry({id:row.id,title:row.title,kind:row.direction,amount:row.amount,date:row.movement_date,status:row.status,series_id:row.series_id,occurrence_number:row.occurrence_number,installment_count:row.installment_count,recurrence:row.recurrence,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
+  function financeToRow(entry) { return {id:entry.id,owner_id:session.user.id,title:entry.title,direction:entry.kind,tag_id:entry.tagId||(entry.kind==='income'?FINANCE_ENTRY_TAG_ID:FINANCE_EXIT_TAG_ID),amount:entry.amount,movement_date:entry.date,status:entry.status,series_id:entry.seriesId||null,occurrence_number:entry.occurrenceNumber||null,installment_count:entry.installmentCount||null,recurrence:entry.recurrence||null,planner_version:1,created_at:entry.createdAt,updated_at:entry.updatedAt,deleted_at:entry.deletedAt}; }
+  function rowToFinance(row) { return normalizeFinanceEntry({id:row.id,title:row.title,kind:row.direction,tag_id:row.tag_id,amount:row.amount,date:row.movement_date,status:row.status,series_id:row.series_id,occurrence_number:row.occurrence_number,installment_count:row.installment_count,recurrence:row.recurrence,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
+  function rowToFinanceState(row) { return normalizeFinanceState({account_balance:row.account_balance,balance_updated_at:row.balance_updated_at,cashbox_amount:row.cashbox_amount,cashbox_updated_at:row.cashbox_updated_at,updated_at:row.updated_at}); }
   function mergeById(local,remote) {
     const map=new Map();
     for (const item of [...remote,...local]) {
@@ -1617,31 +1671,47 @@
     }
     return Array.from(map.values());
   }
+  async function refreshFinanceCloudData() {
+    if(!session?.user?.id||!CLOUD_READY)return false;
+    try{
+      const [financeRows,stateRows]=await Promise.all([fetchAll('nmm_finance_entries?select=*&planner_version=eq.1'),fetchAll('nmm_finance_state?select=*&planner_version=eq.1')]);
+      const remoteEntries=financeRows.map(rowToFinance).filter(Boolean),remoteRow=stateRows.find(row=>row.owner_id===session.user.id)||stateRows[0]||null,remoteState=remoteRow?rowToFinanceState(remoteRow):null,localState=normalizeFinanceState(financeState);
+      const localCashboxAt=Date.parse(localState.cashboxUpdatedAt)||0,remoteCashboxAt=Date.parse(remoteState?.cashboxUpdatedAt||'')||0,localCashboxIsNewer=localCashboxAt>remoteCashboxAt;
+      finances=mergeById(finances,remoteEntries).map(normalizeFinanceEntry).filter(Boolean);
+      financeState=normalizeFinanceState({accountBalance:remoteState?.accountBalance??localState.accountBalance,balanceUpdatedAt:remoteState?.balanceUpdatedAt||localState.balanceUpdatedAt,cashboxAmount:localCashboxIsNewer?localState.cashboxAmount:(remoteState?remoteState.cashboxAmount:localState.cashboxAmount),cashboxUpdatedAt:localCashboxIsNewer?localState.cashboxUpdatedAt:(remoteState?remoteState.cashboxUpdatedAt:localState.cashboxUpdatedAt),updatedAt:remoteState?.updatedAt||localState.updatedAt});
+      localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));
+      if(localCashboxIsNewer)await syncFinanceCashboxState();
+      renderFinancePage();return true;
+    }catch{return false;}
+  }
   async function loadCloudData() {
-    const localTasks=tasks.map(task=>({...task})),localNotes=notes.map(note=>({...note})),localLogs=logs.map(log=>({...log})),localFinances=finances.map(entry=>({...entry})),localTags=tags.map(tag=>({...tag})),localSettings={...userSettings},localVault=privateVault?{...privateVault}:null,localPrivateRows=privateCipherRows.map(row=>({...row}));
-    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteFinanceRows,remoteTagRows,remoteSettingRows,remoteVaultRows,remotePrivateRows]=await Promise.all([
+    const localTasks=tasks.map(task=>({...task})),localNotes=notes.map(note=>({...note})),localLogs=logs.map(log=>({...log})),localFinances=finances.map(entry=>({...entry})),localFinanceState=normalizeFinanceState({...financeState}),localTags=tags.map(tag=>({...tag})),localSettings={...userSettings},localVault=privateVault?{...privateVault}:null,localPrivateRows=privateCipherRows.map(row=>({...row}));
+    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteFinanceRows,remoteFinanceStateRows,remoteTagRows,remoteSettingRows,remoteVaultRows,remotePrivateRows]=await Promise.all([
       fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll('nmm_logs?select=*&planner_version=eq.1'),
       fetchAll('nmm_finance_entries?select=*&planner_version=eq.1'),
+      fetchAll('nmm_finance_state?select=*&planner_version=eq.1'),
       fetchAll('nmm_tags?select=*&planner_version=eq.1'),
       fetchAll('nmm_user_settings?select=*&planner_version=eq.1'),
       fetchAll('nmm_private_vaults?select=*&planner_version=eq.1'),
       fetchAll('nmm_private_notes?select=*&planner_version=eq.1')
     ]);
-    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean),remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean),remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean),remoteFinances=remoteFinanceRows.map(rowToFinance).filter(Boolean),remoteTags=remoteTagRows.map(rowToTag).filter(Boolean),remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null,remoteVault=remoteVaultRows.length?rowToPrivateVault(remoteVaultRows[0]):null,remotePrivateNotes=remotePrivateRows.map(rowToPrivateNote).filter(Boolean);
+    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean),remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean),remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean),remoteFinances=remoteFinanceRows.map(rowToFinance).filter(Boolean),remoteFinanceStateRow=remoteFinanceStateRows.find(row=>row.owner_id===session.user.id)||remoteFinanceStateRows[0]||null,remoteFinanceState=remoteFinanceStateRow?rowToFinanceState(remoteFinanceStateRow):null,remoteTags=remoteTagRows.map(rowToTag).filter(Boolean),remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null,remoteVault=remoteVaultRows.length?rowToPrivateVault(remoteVaultRows[0]):null,remotePrivateNotes=remotePrivateRows.map(rowToPrivateNote).filter(Boolean);
+    const localCashboxIsNewer=(Date.parse(localFinanceState.cashboxUpdatedAt)||0)>(Date.parse(remoteFinanceState?.cashboxUpdatedAt||'')||0);
     tags=ensureDefaultTags(mergeById(localTags,remoteTags).map(normalizeTag).filter(Boolean));
     prunePageFilters();
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
     const localActiveTasks=localTasks.filter(item=>!item.deletedAt),localActiveNotes=localNotes.filter(item=>!item.deletedAt),localActiveLogs=localLogs.filter(item=>!item.deletedAt),localActiveFinances=localFinances.filter(item=>!item.deletedAt);
-    if(!remoteTasks.length&&!remoteNotes.length&&!remoteLogs.length&&!remoteFinances.length&&(localActiveTasks.length||localActiveNotes.length||localActiveLogs.length||localActiveFinances.length)&&!window.confirm('A conta está vazia. Enviar as tarefas, notas, logs e finanças deste aparelho para ela?')){
+    if(!remoteTasks.length&&!remoteNotes.length&&!remoteLogs.length&&!remoteFinances.length&&!remoteFinanceStateRows.length&&(localActiveTasks.length||localActiveNotes.length||localActiveLogs.length||localActiveFinances.length)&&!window.confirm('A conta está vazia. Enviar as tarefas, notas, logs e finanças deste aparelho para ela?')){
       setAuthMessage('Nada foi enviado. Seus dados continuam neste aparelho.'); return false;
     }
     tasks=mergeById(localTasks,remoteTasks).map(normalizeTask).filter(Boolean);
     notes=mergeById(localNotes,remoteNotes).map(normalizeNote).filter(Boolean);
     logs=mergeById(localLogs,remoteLogs).map(normalizeLog).filter(Boolean);
     finances=mergeById(localFinances,remoteFinances).map(normalizeFinanceEntry).filter(Boolean);
-    localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(NOTES_KEY,JSON.stringify(notes));localStorage.setItem(LOGS_KEY,JSON.stringify(logs));localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));
+    financeState=normalizeFinanceState({accountBalance:remoteFinanceState?.accountBalance??localFinanceState.accountBalance,balanceUpdatedAt:remoteFinanceState?.balanceUpdatedAt||localFinanceState.balanceUpdatedAt,cashboxAmount:localCashboxIsNewer?localFinanceState.cashboxAmount:(remoteFinanceState?remoteFinanceState.cashboxAmount:localFinanceState.cashboxAmount),cashboxUpdatedAt:localCashboxIsNewer?localFinanceState.cashboxUpdatedAt:(remoteFinanceState?remoteFinanceState.cashboxUpdatedAt:localFinanceState.cashboxUpdatedAt),updatedAt:remoteFinanceState?.updatedAt||localFinanceState.updatedAt});
+    localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(NOTES_KEY,JSON.stringify(notes));localStorage.setItem(LOGS_KEY,JSON.stringify(logs));localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));
     userSettings=remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(localSettings.updatedAt)?remoteSettings:normalizeUserSettings(localSettings);
     localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));
     const foreignLocalVault=localVault?.ownerId&&localVault.ownerId!==session.user.id;
@@ -1653,6 +1723,7 @@
     if(foreignLocalVault&&privateNotesUnlocked)await lockPrivateNotes();
     else if(privateNotesUnlocked&&privateCryptoKey)setDecryptedVaultItems(await loadDecryptedPrivateNotes());
     const synced=await syncCloudAndWait();
+    if(localCashboxIsNewer)try{await syncFinanceCashboxState();}catch{}
     renderAll(); createAutomaticBackup(false); updateAuthUI();
     return synced;
   }
@@ -1760,7 +1831,7 @@
     finally { authBusy=false; updateAuthUI(); }
   }
   function automaticBackupSnapshot() {
-    return {format:'tnm-weekly-autobackup-v5',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
+    return {format:'tnm-weekly-autobackup-v6',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),financeState,privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
   }
   function updateAutoBackupStatus(timestamp='') {
     const node=$('autoBackupStatus');
@@ -1786,14 +1857,16 @@
     if (!date||Date.now()-date>=AUTO_BACKUP_EVERY) createAutomaticBackup(false); else updateAutoBackupStatus(last.createdAt);
     setInterval(()=>createAutomaticBackup(true),AUTO_BACKUP_EVERY);
     setInterval(checkWeekRollover,60*1000);
+    setInterval(()=>{void refreshFinanceCloudData();},5*60*1000);
     document.addEventListener('visibilitychange',()=>{
       checkWeekRollover();
+      if(document.visibilityState==='visible')void refreshFinanceCloudData();
       const latest=readStored(AUTO_BACKUP_KEY,null), lastAt=latest?.createdAt?Date.parse(latest.createdAt):0;
       if(document.visibilityState==='visible'&&Date.now()-lastAt>=AUTO_BACKUP_EVERY)createAutomaticBackup(true);
     });
   }
   function exportBackup() {
-    const data={format:'tnm-weekly-backup-v6',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
+    const data={format:'tnm-weekly-backup-v7',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),financeState,privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const link=document.createElement('a'); link.href=url; link.download=`tnm-backup-${todayKey()}.json`; link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000); $('backupMessage').textContent='Backup exportado.';
@@ -1883,6 +1956,7 @@
   $('logsList').addEventListener('change',handleLogTagChange);
   document.querySelectorAll('[data-log-range]').forEach(button=>button.addEventListener('click',()=>setLogRange(button.dataset.logRange)));
   $('financeForm').addEventListener('submit',saveFinanceFromForm);
+  $('financeCashboxSaveBtn').addEventListener('click',()=>{void saveFinanceCashbox();});
   $('financeAddBtn').addEventListener('click',()=>openFinanceDialog());
   $('financePrevMonth').addEventListener('click',()=>shiftFinanceMonth(-1));
   $('financeNextMonth').addEventListener('click',()=>shiftFinanceMonth(1));

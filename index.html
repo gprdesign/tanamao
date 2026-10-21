@@ -856,6 +856,16 @@
     .finance-month-toolbar { display:flex; align-items:center; justify-content:center; gap:14px; margin:0 0 12px; }
     .finance-month-toolbar button { width:40px; min-width:40px; height:40px; padding:0; font-size:1.5rem; line-height:1; }
     .finance-month-toolbar strong { min-width:170px; text-align:center; }
+    .finance-budget-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:5px; }
+    .finance-budget-card { min-width:0; padding:11px 10px; border:1px solid var(--line); border-radius:12px; background:#151e32; }
+    .finance-budget-card > span,.finance-budget-card > small,.finance-budget-card > label { display:block; color:var(--muted); font-size:.66rem; font-weight:800; }
+    .finance-budget-card > strong { display:block; margin:5px 0; font-size:.95rem; overflow-wrap:anywhere; }
+    .finance-budget-card.balance strong { color:#c5d6ff; }
+    .finance-budget-card.daily strong { color:#8fe0b5; }
+    .finance-cashbox-form { display:flex; gap:5px; margin:6px 0; }
+    .finance-cashbox-form input { min-width:0; width:100%; height:34px; padding:5px 7px; font-size:.8rem; }
+    .finance-cashbox-form button { min-width:58px; min-height:34px; padding:4px 7px; font-size:.66rem; }
+    .finance-formula-note { margin:0 0 12px; color:var(--muted); font-size:.65rem; text-align:center; }
     .finance-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
     .finance-summary-card { min-width:0; padding:11px 10px; border:1px solid var(--line); border-radius:12px; background:#151e32; }
     .finance-summary-card span,.finance-summary-card small { display:block; color:var(--muted); font-size:.66rem; font-weight:800; }
@@ -870,7 +880,10 @@
     .finance-entry-date { color:var(--muted); font-size:.7rem; font-weight:800; text-align:center; text-transform:capitalize; }
     .finance-entry-main { display:grid; gap:4px; min-width:0; }
     .finance-entry-main strong { overflow-wrap:anywhere; font-size:.84rem; }
-    .finance-entry-main span { color:var(--muted); font-size:.67rem; }
+    .finance-entry-main span { display:flex; align-items:center; gap:5px; flex-wrap:wrap; color:var(--muted); font-size:.67rem; }
+    .finance-flow-tag { display:inline-block; padding:2px 6px; border-radius:999px; font-size:.58rem; font-weight:900; letter-spacing:.02em; }
+    .finance-flow-tag.income { color:#8fe0b5; background:#17332a; }
+    .finance-flow-tag.expense { color:#ffb0b8; background:#3b202b; }
     .finance-entry-actions { display:grid; grid-template-columns:auto 30px 30px; align-items:center; gap:4px; }
     .finance-amount { grid-column:1/-1; text-align:right; white-space:nowrap; font-size:.84rem; }
     .finance-amount.income { color:#8fe0b5; }
@@ -887,6 +900,12 @@
     .finance-future-option input { width:18px; height:18px; margin:0; accent-color:#8bafff; }
     #headerTagsBtn[hidden] { display:none !important; }
     @media(max-width:600px) {
+      .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+      .finance-budget-card { padding:9px 7px; }
+      .finance-budget-card.cashbox { grid-column:1/-1; }
+      .finance-budget-card > span,.finance-budget-card > small,.finance-budget-card > label { font-size:.59rem; }
+      .finance-budget-card > strong { font-size:.82rem; }
+      .finance-formula-note { font-size:.59rem; }
       .finance-summary { gap:5px; }
       .finance-summary-card { padding:9px 6px; }
       .finance-summary-card span,.finance-summary-card small { font-size:.56rem; }
@@ -952,6 +971,12 @@
 
     <section id="financePage" class="page" aria-label="Finanças">
       <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <section class="finance-budget-grid" aria-label="Saldo e valor diário">
+        <article class="finance-budget-card balance"><span>SALDO ATUAL EM CONTA</span><strong id="financeAccountBalance">Aguardando saldo</strong><small id="financeBalanceUpdated">O Radar ainda não recebeu saldo.</small></article>
+        <article class="finance-budget-card cashbox"><label for="financeCashboxInput">CAIXINHA DE CONTAS</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor da Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Salvar</button></div><small id="financeCashboxValue">Ainda não informado</small></article>
+        <article class="finance-budget-card daily"><span>PARA GASTAR POR DIA</span><strong id="financeDailyAllowance">—</strong><small id="financeNextIncomeLabel">Próximo recebimento: cadastre uma entrada prevista no TNM.</small></article>
+      </section>
+      <p class="finance-formula-note">Saldo atual ÷ dias até a próxima ENTRADA. A Caixinha é informativa e não é subtraída do cálculo.</p>
       <div class="finance-month-toolbar"><button class="btn ghost small" id="financePrevMonth" type="button" aria-label="Mês anterior">‹</button><strong id="financeMonthLabel" aria-live="polite"></strong><button class="btn ghost small" id="financeNextMonth" type="button" aria-label="Próximo mês">›</button></div>
       <div class="finance-summary" id="financeSummary"></div>
       <div class="finance-list-heading"><p class="muted">Previsto = ainda não entrou/saiu. Realizado = já recebido/pago.</p><button class="btn primary small" id="financeAddBtn" type="button">＋ Lançamento</button></div>
@@ -987,7 +1012,7 @@
         <section class="panel" aria-label="Backup"><h3>Backup de dados</h3><p class="muted">O app salva um snapshot automático neste aparelho a cada 5 minutos enquanto estiver aberto. Para guardar uma cópia fora do navegador, exporte o arquivo JSON.</p><p class="status-text" id="autoBackupStatus" aria-live="polite">Preparando backup automático…</p><div class="form-actions"><button class="btn" id="exportBtn" type="button">Exportar backup</button></div><p class="status-text" id="backupMessage" aria-live="polite"></p></section>
         <section class="panel" aria-label="Calendário"><h3>Calendário</h3><p class="muted" id="calendarStatus">Autorização do Google Calendar ainda não configurada neste app.</p><div id="calendarFilters" class="calendar-filters"><p class="muted">Os calendários disponíveis aparecerão aqui após a autorização.</p></div></section>
         <section class="panel" aria-label="Resumo diário"><h3>Resumo diário no WhatsApp</h3><p class="muted">Escolha um ou mais horários. O padrão é 08:00; os horários ficam sincronizados com sua conta.</p><div class="field"><label for="summaryNickname">Apelido na saudação</label><input id="summaryNickname" maxlength="32" placeholder="Gio"></div><div class="summary-time-add"><label for="summaryTimeInput">Adicionar horário</label><div class="summary-time-row"><input id="summaryTimeInput" type="time" value="08:00"><button class="btn small" id="addSummaryTimeBtn" type="button">＋ Horário</button></div></div><div id="summaryTimesList" class="summary-times-list"></div><p class="status-text">Os horários são salvos; o envio automático será ativado quando o agendador estiver conectado.</p></section>
-        <section class="panel" aria-label="Últimas atualizações"><h3>Últimas atualizações</h3><ul class="updates-list"><li>Salvamento automático ao fechar os editores de tarefas e notas.</li><li>LOG DE EVENTOS com registros por data e filtros.</li><li>Dock principal e subdocks adaptados por tela.</li><li>Recorrência de tarefas com criação automática da próxima ocorrência.</li><li>Navegação entre dias no pop-up pelas setas ou deslizando.</li><li>FINANÇAS: entradas, saídas, previsões, recorrências mensais e parcelas.</li><li>NOTAS: vários links por nota e fonte padronizada com o app.</li></ul></section>
+        <section class="panel" aria-label="Últimas atualizações"><h3>Últimas atualizações</h3><ul class="updates-list"><li>Salvamento automático ao fechar os editores de tarefas e notas.</li><li>LOG DE EVENTOS com registros por data e filtros.</li><li>Dock principal e subdocks adaptados por tela.</li><li>Recorrência de tarefas com criação automática da próxima ocorrência.</li><li>Navegação entre dias no pop-up pelas setas ou deslizando.</li><li>FINANÇAS: tags automáticas ENTRADA/SAÍDA, saldo do Banco Jota, Caixinha de Contas e limite diário até a próxima entrada.</li><li>NOTAS: vários links por nota e fonte padronizada com o app.</li></ul></section>
       </div>
     </section>
   </main>
@@ -1018,7 +1043,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=91" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=91',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=92" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=92',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

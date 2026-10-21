@@ -91,6 +91,7 @@ create index if not exists nmm_logs_owner_created_idx on public.nmm_logs(owner_i
 create table if not exists public.nmm_finance_entries (
   id text primary key,
   owner_id uuid not null references auth.users(id) on delete cascade,
+  tag_id text not null,
   title text not null,
   direction text not null check (direction in ('income', 'expense')),
   amount numeric(14,2) not null check (amount > 0),
@@ -105,11 +106,23 @@ create table if not exists public.nmm_finance_entries (
   deleted_at timestamptz,
   planner_version smallint not null check (planner_version = 1),
   check ((series_id is null and occurrence_number is null) or (series_id is not null and occurrence_number is not null and occurrence_number > 0)),
-  check (installment_count is null or installment_count between 2 and 240)
+  check (installment_count is null or installment_count between 2 and 240),
+  constraint nmm_finance_entries_owner_tag_fk foreign key (owner_id,tag_id) references public.nmm_tags(owner_id,id)
 );
 
 create index if not exists nmm_finance_entries_owner_date_idx on public.nmm_finance_entries(owner_id, movement_date);
+create index if not exists nmm_finance_entries_owner_income_date_idx on public.nmm_finance_entries(owner_id,direction,status,movement_date) where deleted_at is null;
 create unique index if not exists nmm_finance_entries_series_occurrence_idx on public.nmm_finance_entries(owner_id, series_id, occurrence_number) where series_id is not null;
+
+create table if not exists public.nmm_finance_state (
+  owner_id uuid primary key references auth.users(id) on delete cascade,
+  account_balance numeric(14,2),
+  balance_updated_at timestamptz,
+  cashbox_amount numeric(14,2) check (cashbox_amount is null or cashbox_amount >= 0),
+  cashbox_updated_at timestamptz,
+  updated_at timestamptz not null default now(),
+  planner_version smallint not null default 1 check (planner_version = 1)
+);
 
 create table if not exists public.nmm_user_settings (
   owner_id uuid primary key references auth.users(id) on delete cascade,
@@ -156,6 +169,7 @@ alter table public.nmm_task_links enable row level security;
 alter table public.nmm_notes enable row level security;
 alter table public.nmm_logs enable row level security;
 alter table public.nmm_finance_entries enable row level security;
+alter table public.nmm_finance_state enable row level security;
 alter table public.nmm_user_settings enable row level security;
 alter table public.nmm_private_vaults enable row level security;
 alter table public.nmm_private_notes enable row level security;
@@ -167,6 +181,7 @@ grant select, insert, delete on public.nmm_task_links to authenticated;
 grant select, insert, update on public.nmm_notes to authenticated;
 grant select, insert, update, delete on public.nmm_logs to authenticated;
 grant select, insert, update, delete on public.nmm_finance_entries to authenticated;
+grant select, insert, update on public.nmm_finance_state to authenticated;
 grant select, insert, update on public.nmm_user_settings to authenticated;
 grant select, insert, update on public.nmm_private_vaults to authenticated;
 grant select, insert, update, delete on public.nmm_private_notes to authenticated;
@@ -187,6 +202,11 @@ create policy nmm_logs_owner_all on public.nmm_logs
   with check (owner_id = (select auth.uid()));
 
 create policy nmm_finance_entries_owner_all on public.nmm_finance_entries
+  for all to authenticated
+  using (owner_id = (select auth.uid()))
+  with check (owner_id = (select auth.uid()));
+
+create policy nmm_finance_state_owner_all on public.nmm_finance_state
   for all to authenticated
   using (owner_id = (select auth.uid()))
   with check (owner_id = (select auth.uid()));

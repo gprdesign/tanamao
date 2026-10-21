@@ -16,6 +16,7 @@ Planner semanal pessoal, minimalista, inspirado no Weeklo.
 - Modo glass preserva as cores do tema; abas e telas têm transições suaves. Interface ampliada para celular e tablet, com notas em três colunas nas telas web horizontais.
 - Log de eventos com tags e criptografia individual pelo mesmo cofre das notas privadas.
 - Login/sincronização privada, snapshot local automático a cada 5 minutos e exportação JSON de backup.
+- Finanças com entradas/saídas, previsão/realizado, recorrências, parcelas, saldo do Banco Jota, Caixinha de Contas e cálculo diário até a próxima entrada prevista.
 - Navegação inferior Home, Tarefas, Notas e Configs.
 
 ## Privacidade
@@ -31,6 +32,8 @@ Sem login, tarefas e notas ficam no armazenamento local do navegador. Com login,
 - `supabase/migration-ui-v53.sql`: tags nas notas e ordenação manual.
 - `supabase/migration-ui-v55.sql`: links e notas fixadas; aditiva, sem regravar registros existentes.
 - `supabase/migration-logs-tags-lock.sql`: tags e criptografia individual para registros do Log.
+- `supabase/migration-finance-ledger.sql`: lançamentos financeiros e recorrências.
+- `supabase/migration-finance-daily-budget.sql`: tags automáticas ENTRADA/SAÍDA e saldo/Caixinha sincronizados.
 
 ## Abrir localmente
 
