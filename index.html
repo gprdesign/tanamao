@@ -851,6 +851,55 @@
     .recurrence-weekdays input { width:18px; height:18px; margin:0; accent-color:#8bafff; }
     .recurrence-hint { margin:0; }
     .task-recurrence-icon { flex:none; color:#a9c4ff; font-size:.82rem; font-weight:900; line-height:1; }
+    body[data-page="finance"] .wrap { height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="finance"] { overflow-x:hidden; overflow-y:auto; }
+    .finance-month-toolbar { display:flex; align-items:center; justify-content:center; gap:14px; margin:0 0 12px; }
+    .finance-month-toolbar button { width:40px; min-width:40px; height:40px; padding:0; font-size:1.5rem; line-height:1; }
+    .finance-month-toolbar strong { min-width:170px; text-align:center; text-transform:capitalize; }
+    .finance-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
+    .finance-summary-card { min-width:0; padding:11px 10px; border:1px solid var(--line); border-radius:12px; background:#151e32; }
+    .finance-summary-card span,.finance-summary-card small { display:block; color:var(--muted); font-size:.66rem; font-weight:800; }
+    .finance-summary-card strong { display:block; margin:5px 0; font-size:.95rem; overflow-wrap:anywhere; }
+    .finance-summary-card.income strong { color:#8fe0b5; }
+    .finance-summary-card.expense strong { color:#ffb0b8; }
+    .finance-summary-card.balance strong { color:#c5d6ff; }
+    .finance-list-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:4px 0 10px; }
+    .finance-list-heading p { margin:0; font-size:.72rem; }
+    .finance-entry-list { display:grid; gap:8px; }
+    .finance-entry { display:grid; grid-template-columns:56px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px; border:1px solid var(--line); border-radius:12px; background:#151e32; }
+    .finance-entry-date { color:var(--muted); font-size:.7rem; font-weight:800; text-align:center; text-transform:capitalize; }
+    .finance-entry-main { display:grid; gap:4px; min-width:0; }
+    .finance-entry-main strong { overflow-wrap:anywhere; font-size:.84rem; }
+    .finance-entry-main span { color:var(--muted); font-size:.67rem; }
+    .finance-entry-actions { display:grid; grid-template-columns:auto 30px 30px; align-items:center; gap:4px; }
+    .finance-amount { grid-column:1/-1; text-align:right; white-space:nowrap; font-size:.84rem; }
+    .finance-amount.income { color:#8fe0b5; }
+    .finance-amount.expense { color:#ffb0b8; }
+    .finance-status-pill { min-height:30px; padding:4px 7px; border:1px solid #52627e; border-radius:8px; background:#202b42; color:#ffdb80; font-size:.58rem; font-weight:900; }
+    .finance-status-pill.realized { color:#9be7ba; border-color:#397653; background:#17332a; }
+    .finance-icon-button { width:30px; min-width:30px; height:30px; min-height:30px; padding:0; border:1px solid #52627e; border-radius:8px; background:#202b42; color:var(--text); }
+    .finance-icon-button.danger { color:#ffb0b8; }
+    .finance-empty { padding:18px 10px; text-align:center; }
+    .finance-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 12px; }
+    .finance-form-grid .field { min-width:0; }
+    .finance-form-grid [hidden],#financeInstallmentWrap[hidden],#financeApplyFutureWrap[hidden],#financeDeleteBtn[hidden],#financeStopSeriesBtn[hidden] { display:none !important; }
+    .finance-future-option { display:flex; align-items:center; gap:8px; margin:0 0 10px; color:var(--text); font-size:.78rem; }
+    .finance-future-option input { width:18px; height:18px; margin:0; accent-color:#8bafff; }
+    #headerTagsBtn[hidden] { display:none !important; }
+    @media(max-width:600px) {
+      .finance-summary { gap:5px; }
+      .finance-summary-card { padding:9px 6px; }
+      .finance-summary-card span,.finance-summary-card small { font-size:.56rem; }
+      .finance-summary-card strong { font-size:.76rem; }
+      .finance-entry { grid-template-columns:45px minmax(0,1fr) auto; gap:6px; padding:8px 6px; }
+      .finance-entry-actions { grid-template-columns:auto 28px 28px; gap:3px; }
+      .finance-icon-button { width:28px; min-width:28px; height:28px; min-height:28px; }
+      .finance-status-pill { min-height:28px; padding:3px 5px; font-size:.53rem; }
+      .finance-amount { font-size:.76rem; }
+      .finance-list-heading { align-items:flex-start; }
+      .finance-list-heading p { font-size:.64rem; }
+      .finance-form-grid { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
@@ -888,7 +937,15 @@
       <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="todayBtn" type="button">SEMANA ATUAL</button><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav></div>
     </section>
 
-    <section id="logPage" class="page" aria-label="Log de eventos">
+    <section id="financePage" class="page" aria-label="Finanças">
+      <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <div class="finance-month-toolbar"><button class="btn ghost small" id="financePrevMonth" type="button" aria-label="Mês anterior">‹</button><strong id="financeMonthLabel" aria-live="polite"></strong><button class="btn ghost small" id="financeNextMonth" type="button" aria-label="Próximo mês">›</button></div>
+      <div class="finance-summary" id="financeSummary"></div>
+      <div class="finance-list-heading"><p class="muted">Previsto = ainda não entrou/saiu. Realizado = já recebido/pago.</p><button class="btn primary small" id="financeAddBtn" type="button">＋ Lançamento</button></div>
+      <div class="finance-entry-list" id="financeEntriesList" aria-live="polite"></div>
+    </section>
+
+    <section id="logPage" class="page" aria-label="Arquivo de logs" hidden>
       <div class="page-heading"><div><h2>LOG DE EVENTOS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <form id="logForm" class="log-form"><textarea id="logText" maxlength="20000" rows="2" required aria-label="Texto do registro" placeholder="Escreva um registro…"></textarea><select id="logTagSelect" aria-label="Tag do registro"><option value="">SEM TAG</option></select><button class="btn primary" type="submit">REGISTRAR</button></form>
       <div class="log-ranges" role="group" aria-label="Período do log"><button type="button" data-log-range="7d" aria-pressed="true">7 DIAS</button><button type="button" data-log-range="30d" aria-pressed="false">30 DIAS</button><button type="button" data-log-range="12w" aria-pressed="false">12 SEMANAS</button><button type="button" data-log-range="all" aria-pressed="false">TUDO</button></div>
@@ -917,7 +974,7 @@
         <section class="panel" aria-label="Backup"><h3>Backup de dados</h3><p class="muted">O app salva um snapshot automático neste aparelho a cada 5 minutos enquanto estiver aberto. Para guardar uma cópia fora do navegador, exporte o arquivo JSON.</p><p class="status-text" id="autoBackupStatus" aria-live="polite">Preparando backup automático…</p><div class="form-actions"><button class="btn" id="exportBtn" type="button">Exportar backup</button></div><p class="status-text" id="backupMessage" aria-live="polite"></p></section>
         <section class="panel" aria-label="Calendário"><h3>Calendário</h3><p class="muted" id="calendarStatus">Autorização do Google Calendar ainda não configurada neste app.</p><div id="calendarFilters" class="calendar-filters"><p class="muted">Os calendários disponíveis aparecerão aqui após a autorização.</p></div></section>
         <section class="panel" aria-label="Resumo diário"><h3>Resumo diário no WhatsApp</h3><p class="muted">Escolha um ou mais horários. O padrão é 08:00; os horários ficam sincronizados com sua conta.</p><div class="field"><label for="summaryNickname">Apelido na saudação</label><input id="summaryNickname" maxlength="32" placeholder="Gio"></div><div class="summary-time-add"><label for="summaryTimeInput">Adicionar horário</label><div class="summary-time-row"><input id="summaryTimeInput" type="time" value="08:00"><button class="btn small" id="addSummaryTimeBtn" type="button">＋ Horário</button></div></div><div id="summaryTimesList" class="summary-times-list"></div><p class="status-text">Os horários são salvos; o envio automático será ativado quando o agendador estiver conectado.</p></section>
-        <section class="panel" aria-label="Últimas atualizações"><h3>Últimas atualizações</h3><ul class="updates-list"><li>Salvamento automático ao fechar os editores de tarefas e notas.</li><li>LOG DE EVENTOS com registros por data e filtros.</li><li>Dock principal e subdocks adaptados por tela.</li><li>Recorrência de tarefas com criação automática da próxima ocorrência.</li><li>Navegação entre dias no pop-up pelas setas ou deslizando.</li></ul></section>
+        <section class="panel" aria-label="Últimas atualizações"><h3>Últimas atualizações</h3><ul class="updates-list"><li>Salvamento automático ao fechar os editores de tarefas e notas.</li><li>LOG DE EVENTOS com registros por data e filtros.</li><li>Dock principal e subdocks adaptados por tela.</li><li>Recorrência de tarefas com criação automática da próxima ocorrência.</li><li>Navegação entre dias no pop-up pelas setas ou deslizando.</li><li>FINANÇAS: entradas, saídas, previsões, recorrências mensais e parcelas.</li></ul></section>
       </div>
     </section>
   </main>
@@ -931,13 +988,15 @@
     <button class="nav-btn" type="button" data-page="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span>RESUMO</span></button>
     <button class="nav-btn" type="button" data-page="tasks"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span>PLANNER</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
-    <button class="nav-btn" type="button" data-page="log"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8"></circle><path d="M12 7.5v5l3.5 2"></path></svg></span><span>LOG</span></button>
+    <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true">R$</span><span>FINANÇAS</span></button>
   </nav>
 
   <dialog id="taskDialog" class="app-dialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><div class="field"><label for="taskRecurrence">Repetição</label><select id="taskRecurrence"><option value="">Não se repete</option><option value="daily">Diariamente</option><option value="weekly">Semanalmente</option><option value="monthly">Mensalmente</option><option value="yearly">Anualmente</option></select></div><div id="recurrenceOptions" class="recurrence-options" hidden><div class="field"><label for="recurrenceInterval">Repetir a cada</label><div class="recurrence-interval-row"><input id="recurrenceInterval" type="number" min="1" max="999" step="1" value="1"><span id="recurrenceUnit">dia(s)</span></div></div><div class="field" id="recurrenceWeekdaysField" hidden><span class="field-label">Dias da semana</span><div class="recurrence-weekdays"><label><input type="checkbox" name="recurrenceWeekday" value="1"> SEG</label><label><input type="checkbox" name="recurrenceWeekday" value="2"> TER</label><label><input type="checkbox" name="recurrenceWeekday" value="3"> QUA</label><label><input type="checkbox" name="recurrenceWeekday" value="4"> QUI</label><label><input type="checkbox" name="recurrenceWeekday" value="5"> SEX</label><label><input type="checkbox" name="recurrenceWeekday" value="6"> SÁB</label><label><input type="checkbox" name="recurrenceWeekday" value="7"> DOM</label></div></div><div class="field"><label for="recurrenceUntil">Repetir até <span class="muted">(opcional)</span></label><input id="recurrenceUntil" type="date"></div><p class="dialog-hint recurrence-hint">Ao concluir uma ocorrência, a próxima será criada automaticamente.</p></div><div class="field"><label for="taskContent">Conteúdo <span class="muted">(opcional)</span></label><textarea id="taskContent" maxlength="20000" placeholder="Detalhes da tarefa…"></textarea></div><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="taskLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="taskLinkWrap" hidden><div><label for="taskLink">Endereço do link</label><input id="taskLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="taskLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Sem data, fica em Planejar. Enter no título vai para Conteúdo; Enter no conteúdo cria linha. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions dialog-save-actions"><button class="btn danger" id="deleteTaskBtn" type="button">Excluir</button><button class="btn primary" type="submit">Salvar</button></div></form></dialog>
 
   <dialog id="filterDialog" class="app-dialog"><div class="dialog-head"><h2>Filtros</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">As mesmas tags aparecem em todas as páginas, mas a seleção vale somente para a página aberta.</p><div class="filter-tag-list" id="filterTagList"></div><button class="btn small" id="clearFiltersBtn" type="button">Limpar seleção</button><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
   <dialog id="tagManagerDialog" class="app-dialog"><div class="dialog-head"><h2>Gerenciar tags</h2><button class="btn ghost small" id="closeTagManager" type="button" aria-label="Fechar">✕</button></div><form id="tagManagerAddForm" class="tag-manager-add"><div class="field"><label for="managedTagName">Nova tag</label><input id="managedTagName" maxlength="32" required placeholder="Nome da tag"></div><div class="field"><label for="managedTagColor">Cor</label><input id="managedTagColor" type="color" value="#8bafff" aria-label="Cor da nova tag"></div><button class="btn primary small" type="submit">＋ ADC</button></form><p class="tag-status" id="tagManagerStatus" aria-live="polite"></p><div id="tagManagerList" class="tag-manager-list"></div></dialog>
+
+  <dialog id="financeDialog" class="app-dialog"><form id="financeForm"><div class="dialog-head"><h2 id="financeDialogTitle">Nova movimentação</h2><button class="btn ghost small" id="closeFinanceDialog" type="button" aria-label="Fechar">✕</button></div><input id="financeId" type="hidden"><div class="finance-form-grid"><div class="field"><label for="financeTitle">Descrição</label><input id="financeTitle" maxlength="180" required placeholder="Ex.: salário, aluguel"></div><div class="field"><label for="financeDirection">Movimento</label><select id="financeDirection"><option value="expense">Saída</option><option value="income">Entrada</option></select></div><div class="field"><label for="financeAmount">Valor por movimentação (R$)</label><input id="financeAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="0,00"></div><div class="field"><label for="financeDate">Data</label><input id="financeDate" type="date" required></div><div class="field"><label for="financeStatus">Situação</label><select id="financeStatus"><option value="planned">Previsto</option><option value="realized">Realizado</option></select></div><div class="field"><label for="financeRecurrence">Repetição</label><select id="financeRecurrence"><option value="once">Uma vez</option><option value="monthly">Mensalmente</option></select></div><div class="field" id="financeInstallmentWrap" hidden><label for="financeInstallmentCount">Número de parcelas <span class="muted">(opcional)</span></label><input id="financeInstallmentCount" type="number" min="2" max="240" step="1" inputmode="numeric" placeholder="Vazio = mensal contínua"></div></div><p class="dialog-hint">O valor é por mês/parcela. Uma recorrência mensal sem número de parcelas continua até você encerrá-la.</p><p class="dialog-hint finance-series-info" id="financeSeriesInfo" hidden></p><label class="finance-future-option" id="financeApplyFutureWrap" hidden><input id="financeApplyFuture" type="checkbox"> Aplicar descrição e valor às próximas previsões</label><div class="form-actions dialog-save-actions"><button class="btn danger" id="financeDeleteBtn" type="button" hidden>Excluir</button><button class="btn danger" id="financeStopSeriesBtn" type="button" hidden>Encerrar recorrência</button><button class="btn primary" type="submit">Salvar</button></div></form></dialog>
 
   <dialog id="dayDialog" class="app-dialog"><div class="dialog-head day-dialog-head"><button class="btn ghost small day-dialog-nav" id="dayDialogPrevBtn" type="button" aria-label="Dia anterior" title="Dia anterior">←</button><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small day-dialog-nav" id="dayDialogNextBtn" type="button" aria-label="Próximo dia" title="Próximo dia">→</button><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint" id="dayDialogHint" hidden></p><div class="form-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
 
@@ -946,7 +1005,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=88" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=88',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=89" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=89',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

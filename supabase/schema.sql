@@ -87,6 +87,29 @@ create table if not exists public.nmm_logs (
 
 create index if not exists nmm_logs_owner_created_idx on public.nmm_logs(owner_id, created_at desc);
 
+create table if not exists public.nmm_finance_entries (
+  id text primary key,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  direction text not null check (direction in ('income', 'expense')),
+  amount numeric(14,2) not null check (amount > 0),
+  movement_date date not null,
+  status text not null default 'planned' check (status in ('planned', 'realized')),
+  series_id text,
+  occurrence_number integer,
+  installment_count integer,
+  recurrence jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
+  planner_version smallint not null check (planner_version = 1),
+  check ((series_id is null and occurrence_number is null) or (series_id is not null and occurrence_number is not null and occurrence_number > 0)),
+  check (installment_count is null or installment_count between 2 and 240)
+);
+
+create index if not exists nmm_finance_entries_owner_date_idx on public.nmm_finance_entries(owner_id, movement_date);
+create unique index if not exists nmm_finance_entries_series_occurrence_idx on public.nmm_finance_entries(owner_id, series_id, occurrence_number) where series_id is not null;
+
 create table if not exists public.nmm_user_settings (
   owner_id uuid primary key references auth.users(id) on delete cascade,
   data jsonb not null default '{"summaryTimes":["08:00"],"calendarIds":[],"nickname":"Gio"}'::jsonb,
@@ -131,6 +154,7 @@ alter table public.nmm_task_comments enable row level security;
 alter table public.nmm_task_links enable row level security;
 alter table public.nmm_notes enable row level security;
 alter table public.nmm_logs enable row level security;
+alter table public.nmm_finance_entries enable row level security;
 alter table public.nmm_user_settings enable row level security;
 alter table public.nmm_private_vaults enable row level security;
 alter table public.nmm_private_notes enable row level security;
@@ -141,6 +165,7 @@ grant select, insert on public.nmm_task_comments to authenticated;
 grant select, insert, delete on public.nmm_task_links to authenticated;
 grant select, insert, update on public.nmm_notes to authenticated;
 grant select, insert, update, delete on public.nmm_logs to authenticated;
+grant select, insert, update, delete on public.nmm_finance_entries to authenticated;
 grant select, insert, update on public.nmm_user_settings to authenticated;
 grant select, insert, update on public.nmm_private_vaults to authenticated;
 grant select, insert, update, delete on public.nmm_private_notes to authenticated;
@@ -156,6 +181,11 @@ create policy nmm_notes_owner_all on public.nmm_notes
   with check (owner_id = (select auth.uid()));
 
 create policy nmm_logs_owner_all on public.nmm_logs
+  for all to authenticated
+  using (owner_id = (select auth.uid()))
+  with check (owner_id = (select auth.uid()));
+
+create policy nmm_finance_entries_owner_all on public.nmm_finance_entries
   for all to authenticated
   using (owner_id = (select auth.uid()))
   with check (owner_id = (select auth.uid()));

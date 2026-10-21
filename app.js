@@ -6,6 +6,8 @@
   const TASKS_KEY = 'tnm.weekly.tasks.v1';
   const NOTES_KEY = 'tnm.weekly.notes.v1';
   const LOGS_KEY = 'tnm.weekly.logs.v1';
+  const FINANCE_KEY = 'tnm.weekly.finance.v1';
+  const FINANCE_MONTH_KEY = 'tnm.weekly.financeMonth.v1';
   const LOG_RANGE_KEY = 'tnm.weekly.logsRange.v1';
   const ZOOM_KEY = 'tnm.weekly.zoom.v1';
   const USER_SETTINGS_KEY = 'tnm.weekly.userSettings.v1';
@@ -16,7 +18,7 @@
   const TAGS_KEY = 'tnm.weekly.tags.v1';
   const TAG_FILTER_KEY = 'tnm.weekly.filterTag.v1';
   const PAGE_FILTERS_KEY = 'tnm.weekly.filterTagsByPage.v1';
-  const FILTER_PAGES = ['home','tasks','notes','log'];
+  const FILTER_PAGES = ['home','tasks','notes','finance'];
   const LAST_TAG_KEY = 'tnm.weekly.lastTag.v1';
   const AUTO_BACKUP_KEY = 'tnm.weekly.autobackup.v1';
   const CALENDAR_EVENTS_KEY = 'tnm.weekly.calendarEvents.v1';
@@ -42,6 +44,8 @@
   let tasks = [];
   let notes = [];
   let logs = readStored(LOGS_KEY,[]);
+  let finances = [];
+  let financeMonth = /^\d{4}-\d{2}$/.test(localStorage.getItem(FINANCE_MONTH_KEY)||'')?localStorage.getItem(FINANCE_MONTH_KEY):todayKey().slice(0,7);
   if(!Array.isArray(logs))logs=[];
   let logRange = ['7d','30d','12w','all'].includes(localStorage.getItem(LOG_RANGE_KEY))?localStorage.getItem(LOG_RANGE_KEY):'7d';
   let userSettings = normalizeUserSettings(readStored(USER_SETTINGS_KEY,{summaryTimes:['08:00'],calendarIds:[],nickname:'Gio'}));
@@ -65,7 +69,8 @@
   let calendarEvents = readStored(CALENDAR_EVENTS_KEY,[]);
   if(!Array.isArray(calendarEvents))calendarEvents=[];
   let session = readStored(SESSION_KEY,null);
-  let currentPage = ['home','tasks','log','notes','settings'].includes(localStorage.getItem(PAGE_KEY)) ? localStorage.getItem(PAGE_KEY) : 'home';
+  const storedPage = localStorage.getItem(PAGE_KEY);
+  let currentPage = storedPage==='log'?'finance':['home','tasks','finance','notes','settings'].includes(storedPage)?storedPage:'home';
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
@@ -108,7 +113,7 @@
   function loadPageFilters() {
     const saved=readStored(PAGE_FILTERS_KEY,null);
     if(saved&&typeof saved==='object'&&!Array.isArray(saved))return Object.fromEntries(FILTER_PAGES.map(page=>[page,Array.isArray(saved[page])?Array.from(new Set(saved[page].map(String))):[]]));
-    const migrated={home:[],tasks:[],notes:readFilterTags(),log:[]};
+    const migrated={home:[],tasks:[],notes:readFilterTags(),finance:[]};
     localStorage.setItem(PAGE_FILTERS_KEY,JSON.stringify(migrated));return migrated;
   }
   function persistPageFilters() {
@@ -170,10 +175,11 @@
     if (schedule) scheduleSync();
   }
   function loadLocalData() {
-    const storedTasks=readStored(TASKS_KEY,[]), storedNotes=readStored(NOTES_KEY,[]), storedLogs=readStored(LOGS_KEY,[]);
-    tasks=Array.isArray(storedTasks) ? storedTasks.map(normalizeTask).filter(Boolean) : [];
-    notes=Array.isArray(storedNotes) ? storedNotes.map(normalizeNote).filter(Boolean) : [];
-    logs=Array.isArray(storedLogs) ? storedLogs.map(normalizeLog).filter(Boolean) : [];
+    const storedTasks=readStored(TASKS_KEY,[]),storedNotes=readStored(NOTES_KEY,[]),storedLogs=readStored(LOGS_KEY,[]),storedFinance=readStored(FINANCE_KEY,[]);
+    tasks=Array.isArray(storedTasks)?storedTasks.map(normalizeTask).filter(Boolean):[];
+    notes=Array.isArray(storedNotes)?storedNotes.map(normalizeNote).filter(Boolean):[];
+    logs=Array.isArray(storedLogs)?storedLogs.map(normalizeLog).filter(Boolean):[];
+    finances=Array.isArray(storedFinance)?storedFinance.map(normalizeFinanceEntry).filter(Boolean):[];
   }
   function normalizeRecurrence(value,taskDate='',taskId='') {
     if(!value||typeof value!=='object')return null;
@@ -242,6 +248,26 @@
     if(!content&&!isLocked)return null;
     return {id:String(value.id||makeId()),content:isLocked?'':content,isLocked,tagId:String(value.tagId??value.tag_id??''),createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
   }
+  function normalizeFinanceEntry(value) {
+    if(!value||typeof value!=='object'||!String(value.title||'').trim())return null;
+    const rawDate=value.date||value.movementDate||value.movement_date,date=isDateKey(rawDate)?String(rawDate):null;
+    const kind=['income','expense'].includes(String(value.kind||value.direction))?String(value.kind||value.direction):'';
+    const rawAmount=Number(value.amount),amount=Math.round(rawAmount*100)/100;
+    if(!date||!kind||!Number.isFinite(amount)||amount<=0)return null;
+    const status=['planned','realized'].includes(String(value.status))?String(value.status):'planned';
+    const rawRule=value.recurrence&&typeof value.recurrence==='object'?value.recurrence:null;
+    let recurrence=null,seriesId=String(value.seriesId||value.series_id||rawRule?.seriesId||'');
+    let occurrenceNumber=Number(value.occurrenceNumber??value.occurrence_number)||null;
+    let installmentCount=Number(value.installmentCount??value.installment_count)||null;
+    if(rawRule&&rawRule.frequency==='monthly'&&isDateKey(rawRule.anchorDate)){
+      installmentCount=Number(rawRule.installmentCount??rawRule.installment_count??installmentCount)||null;
+      if(installmentCount)installmentCount=Math.min(240,Math.max(1,Math.floor(installmentCount)));
+      recurrence={frequency:'monthly',anchorDate:String(rawRule.anchorDate),installmentCount,seriesStopped:Boolean(rawRule.seriesStopped)};
+      if(!seriesId)seriesId=String(rawRule.seriesId||value.id||'');
+    }
+    if(occurrenceNumber)occurrenceNumber=Math.max(1,Math.floor(occurrenceNumber));
+    return {id:String(value.id||makeId()),title:String(value.title).trim().slice(0,180),kind,amount,date,status,recurrence,seriesId,occurrenceNumber,installmentCount,createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
+  }
   function normalizeNote(value) {
     if (!value || typeof value !== 'object') return null;
     const title=String(value.title || '').trim().slice(0,140), content=String(value.content || '').slice(0,20000);
@@ -268,6 +294,10 @@
   function saveLogs(schedule=true) {
     localStorage.setItem(LOGS_KEY,JSON.stringify(logs));
     renderLogs();
+    if(schedule)scheduleSync();
+  }
+  function saveFinanceEntries(schedule=true) {
+    localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);renderFinancePage();
     if(schedule)scheduleSync();
   }
   function saveUserSettings(schedule=true) {
@@ -442,35 +472,25 @@
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
-    if (!['home','tasks','log','notes','settings'].includes(page)) return;
-    const pageOrder=['home','tasks','notes','log','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
+    if(!['home','tasks','finance','notes','settings'].includes(page))return;
+    const pageOrder=['home','tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
-    if(!['notes','log'].includes(page)){pendingLogLockId='';pendingLogUnlockId='';}
-    if(page==='log'&&privateNotesUnlocked&&privateNoteDirty){void savePrivateNote({preventDefault(){}},false).then(saved=>{if(saved)setPage(page);});return;}
-    if(!['notes','log'].includes(page)&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
-    if(!['notes','log'].includes(page)&&privateNotesUnlocked)void lockPrivateNotes();
+    pendingLogLockId='';pendingLogUnlockId='';
+    if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
+    if(page!=='notes'&&privateNotesUnlocked)void lockPrivateNotes();
     if(page!==currentPage){persistPageFilters();filterTagIds=[...selectedPageTags(page)];}
-    currentPage=page;
-    localStorage.setItem(PAGE_KEY,page);
-    document.body.dataset.page=page;
+    currentPage=page;localStorage.setItem(PAGE_KEY,page);document.body.dataset.page=page;
     document.querySelectorAll('.page').forEach(node=>{
-      const active=node.id===`${page}Page`;
-      node.classList.toggle('active',active);
-      if (active&&previous!==page) {
-        node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');
-        node.classList.remove('page-enter'); void node.offsetWidth; node.classList.add('page-enter');
-      }
+      const active=node.id===`${page}Page`;node.classList.toggle('active',active);
+      if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
     });
-    document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{
-      if (button.dataset.page===page) button.setAttribute('aria-current','page');
-      else button.removeAttribute('aria-current');
-    });
+    document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(button.dataset.page===page)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
     updateNavIndicator(page);renderFilterButton();
-    if (page==='home') renderHome();
-    if (page==='tasks') renderTasks();
-    if (page==='notes') { renderNotes();renderNotesMode(); }
-    if (page==='log') renderLogs();
-    if (page==='settings') { updateAuthUI();renderSettings(); }
+    if(page==='home')renderHome();
+    if(page==='tasks')renderTasks();
+    if(page==='finance')renderFinancePage();
+    if(page==='notes'){renderNotes();renderNotesMode();}
+    if(page==='settings'){updateAuthUI();renderSettings();}
   }
   function hasSelectedTag(tagIds,page=filterPageKey(currentPage)) { const selected=selectedPageTags(page);return !selected.length||tagIds.some(id=>selected.includes(id)); }
   function visibleTasks(page='tasks') { return tasks.filter(task=>!task.deletedAt&&hasSelectedTag([task.tagId],page)); }
@@ -551,7 +571,9 @@
     const names=filterTagIds.map(id=>getTag(id).name),summary=names.length?names.join(' + '):'TODAS',active=names.length>0;
     for(const node of document.querySelectorAll('[data-active-filter-summary]'))node.textContent=summary;
     for(const button of document.querySelectorAll('[data-filter-open]'))button.setAttribute('aria-label',active?`Filtro desta página: ${names.join(' e ')}`:'Filtro desta página; todas as tags');
-    const button=$('headerFilterBtn');if(button){button.textContent=active?`FILTRO · ${names.length}`:'FILTRO';button.setAttribute('aria-pressed',String(active));button.hidden=currentPage==='settings';}
+    const button=$('headerFilterBtn'),tagsButton=$('headerTagsBtn'),hideTagActions=currentPage==='settings'||currentPage==='finance';
+    if(button){button.textContent=active?`FILTRO · ${names.length}`:'FILTRO';button.setAttribute('aria-pressed',String(active));button.hidden=hideTagActions;}
+    if(tagsButton)tagsButton.hidden=hideTagActions;
   }
   function renderTaskTagOptions(selectedId='') {
     const active=tags.filter(tag=>!tag.deletedAt);
@@ -666,7 +688,7 @@
     if (expandedSection==='completed') completedVisibleLimit=6;
     renderTasks();
   }
-  function renderAll() { renderTasks(); renderHome(); renderNotes(); renderLogs(); renderNotesMode(); }
+  function renderAll() { renderTasks(); renderHome(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
   function homeDateLabel(date) {
     const text=formatDate(date).replace(/\./g,'');
     const title=text.charAt(0).toLocaleUpperCase('pt-BR')+text.slice(1);
@@ -737,6 +759,108 @@
   function setLogRange(range) {
     if(!['7d','30d','12w','all'].includes(range))return;
     logRange=range;localStorage.setItem(LOG_RANGE_KEY,range);renderLogs();
+  }
+  function financeMoney(amount) { return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(amount)||0); }
+  function financeDateForOccurrence(anchorDate,occurrenceNumber) {
+    const anchor=dateAtNoon(anchorDate);if(!anchor)return anchorDate;
+    return recurrenceDateInMonth(anchor.getFullYear()*12+anchor.getMonth()+Math.max(0,Number(occurrenceNumber||1)-1),anchor.getDate());
+  }
+  function financeHorizonEnd(month=financeMonth) {
+    const baseMonth=month>todayKey().slice(0,7)?month:todayKey().slice(0,7),[year,monthNumber]=baseMonth.split('-').map(Number);
+    return recurrenceDateInMonth(year*12+monthNumber-1+11,31);
+  }
+  function ensureFinanceHorizon() {
+    const groups=new Map(),horizonEnd=financeHorizonEnd();let changed=false;
+    for(const entry of finances){if(!entry.seriesId||entry.recurrence?.frequency!=='monthly')continue;if(!groups.has(entry.seriesId))groups.set(entry.seriesId,[]);groups.get(entry.seriesId).push(entry);}
+    for(const [seriesId,entries] of groups){
+      const rule=entries.find(entry=>entry.recurrence)?.recurrence;if(!rule||entries.some(entry=>entry.recurrence?.seriesStopped))continue;
+      const source=entries.find(entry=>entry.occurrenceNumber===1)||entries.slice().sort((a,b)=>(a.occurrenceNumber||0)-(b.occurrenceNumber||0))[0];
+      const installmentCount=Number(source.installmentCount||rule.installmentCount)||null,lastNumber=Math.max(0,...entries.map(entry=>Number(entry.occurrenceNumber)||0));
+      for(let number=lastNumber+1;number<=240;number++){
+        if(installmentCount&&number>installmentCount)break;
+        const date=financeDateForOccurrence(rule.anchorDate,number);if(!installmentCount&&date>horizonEnd)break;
+        const now=nowISO(),recurrence={frequency:'monthly',anchorDate:rule.anchorDate,installmentCount,seriesStopped:false,seriesId};
+        finances.push({id:`${seriesId}:${number}`,title:source.title,kind:source.kind,amount:source.amount,date,status:'planned',recurrence,seriesId,occurrenceNumber:number,installmentCount,createdAt:now,updatedAt:now,deletedAt:null});changed=true;
+      }
+    }
+    if(changed){localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);scheduleSync();}
+    return changed;
+  }
+  function renderFinancePage() {
+    const monthLabel=$('financeMonthLabel'),summary=$('financeSummary'),list=$('financeEntriesList');if(!monthLabel||!summary||!list)return;
+    ensureFinanceHorizon();
+    const monthDate=dateAtNoon(`${financeMonth}-01`)||new Date(),rawMonth=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    monthLabel.textContent=rawMonth.charAt(0).toLocaleUpperCase('pt-BR')+rawMonth.slice(1);
+    const entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===financeMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
+    const income=entries.filter(entry=>entry.kind==='income'),expense=entries.filter(entry=>entry.kind==='expense');
+    const totalIncome=income.reduce((sum,entry)=>sum+entry.amount,0),realizedIncome=income.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
+    const totalExpense=expense.reduce((sum,entry)=>sum+entry.amount,0),realizedExpense=expense.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
+    const plannedBalance=totalIncome-totalExpense,realizedBalance=realizedIncome-realizedExpense;
+    summary.innerHTML=`<article class="finance-summary-card income"><span>ENTRADAS</span><strong>${financeMoney(totalIncome)}</strong><small>Recebido: ${financeMoney(realizedIncome)}</small></article><article class="finance-summary-card expense"><span>SAÍDAS</span><strong>${financeMoney(totalExpense)}</strong><small>Pago: ${financeMoney(realizedExpense)}</small></article><article class="finance-summary-card balance"><span>SALDO PREVISTO</span><strong>${financeMoney(plannedBalance)}</strong><small>Realizado: ${financeMoney(realizedBalance)}</small></article>`;
+    list.innerHTML=entries.length?entries.map(entry=>{
+      const id=escapeHTML(entry.id),date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',amountLabel=`${entry.kind==='income'?'+':'−'} ${financeMoney(entry.amount)}`;
+      const occurrenceLabel=entry.installmentCount?`Parcela ${entry.occurrenceNumber}/${entry.installmentCount}`:entry.recurrence?'Mensal':'';
+      return `<article class="finance-entry ${entry.kind} ${entry.status}" data-finance-id="${id}"><div class="finance-entry-date">${escapeHTML(dateLabel)}</div><div class="finance-entry-main"><strong>${escapeHTML(entry.title)}</strong><span>${entry.kind==='income'?'Entrada':'Saída'}${occurrenceLabel?` · ${escapeHTML(occurrenceLabel)}`:''}</span></div><div class="finance-entry-actions"><strong class="finance-amount ${entry.kind}">${escapeHTML(amountLabel)}</strong><button class="finance-status-pill ${entry.status}" type="button" data-finance-toggle-status="${id}" aria-label="${entry.status==='planned'?'Marcar como realizado':'Voltar para previsto'}">${entry.status==='planned'?'PREVISTO':'REALIZADO'}</button><button class="finance-icon-button" type="button" data-finance-edit="${id}" aria-label="Editar ${escapeHTML(entry.title)}" title="Editar">✎</button><button class="finance-icon-button danger" type="button" data-finance-delete="${id}" aria-label="Excluir ${escapeHTML(entry.title)}" title="Excluir">×</button></div></article>`;
+    }).join(''):'<p class="empty finance-empty">Nenhuma movimentação neste mês. Adicione entradas e saídas quando quiser.</p>';
+  }
+  function shiftFinanceMonth(amount) {
+    const date=dateAtNoon(`${financeMonth}-01`)||dateAtNoon(todayKey());date.setMonth(date.getMonth()+Number(amount||0));financeMonth=dateKey(date).slice(0,7);localStorage.setItem(FINANCE_MONTH_KEY,financeMonth);renderFinancePage();
+  }
+  function updateFinanceRecurrenceUI() { $('financeInstallmentWrap').hidden=$('financeRecurrence').value!=='monthly'; }
+  function openFinanceDialog(entryId='') {
+    const entry=entryId?finances.find(item=>item.id===String(entryId)&&!item.deletedAt):null,series=Boolean(entry?.seriesId&&entry?.recurrence?.frequency==='monthly');
+    $('financeForm').reset();$('financeId').value=entry?.id||'';$('financeDialogTitle').textContent=entry?'Editar movimentação':'Nova movimentação';
+    $('financeTitle').value=entry?.title||'';$('financeDirection').value=entry?.kind||'expense';$('financeAmount').value=entry?String(entry.amount):'';$('financeDate').value=entry?.date||todayKey();$('financeStatus').value=entry?.status||'planned';
+    $('financeRecurrence').value=entry?.recurrence?'monthly':'once';$('financeInstallmentCount').value=entry?.installmentCount?String(entry.installmentCount):'';
+    $('financeRecurrence').disabled=series;$('financeInstallmentCount').disabled=series;updateFinanceRecurrenceUI();
+    $('financeSeriesInfo').hidden=!series;$('financeSeriesInfo').textContent=series?(entry.installmentCount?`Parcela ${entry.occurrenceNumber}/${entry.installmentCount}.`:'Movimentação mensal contínua.') : '';
+    $('financeApplyFutureWrap').hidden=!series;$('financeApplyFuture').checked=true;$('financeStopSeriesBtn').hidden=!series||Boolean(entry.recurrence?.seriesStopped);$('financeDeleteBtn').hidden=!entry;
+    $('financeDialog').showModal();
+  }
+  function makeFinanceOccurrence({title,kind,amount,date,status,seriesId,occurrenceNumber,installmentCount,anchorDate}) {
+    const now=nowISO(),recurrence={frequency:'monthly',anchorDate,installmentCount:installmentCount||null,seriesStopped:false,seriesId};
+    return {id:occurrenceNumber===1?seriesId:`${seriesId}:${occurrenceNumber}`,title,kind,amount,date,status,recurrence,seriesId,occurrenceNumber,installmentCount:installmentCount||null,createdAt:now,updatedAt:now,deletedAt:null};
+  }
+  function saveFinanceFromForm(event) {
+    event?.preventDefault?.();
+    const id=$('financeId').value,existing=id?finances.find(item=>item.id===id&&!item.deletedAt):null,title=$('financeTitle').value.trim(),kind=$('financeDirection').value,amount=Math.round(Number($('financeAmount').value)*100)/100,date=$('financeDate').value,status=$('financeStatus').value,repeat=$('financeRecurrence').value;
+    const rawCount=$('financeInstallmentCount').value.trim(),installmentCount=rawCount?Number(rawCount):null;
+    if(!title||!['income','expense'].includes(kind)||!Number.isFinite(amount)||amount<=0||!isDateKey(date)){showToast('Confira a descrição, o valor e a data.');return false;}
+    const editingSeries=Boolean(existing?.seriesId&&existing?.recurrence?.frequency==='monthly');
+    if(repeat==='monthly'&&!editingSeries&&rawCount&&(!Number.isInteger(installmentCount)||installmentCount<2||installmentCount>240)){showToast('Informe de 2 a 240 parcelas ou deixe vazio para repetir mensalmente.');return false;}
+    const now=nowISO();
+    if(existing){
+      const recurring=Boolean(existing.seriesId&&existing.recurrence?.frequency==='monthly');
+      existing.title=title;existing.kind=kind;existing.amount=amount;existing.date=date;existing.status=status;existing.updatedAt=now;
+      if(recurring){
+        if($('financeApplyFuture').checked)for(const future of finances.filter(item=>item.seriesId===existing.seriesId&&item.occurrenceNumber>existing.occurrenceNumber&&!item.deletedAt&&item.status==='planned')){future.title=title;future.kind=kind;future.amount=amount;future.updatedAt=now;}
+      }else if(repeat==='monthly'){
+        const seriesId=makeId();existing.seriesId=seriesId;existing.occurrenceNumber=1;existing.installmentCount=installmentCount||null;existing.recurrence={frequency:'monthly',anchorDate:date,installmentCount:installmentCount||null,seriesStopped:false,seriesId};
+      }else{existing.seriesId='';existing.occurrenceNumber=null;existing.installmentCount=null;existing.recurrence=null;}
+    }else if(repeat==='monthly'){
+      const seriesId=makeId();finances.push(makeFinanceOccurrence({title,kind,amount,date,status,seriesId,occurrenceNumber:1,installmentCount,anchorDate:date}));
+    }else finances.push({id:makeId(),title,kind,amount,date,status,recurrence:null,seriesId:'',occurrenceNumber:null,installmentCount:null,createdAt:now,updatedAt:now,deletedAt:null});
+    $('financeDialog').close();saveFinanceEntries();showToast(existing?'Movimentação atualizada.':'Movimentação adicionada.');return true;
+  }
+  function toggleFinanceStatus(entryId) {
+    const entry=finances.find(item=>item.id===String(entryId)&&!item.deletedAt);if(!entry)return;
+    entry.status=entry.status==='planned'?'realized':'planned';entry.updatedAt=nowISO();saveFinanceEntries();showToast(entry.status==='realized'?(entry.kind==='income'?'Entrada marcada como recebida.':'Saída marcada como paga.'):'Movimentação voltou para prevista.');
+  }
+  function deleteFinanceEntry(entryId) {
+    const entry=finances.find(item=>item.id===String(entryId)&&!item.deletedAt);if(!entry||!window.confirm(`Excluir “${entry.title}” deste mês?`))return;
+    entry.deletedAt=nowISO();entry.updatedAt=entry.deletedAt;saveFinanceEntries();if($('financeDialog').open)$('financeDialog').close();showToast('Movimentação excluída.');
+  }
+  function stopFinanceSeries(entryId) {
+    const entry=finances.find(item=>item.id===String(entryId)&&!item.deletedAt);if(!entry?.seriesId||!window.confirm('Encerrar esta recorrência e remover as próximas movimentações previstas? As já realizadas ficam no histórico.'))return;
+    const now=nowISO();for(const item of finances.filter(row=>row.seriesId===entry.seriesId)){
+      item.recurrence={...(item.recurrence||{}),seriesStopped:true};if(item.occurrenceNumber>=entry.occurrenceNumber&&item.status==='planned')item.deletedAt=now;item.updatedAt=now;
+    }
+    $('financeDialog').close();saveFinanceEntries();showToast('Recorrência encerrada; o histórico foi mantido.');
+  }
+  function handleFinanceClick(event) {
+    const status=event.target.closest('[data-finance-toggle-status]');if(status){toggleFinanceStatus(status.dataset.financeToggleStatus);return;}
+    const edit=event.target.closest('[data-finance-edit]');if(edit){openFinanceDialog(edit.dataset.financeEdit);return;}
+    const remove=event.target.closest('[data-finance-delete]');if(remove){deleteFinanceEntry(remove.dataset.financeDelete);return;}
   }
   function requestLogVaultAccess(logId,action) {
     if(action==='lock'){pendingLogLockId=String(logId);pendingLogUnlockId='';}else{pendingLogUnlockId=String(logId);pendingLogLockId='';}
@@ -1456,6 +1580,8 @@
   function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function logToRow(log) { return {id:log.id,owner_id:session.user.id,content:log.isLocked?'🔒 Registro trancado':log.content,tag_id:log.tagId||null,is_locked:Boolean(log.isLocked),planner_version:1,created_at:log.createdAt,updated_at:log.updatedAt,deleted_at:log.deletedAt}; }
   function rowToLog(row) { return normalizeLog({id:row.id,content:row.content,tag_id:row.tag_id,is_locked:row.is_locked,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
+  function financeToRow(entry) { return {id:entry.id,owner_id:session.user.id,title:entry.title,direction:entry.kind,amount:entry.amount,movement_date:entry.date,status:entry.status,series_id:entry.seriesId||null,occurrence_number:entry.occurrenceNumber||null,installment_count:entry.installmentCount||null,recurrence:entry.recurrence||null,planner_version:1,created_at:entry.createdAt,updated_at:entry.updatedAt,deleted_at:entry.deletedAt}; }
+  function rowToFinance(row) { return normalizeFinanceEntry({id:row.id,title:row.title,kind:row.direction,amount:row.amount,date:row.movement_date,status:row.status,series_id:row.series_id,occurrence_number:row.occurrence_number,installment_count:row.installment_count,recurrence:row.recurrence,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
   function mergeById(local,remote) {
     const map=new Map();
     for (const item of [...remote,...local]) {
@@ -1465,31 +1591,30 @@
     return Array.from(map.values());
   }
   async function loadCloudData() {
-    const localTasks=tasks.map(task=>({...task})), localNotes=notes.map(note=>({...note})), localLogs=logs.map(log=>({...log})), localTags=tags.map(tag=>({...tag})), localSettings={...userSettings},localVault=privateVault?{...privateVault}:null,localPrivateRows=privateCipherRows.map(row=>({...row}));
-    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteTagRows,remoteSettingRows,remoteVaultRows,remotePrivateRows]=await Promise.all([
+    const localTasks=tasks.map(task=>({...task})),localNotes=notes.map(note=>({...note})),localLogs=logs.map(log=>({...log})),localFinances=finances.map(entry=>({...entry})),localTags=tags.map(tag=>({...tag})),localSettings={...userSettings},localVault=privateVault?{...privateVault}:null,localPrivateRows=privateCipherRows.map(row=>({...row}));
+    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteFinanceRows,remoteTagRows,remoteSettingRows,remoteVaultRows,remotePrivateRows]=await Promise.all([
       fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll('nmm_logs?select=*&planner_version=eq.1'),
+      fetchAll('nmm_finance_entries?select=*&planner_version=eq.1'),
       fetchAll('nmm_tags?select=*&planner_version=eq.1'),
       fetchAll('nmm_user_settings?select=*&planner_version=eq.1'),
       fetchAll('nmm_private_vaults?select=*&planner_version=eq.1'),
       fetchAll('nmm_private_notes?select=*&planner_version=eq.1')
     ]);
-    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean), remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean), remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean), remoteTags=remoteTagRows.map(rowToTag).filter(Boolean), remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null,remoteVault=remoteVaultRows.length?rowToPrivateVault(remoteVaultRows[0]):null,remotePrivateNotes=remotePrivateRows.map(rowToPrivateNote).filter(Boolean);
+    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean),remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean),remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean),remoteFinances=remoteFinanceRows.map(rowToFinance).filter(Boolean),remoteTags=remoteTagRows.map(rowToTag).filter(Boolean),remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null,remoteVault=remoteVaultRows.length?rowToPrivateVault(remoteVaultRows[0]):null,remotePrivateNotes=remotePrivateRows.map(rowToPrivateNote).filter(Boolean);
     tags=ensureDefaultTags(mergeById(localTags,remoteTags).map(normalizeTag).filter(Boolean));
     prunePageFilters();
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
-    const localActiveTasks=localTasks.filter(item=>!item.deletedAt), localActiveNotes=localNotes.filter(item=>!item.deletedAt);
-    const localActiveLogs=localLogs.filter(item=>!item.deletedAt);
-    if (!remoteTasks.length && !remoteNotes.length && !remoteLogs.length && (localActiveTasks.length || localActiveNotes.length || localActiveLogs.length) && !window.confirm('A conta está vazia. Enviar as tarefas, notas e logs deste aparelho para ela?')) {
+    const localActiveTasks=localTasks.filter(item=>!item.deletedAt),localActiveNotes=localNotes.filter(item=>!item.deletedAt),localActiveLogs=localLogs.filter(item=>!item.deletedAt),localActiveFinances=localFinances.filter(item=>!item.deletedAt);
+    if(!remoteTasks.length&&!remoteNotes.length&&!remoteLogs.length&&!remoteFinances.length&&(localActiveTasks.length||localActiveNotes.length||localActiveLogs.length||localActiveFinances.length)&&!window.confirm('A conta está vazia. Enviar as tarefas, notas, logs e finanças deste aparelho para ela?')){
       setAuthMessage('Nada foi enviado. Seus dados continuam neste aparelho.'); return false;
     }
     tasks=mergeById(localTasks,remoteTasks).map(normalizeTask).filter(Boolean);
     notes=mergeById(localNotes,remoteNotes).map(normalizeNote).filter(Boolean);
     logs=mergeById(localLogs,remoteLogs).map(normalizeLog).filter(Boolean);
-    localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
-    localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
-    localStorage.setItem(LOGS_KEY,JSON.stringify(logs));
+    finances=mergeById(localFinances,remoteFinances).map(normalizeFinanceEntry).filter(Boolean);
+    localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(NOTES_KEY,JSON.stringify(notes));localStorage.setItem(LOGS_KEY,JSON.stringify(logs));localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));
     userSettings=remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(localSettings.updatedAt)?remoteSettings:normalizeUserSettings(localSettings);
     localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));
     const foreignLocalVault=localVault?.ownerId&&localVault.ownerId!==session.user.id;
@@ -1519,11 +1644,13 @@
         const taskRows=tasks.map(taskToRow);
         const noteRows=notes.map(noteToRow);
         const logRows=logs.map(logToRow);
+        const financeRows=finances.map(financeToRow);
         const settingsRow=settingsToRow(),vaultRow=privateVaultToRow(),canSyncPrivate=Boolean(privateVault)&&(!privateVault.ownerId||privateVault.ownerId===session.user.id),privateRows=canSyncPrivate?privateCipherRows.map(privateRowToRow):[];
         if (tagRows.length) await cloudRequest('nmm_tags?on_conflict=owner_id,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(tagRows)});
         if (taskRows.length) await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});
         if (noteRows.length) await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});
         if (logRows.length) await cloudRequest('nmm_logs?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(logRows)});
+        if (financeRows.length) await cloudRequest('nmm_finance_entries?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(financeRows)});
         await cloudRequest('nmm_user_settings?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(settingsRow)});
         if(vaultRow)await cloudRequest('nmm_private_vaults?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(vaultRow)});
         if(privateRows.length)await cloudRequest('nmm_private_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(privateRows)});
@@ -1606,7 +1733,7 @@
     finally { authBusy=false; updateAuthUI(); }
   }
   function automaticBackupSnapshot() {
-    return {format:'tnm-weekly-autobackup-v4',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
+    return {format:'tnm-weekly-autobackup-v5',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
   }
   function updateAutoBackupStatus(timestamp='') {
     const node=$('autoBackupStatus');
@@ -1639,7 +1766,7 @@
     });
   }
   function exportBackup() {
-    const data={format:'tnm-weekly-backup-v5',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
+    const data={format:'tnm-weekly-backup-v6',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const link=document.createElement('a'); link.href=url; link.download=`tnm-backup-${todayKey()}.json`; link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000); $('backupMessage').textContent='Backup exportado.';
@@ -1728,6 +1855,15 @@
   $('logsList').addEventListener('click',handleLogsClick);
   $('logsList').addEventListener('change',handleLogTagChange);
   document.querySelectorAll('[data-log-range]').forEach(button=>button.addEventListener('click',()=>setLogRange(button.dataset.logRange)));
+  $('financeForm').addEventListener('submit',saveFinanceFromForm);
+  $('financeAddBtn').addEventListener('click',()=>openFinanceDialog());
+  $('financePrevMonth').addEventListener('click',()=>shiftFinanceMonth(-1));
+  $('financeNextMonth').addEventListener('click',()=>shiftFinanceMonth(1));
+  $('financeEntriesList').addEventListener('click',handleFinanceClick);
+  $('financeRecurrence').addEventListener('change',updateFinanceRecurrenceUI);
+  $('closeFinanceDialog').addEventListener('click',()=>$('financeDialog').close());
+  $('financeDeleteBtn').addEventListener('click',()=>deleteFinanceEntry($('financeId').value));
+  $('financeStopSeriesBtn').addEventListener('click',()=>stopFinanceSeries($('financeId').value));
   $('addSummaryTimeBtn').addEventListener('click',addSummaryTime);
   $('summaryTimesList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-summary-time]');if(button)removeSummaryTime(button.dataset.removeSummaryTime);});
   $('summaryNickname').addEventListener('change',()=>{userSettings.nickname=$('summaryNickname').value.trim()||'Gio';saveUserSettings();});
