@@ -64,6 +64,7 @@ create table if not exists public.nmm_notes (
   title text not null default '',
   content text not null default '',
   link_url text not null default '',
+  links jsonb not null default '[]'::jsonb constraint nmm_notes_links_array_check check (jsonb_typeof(links) = 'array'),
   is_pinned boolean not null default false,
   tag_ids text[] not null default '{}'::text[],
   sort_order integer not null default 0,

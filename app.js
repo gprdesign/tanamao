@@ -137,6 +137,32 @@
     if(!text)return '';
     try{const url=new URL(text);return ['http:','https:'].includes(url.protocol)?url.href:'';}catch{return '';}
   }
+  function normalizeLinks(values,legacy='') {
+    const source=Array.isArray(values)?values:[];
+    return Array.from(new Set([...source,legacy].map(normalizeLink).filter(Boolean)));
+  }
+  function noteLinks(note) { return normalizeLinks(note?.links,note?.link); }
+  function linkInputValues(containerId) { return Array.from($(containerId)?.querySelectorAll('[data-note-link-input]')||[]).map(input=>input.value); }
+  function renderLinkInputs(containerId,values=[]) {
+    const list=$(containerId);if(!list)return;
+    list.innerHTML=values.map((value,index)=>`<div class="note-link-editor-row"><input type="url" data-note-link-input maxlength="2048" value="${escapeHTML(value)}" placeholder="https://…" aria-label="Endereço do link ${index+1}"><button class="btn small note-link-remove" type="button" data-remove-note-link="${index}" aria-label="Remover link ${index+1}" title="Remover link">×</button></div>`).join('');
+  }
+  function addLinkInput(containerId) {
+    const values=linkInputValues(containerId);values.push('');renderLinkInputs(containerId,values);
+    const inputs=$(containerId)?.querySelectorAll('[data-note-link-input]');if(inputs?.length)inputs[inputs.length-1].focus();
+  }
+  function collectNoteLinks(containerId) {
+    const raw=linkInputValues(containerId),invalid=raw.some(value=>String(value||'').trim()&&!normalizeLink(value));
+    return {links:normalizeLinks(raw),invalid};
+  }
+  function noteLinkInputsHaveValue(containerId) { return linkInputValues(containerId).some(value=>String(value||'').trim()); }
+  function removeLinkInput(containerId,index) {
+    const values=linkInputValues(containerId);values.splice(Number(index),1);renderLinkInputs(containerId,values);
+  }
+  function linksPreview(links) {
+    const safe=normalizeLinks(links);
+    return safe.map((link,index)=>`<a class="item-link" href="${escapeHTML(link)}" target="_blank" rel="noopener noreferrer">↗ ${safe.length===1?'Abrir link':`Link ${index+1}`}</a>`).join('');
+  }
   function normalizeCalendarEvent(value) {
     if(!value||typeof value!=='object')return null;
     const title=String(value.summary||value.title||'').trim().slice(0,180);
@@ -270,11 +296,11 @@
   }
   function normalizeNote(value) {
     if (!value || typeof value !== 'object') return null;
-    const title=String(value.title || '').trim().slice(0,140), content=String(value.content || '').slice(0,20000);
-    if (!title && !content.trim()) return null;
+    const title=String(value.title || '').trim().slice(0,140), content=String(value.content || '').slice(0,20000),links=normalizeLinks(value.links,value.link ?? value.link_url ?? ''),link=links[0]||'';
+    if (!title && !content.trim()&&!links.length) return null;
     const rawTags=value.tagIds ?? value.tag_ids ?? [];
     return {
-      id:String(value.id || makeId()), title, content,link:normalizeLink(value.link ?? value.link_url ?? ''),isPinned:Boolean(value.isPinned ?? value.is_pinned ?? false),
+      id:String(value.id || makeId()), title, content,link,links,isPinned:Boolean(value.isPinned ?? value.is_pinned ?? false),
       tagIds:Array.isArray(rawTags)?Array.from(new Set(rawTags.map(String))):[],
       sortOrder:Number.isFinite(Number(value.sortOrder ?? value.sort_order)) ? Number(value.sortOrder ?? value.sort_order) : 0,
       createdAt:String(value.createdAt || value.created_at || nowISO()), updatedAt:String(value.updatedAt || value.updated_at || value.createdAt || value.created_at || nowISO()),
@@ -317,7 +343,7 @@
     setup.hidden=Boolean(privateVault);unlock.hidden=!privateVault||privateNotesUnlocked;opened.hidden=!privateNotesUnlocked;
     if(!privateNotesUnlocked){list.innerHTML='';$('privateNoteForm').hidden=true;return;}
     const ordered=privateNotes.filter(note=>!note.deletedAt&&note.kind!=='log'&&hasSelectedTag(note.tagIds||[],'notes')).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
-    list.innerHTML=ordered.length?ordered.map(note=>{const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',tagIds=Array.isArray(note.tagIds)?note.tagIds:[],tagsHtml=tagIds.map(id=>tags.find(tag=>tag.id===id&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');return `<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${formatNoteContent(note.content)}</p></button>${link}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`;}).join(''):'<p class="empty">Nenhuma nota privada.</p>';
+    list.innerHTML=ordered.length?ordered.map(note=>{const linksHtml=linksPreview(noteLinks(note)),tagIds=Array.isArray(note.tagIds)?note.tagIds:[],tagsHtml=tagIds.map(id=>tags.find(tag=>tag.id===id&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');return `<article class="private-note-card"><button class="private-note-open" type="button" data-private-edit="${escapeHTML(note.id)}"><h4>${escapeHTML(note.title||'Nota privada')}</h4><p>${formatNoteContent(note.content)}</p></button>${linksHtml?`<div class="note-links-preview">${linksHtml}</div>`:''}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}<div class="private-note-actions"><button type="button" data-private-duplicate="${escapeHTML(note.id)}">DUPLICAR</button><button type="button" data-private-delete="${escapeHTML(note.id)}">EXCLUIR</button></div></article>`;}).join(''):'<p class="empty">Nenhuma nota privada.</p>';
   }
   function renderNotesMode() {
     $('normalNotesView').hidden=privateNotesMode;$('privateNotesView').hidden=!privateNotesMode;
@@ -947,7 +973,7 @@
   }
   function setDecryptedVaultItems(items) {
     const isLog=item=>item.kind==='log'||Boolean(item.logId)||String(item.id||'').startsWith('tnm-log:');
-    privateNotes=items.filter(item=>!isLog(item));
+    privateNotes=items.filter(item=>!isLog(item)).map(item=>{const links=noteLinks(item);return {...item,links,link:links[0]||''};});
     privateLogs=items.filter(isLog).map(item=>{const cipherId=String(item.id||''),rowLogId=cipherId.startsWith('tnm-log:')?cipherId.slice(8):'',id=rowLogId||String(item.logId||'');return id?{id,content:String(typeof item.content==='string'?item.content:item.text||''),createdAt:String(item.createdAt||''),cipherId}:null;}).filter(Boolean);
     unlockedLogIds.clear();
   }
@@ -984,7 +1010,7 @@
     const source=notes.find(item=>item.id===pendingPrivateMoveId&&!item.deletedAt),key=privateCryptoKey;
     if(!source||!privateNotesUnlocked||!key)return false;
     const oldRows=privateCipherRows,oldPrivateNotes=privateNotes,oldDeletedAt=source.deletedAt,oldUpdatedAt=source.updatedAt,now=nowISO();
-    const data={title:source.title||'',content:source.content||'',link:source.link||'',tagIds:Array.isArray(source.tagIds)?[...source.tagIds]:[],isPinned:Boolean(source.isPinned),sortOrder:Number(source.sortOrder)||0};
+    const links=noteLinks(source),data={title:source.title||'',content:source.content||'',link:links[0]||'',links,tagIds:Array.isArray(source.tagIds)?[...source.tagIds]:[],isPinned:Boolean(source.isPinned),sortOrder:Number(source.sortOrder)||0};
     try {
       const encrypted=await encryptPrivateValue(key,data);
       if(!privateNotesUnlocked||privateCryptoKey!==key)return false;
@@ -1002,15 +1028,16 @@
     if(!privateNotesUnlocked){showToast('Desbloqueie as Notas privadas primeiro.');return;}
     if(privateNoteDirty){void savePrivateNote({preventDefault(){}},false).then(saved=>{if(saved)openPrivateNoteEditor(noteId);});return;}
     const note=noteId?privateNotes.find(item=>item.id===String(noteId)&&!item.deletedAt):null;
-    privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteId').value=note?.id||'';$('privateNoteTitle').value=note?.title||'';$('privateNoteContent').value=note?.content||'';$('privateNoteForm').hidden=false;
+    privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteId').value=note?.id||'';$('privateNoteTitle').value=note?.title||'';$('privateNoteContent').value=note?.content||'';renderLinkInputs('privateNoteLinksList',noteLinks(note));$('privateNoteForm').hidden=false;
   }
   async function savePrivateNote(event,close=true,allowEmpty=false) {
     event?.preventDefault?.();if(!privateNotesUnlocked||!privateCryptoKey)return false;
-    const title=$('privateNoteTitle').value.trim(),content=$('privateNoteContent').value.trim();
-    if(!title&&!content){if(allowEmpty){privateNoteDirty=false;return true;}setPrivateStatus('Preencha o título ou conteúdo.',true);return false;}
+    const title=$('privateNoteTitle').value.trim(),content=$('privateNoteContent').value.trim(),linkResult=collectNoteLinks('privateNoteLinksList'),links=linkResult.links;
+    if(linkResult.invalid){setPrivateStatus('Confira o endereço de cada link.',true);return false;}
+    if(!title&&!content&&!links.length){if(allowEmpty&&!$('privateNoteId').value){privateNoteDirty=false;return true;}setPrivateStatus('Preencha o título, o conteúdo ou adicione um link.',true);return false;}
     try {
       const id=$('privateNoteId').value||makeId(),old=privateCipherRows.find(item=>item.id===id&&!item.deletedAt),oldNote=privateNotes.find(item=>item.id===id&&!item.deletedAt),now=nowISO();
-      const data={title,content,link:oldNote?.link||'',tagIds:Array.isArray(oldNote?.tagIds)?oldNote.tagIds:[],isPinned:Boolean(oldNote?.isPinned),sortOrder:Number(oldNote?.sortOrder)||0},key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
+      const data={title,content,link:links[0]||'',links,tagIds:Array.isArray(oldNote?.tagIds)?oldNote.tagIds:[],isPinned:Boolean(oldNote?.isPinned),sortOrder:Number(oldNote?.sortOrder)||0},key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
       if(!privateNotesUnlocked||privateCryptoKey!==key)return false;
       const row={id,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:old?.createdAt||oldNote?.createdAt||now,updatedAt:now,deletedAt:null};
       privateCipherRows=privateCipherRows.filter(item=>item.id!==id).concat(row);privateNotes=privateNotes.filter(item=>item.id!==id).concat({...data,id,createdAt:row.createdAt,updatedAt:now,deletedAt:null});
@@ -1022,7 +1049,7 @@
   async function duplicatePrivateNote(noteId) {
     const source=privateNotes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!source||!privateCryptoKey)return;
     try {
-      const now=nowISO(),data={title:source.title?`${source.title.slice(0,132)} (cópia)`: '',content:source.content,link:source.link||'',tagIds:Array.isArray(source.tagIds)?source.tagIds:[],isPinned:Boolean(source.isPinned),sortOrder:Number(source.sortOrder)||0},id=makeId(),key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
+      const now=nowISO(),links=noteLinks(source),data={title:source.title?`${source.title.slice(0,132)} (cópia)`: '',content:source.content,link:links[0]||'',links,tagIds:Array.isArray(source.tagIds)?source.tagIds:[],isPinned:Boolean(source.isPinned),sortOrder:Number(source.sortOrder)||0},id=makeId(),key=privateCryptoKey,encrypted=await encryptPrivateValue(key,data);
       if(!privateNotesUnlocked||privateCryptoKey!==key)return;
       const row={id,iv:encrypted.iv,ciphertext:encrypted.ciphertext,createdAt:now,updatedAt:now,deletedAt:null};privateCipherRows.push(row);privateNotes.unshift({...data,id,createdAt:now,updatedAt:now,deletedAt:null});persistPrivateVault();renderPrivateNotes();showToast('Nota privada duplicada.');
     } catch { setPrivateStatus('Não consegui duplicar a nota privada.',true); }
@@ -1043,8 +1070,7 @@
       const id=escapeHTML(note.id),tagsHtml=(note.tagIds||[]).map(tagId=>tags.find(tag=>tag.id===tagId&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');
       const title=note.title?`<h3 class="note-card-title">${escapeHTML(note.title)}</h3>`:'<span class="note-card-title-placeholder" aria-hidden="true"></span>';
       const body=note.title?(note.content?`<p>${formatNoteContent(note.content)}</p>`:''):`<p class="note-card-content--titleless">${formatNoteContent(note.content)}</p>`;
-      const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota';
-      const link=note.link?`<a class="item-link" href="${escapeHTML(note.link)}" target="_blank" rel="noopener noreferrer">↗ Abrir link</a>`:'',footer=link||tagsHtml?`<footer class="note-card-footer">${link||'<span class="note-card-footer-spacer" aria-hidden="true"></span>'}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</footer>`:'';
+      const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota',linkHtml=linksPreview(noteLinks(note)),footer=linkHtml||tagsHtml?`<footer class="note-card-footer">${linkHtml?`<div class="note-links-preview">${linkHtml}</div>`:''}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</footer>`:'';
       return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}">${pinLabel}</button><button class="menu-action menu-edit" type="button" data-duplicate-note="${id}">DUPLICAR NOTA</button><button class="menu-action" type="button" data-lock-note="${id}">TRANCAR 🔒</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${footer}</article>`;
     }).join('') : '<div class="empty">Nenhuma nota para as tags selecionadas.</div>';
     renderFilterButton(); renderDialogLists();
@@ -1121,10 +1147,10 @@
       return true;
     }
     if(dialog.id==='noteDialog'&&noteDialogDirty){
-      const hasText=$('noteTitle').value.trim()||$('noteContent').value.trim()||$('noteLink').value.trim();
+      const hasText=$('noteId').value||$('noteTitle').value.trim()||$('noteContent').value.trim()||noteLinkInputsHaveValue('noteLinksList');
       if(!hasText){noteDialogDirty=false;return true;}
       saveNote({preventDefault(){}});
-      if(dialog.open){showToast('Preencha o título ou conteúdo da nota. Mantive o popup aberto para não perder o texto.');return false;}
+      if(dialog.open){showToast('Confira o título, o conteúdo e os links. Mantive o popup aberto para não perder o texto.');return false;}
       return true;
     }
     return true;
@@ -1135,7 +1161,7 @@
     if(dialog.open){closeTaskDialog();if(hasItem)showToast('Tarefa salva.',3000);}
   }
   function closeNoteDialogSafely() {
-    const dialog=$('noteDialog'),hasItem=Boolean($('noteId').value||$('noteTitle').value.trim()||$('noteContent').value.trim()||$('noteLink').value.trim());
+    const dialog=$('noteDialog'),hasItem=Boolean($('noteId').value||$('noteTitle').value.trim()||$('noteContent').value.trim()||noteLinkInputsHaveValue('noteLinksList'));
     if(!savePopupBeforeClose(dialog))return;
     if(dialog.open){dialog.close();if(hasItem)showToast('Nota salva.',3000);}
   }
@@ -1437,17 +1463,18 @@
     $('deleteNoteBtn').classList.toggle('hidden',!note);
     $('lockNoteBtn').classList.toggle('hidden',!note);
     $('noteTitle').value=note?.title || ''; $('noteContent').value=note?.content || '';
-    renderNoteTagChoices(note?.tagIds||[]);$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';setLinkAttachment('note',note?.link||'');
+    renderNoteTagChoices(note?.tagIds||[]);$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';renderLinkInputs('noteLinksList',noteLinks(note));
     $('noteDialog').showModal();
   }
   function saveNote(event,close=true) {
     event?.preventDefault?.();
-    const content=$('noteContent').value.trim(),title=$('noteTitle').value.trim(),link=normalizeLink($('noteLink').value);
-    if (!title&&!content) { showToast('Preencha o título ou conteúdo da nota.');return false; }
+    const content=$('noteContent').value.trim(),title=$('noteTitle').value.trim(),linkResult=collectNoteLinks('noteLinksList'),links=linkResult.links,link=links[0]||'';
+    if(linkResult.invalid){showToast('Confira o endereço de cada link.');return false;}
+    if (!title&&!content&&!links.length) { showToast('Preencha o título, o conteúdo ou adicione pelo menos um link.');return false; }
     const tagIds=Array.from($('noteTagChoices').querySelectorAll('input:checked')).map(input=>input.value);
     const id=$('noteId').value, now=nowISO(), note=id?notes.find(item=>item.id===id&&!item.deletedAt):null,savedId=note?.id||makeId();
-    if (note) { note.title=title;note.content=content;note.link=link;note.tagIds=tagIds;note.updatedAt=now; }
-    else notes.unshift({id:savedId,title,content,link,isPinned:false,tagIds,sortOrder:Math.min(-1,...notes.map(item=>Number(item.sortOrder)||0)),createdAt:now,updatedAt:now,deletedAt:null});
+    if (note) { note.title=title;note.content=content;note.link=link;note.links=links;note.tagIds=tagIds;note.updatedAt=now; }
+    else notes.unshift({id:savedId,title,content,link,links,isPinned:false,tagIds,sortOrder:Math.min(-1,...notes.map(item=>Number(item.sortOrder)||0)),createdAt:now,updatedAt:now,deletedAt:null});
     $('noteId').value=savedId;
     if(!close)$('noteDialogTitle').textContent='Editar nota';
     noteDialogDirty=false;if(close)$('noteDialog').close();saveNotes();showToast(close?'Nota salva.':note?'Nota atualizada.':'Nota adicionada.',close?3000:2600);return true;
@@ -1472,7 +1499,7 @@
   function duplicateNote(noteId) {
     const source=notes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!source)return;
     const now=nowISO(),title=source.title?`${source.title.slice(0,132)} (cópia)`:'';
-    notes.unshift({id:makeId(),title,content:source.content,link:source.link,isPinned:false,tagIds:[...(source.tagIds||[])],sortOrder:Math.min(-1,...notes.filter(item=>!item.deletedAt&&!item.isPinned).map(item=>Number(item.sortOrder)||0))-1,createdAt:now,updatedAt:now,deletedAt:null});
+    const links=noteLinks(source);notes.unshift({id:makeId(),title,content:source.content,link:links[0]||'',links,isPinned:false,tagIds:[...(source.tagIds||[])],sortOrder:Math.min(-1,...notes.filter(item=>!item.deletedAt&&!item.isPinned).map(item=>Number(item.sortOrder)||0))-1,createdAt:now,updatedAt:now,deletedAt:null});
     saveNotes();showToast('Nota duplicada.');
   }
   function deleteNote(noteId) {
@@ -1576,8 +1603,8 @@
   function rowToPrivateVault(row) { return normalizePrivateVault({salt:row.salt,verifierIv:row.verifier_iv,verifierCiphertext:row.verifier_ciphertext,ownerId:row.owner_id,updatedAt:row.updated_at}); }
   function privateRowToRow(row) { return {id:row.id,owner_id:session.user.id,iv:row.iv,ciphertext:row.ciphertext,created_at:row.createdAt,updated_at:row.updatedAt,deleted_at:row.deletedAt,planner_version:1}; }
   function rowToPrivateNote(row) { return normalizePrivateRow({id:row.id,iv:row.iv,ciphertext:row.ciphertext,created_at:row.created_at,updated_at:row.updated_at,deleted_at:row.deleted_at}); }
-  function noteToRow(note) { return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,link_url:note.link||'',is_pinned:Boolean(note.isPinned),tag_ids:note.tagIds||[],sort_order:Number(note.sortOrder)||0,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
-  function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
+  function noteToRow(note) { const links=noteLinks(note);return {id:note.id,owner_id:session.user.id,title:note.title,content:note.content,link_url:links[0]||'',links,is_pinned:Boolean(note.isPinned),tag_ids:note.tagIds||[],sort_order:Number(note.sortOrder)||0,planner_version:1,created_at:note.createdAt,updated_at:note.updatedAt,deleted_at:note.deletedAt}; }
+  function rowToNote(row) { return normalizeNote({id:row.id,title:row.title,content:row.content,link_url:row.link_url,links:row.links,is_pinned:row.is_pinned,tag_ids:row.tag_ids,sort_order:row.sort_order,createdAt:row.created_at,updatedAt:row.updated_at || row.created_at,deletedAt:row.deleted_at}); }
   function logToRow(log) { return {id:log.id,owner_id:session.user.id,content:log.isLocked?'🔒 Registro trancado':log.content,tag_id:log.tagId||null,is_locked:Boolean(log.isLocked),planner_version:1,created_at:log.createdAt,updated_at:log.updatedAt,deleted_at:log.deletedAt}; }
   function rowToLog(row) { return normalizeLog({id:row.id,content:row.content,tag_id:row.tag_id,is_locked:row.is_locked,created_at:row.created_at,updated_at:row.updated_at||row.created_at,deleted_at:row.deleted_at}); }
   function financeToRow(entry) { return {id:entry.id,owner_id:session.user.id,title:entry.title,direction:entry.kind,amount:entry.amount,movement_date:entry.date,status:entry.status,series_id:entry.seriesId||null,occurrence_number:entry.occurrenceNumber||null,installment_count:entry.installmentCount||null,recurrence:entry.recurrence||null,planner_version:1,created_at:entry.createdAt,updated_at:entry.updatedAt,deleted_at:entry.deletedAt}; }
@@ -1837,8 +1864,8 @@
   $('noteNewTagToggle').addEventListener('click',()=>{const open=$('noteNewTagRow').hidden;$('noteNewTagRow').hidden=!open;$('noteNewTagToggle').setAttribute('aria-expanded',String(open));if(open)$('noteNewTagName').focus();});
   $('noteNewTagAdd').addEventListener('click',createNoteTag);
   $('noteNewTagName').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();createNoteTag();}});
-  $('noteLinkToggle').addEventListener('click',()=>toggleLinkAttachment('note'));
-  $('noteLinkRemove').addEventListener('click',()=>clearLinkAttachment('note'));
+  $('noteLinkAddBtn').addEventListener('click',()=>{addLinkInput('noteLinksList');noteDialogDirty=true;});
+  $('noteLinksList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-note-link]');if(button){removeLinkInput('noteLinksList',button.dataset.removeNoteLink);noteDialogDirty=true;}});
   $('closeNoteDialog').addEventListener('click',closeNoteDialogSafely);
   $('deleteNoteBtn').addEventListener('click',softDeleteNoteFromDialog);
   $('lockNoteBtn').addEventListener('click',()=>requestPrivateMove($('noteId').value));
@@ -1876,6 +1903,8 @@
   $('privateNoteForm').addEventListener('input',()=>{privateNoteDirty=true;});
   $('privateNoteForm').addEventListener('change',()=>{privateNoteDirty=true;});
   $('privateNoteForm').addEventListener('keydown',event=>{if(event.target.id!=='privateNoteContent')return;const format=noteFormatShortcut(event);if(format){event.preventDefault();applyNoteFormat('privateNoteContent',format);}});
+  $('privateNoteLinkAddBtn').addEventListener('click',()=>{addLinkInput('privateNoteLinksList');privateNoteDirty=true;});
+  $('privateNoteLinksList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-note-link]');if(button){removeLinkInput('privateNoteLinksList',button.dataset.removeNoteLink);privateNoteDirty=true;}});
   $('privateNewNoteBtn').addEventListener('click',()=>openPrivateNoteEditor());
   $('privateLockBtn').addEventListener('click',()=>{void lockPrivateNotes();});
   $('privateCancelEditBtn').addEventListener('click',()=>{privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteForm').hidden=true;$('privateNoteId').value='';});
