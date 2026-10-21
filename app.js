@@ -1205,6 +1205,7 @@
     document.querySelectorAll('[name="recurrenceWeekday"]').forEach(box=>{box.checked=Boolean(recurrence?.weekdays?.includes(Number(box.value)));});updateTaskRecurrenceUI(false);
     $('deleteTaskBtn').classList.toggle('hidden',!task);
     $('taskDialog').showModal();
+    requestAnimationFrame(()=>{ $('taskChecklistList').querySelectorAll('[data-task-checklist-text]').forEach(resizeTaskChecklistTextarea); });
   }
   function closeTaskDialog() { taskDialogDirty=false;if ($('taskDialog').open) $('taskDialog').close(); }
   function savePopupBeforeClose(dialog) {
