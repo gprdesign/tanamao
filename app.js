@@ -1177,9 +1177,15 @@
   function readTaskChecklistDraft(includeEmpty=false) {
     return Array.from($('taskChecklistList').querySelectorAll('[data-task-checklist-row]')).map(row=>({id:String(row.dataset.checklistId||makeId()),text:String(row.querySelector('[data-task-checklist-text]')?.value||'').trim().slice(0,180),completed:Boolean(row.querySelector('[data-task-checklist-done]')?.checked)})).filter(item=>includeEmpty||item.text).slice(0,50);
   }
+  function resizeTaskChecklistTextarea(textarea) {
+    if(!textarea)return;
+    textarea.style.height='auto';
+    textarea.style.height=`${Math.max(40,textarea.scrollHeight)}px`;
+  }
   function renderTaskChecklist(items=[]) {
     const list=$('taskChecklistList'),rows=Array.isArray(items)?items.slice(0,50):[];
-    list.innerHTML=rows.length?rows.map((item,index)=>`<div class="task-checklist-row${item.completed?' is-complete':''}" data-task-checklist-row data-checklist-id="${escapeHTML(item.id||makeId())}"><input type="checkbox" data-task-checklist-done aria-label="Marcar etapa ${index+1} como concluída" ${item.completed?'checked':''}><input type="text" data-task-checklist-text maxlength="180" value="${escapeHTML(item.text||'')}" placeholder="Etapa ${index+1}" aria-label="Texto da etapa ${index+1}"><button class="btn ghost small task-checklist-remove" type="button" data-remove-task-checklist-item aria-label="Remover etapa ${index+1}" title="Remover etapa">×</button></div>`).join(''):'<p class="task-checklist-empty">Nenhuma etapa adicionada.</p>';
+    list.innerHTML=rows.length?rows.map((item,index)=>`<div class="task-checklist-row${item.completed?' is-complete':''}" data-task-checklist-row data-checklist-id="${escapeHTML(item.id||makeId())}"><input type="checkbox" data-task-checklist-done aria-label="Marcar etapa ${index+1} como concluída" ${item.completed?'checked':''}><textarea data-task-checklist-text maxlength="180" rows="1" placeholder="Etapa ${index+1}" aria-label="Texto da etapa ${index+1}">${escapeHTML(item.text||'')}</textarea><button class="btn ghost small task-checklist-remove" type="button" data-remove-task-checklist-item aria-label="Remover etapa ${index+1}" title="Remover etapa">×</button></div>`).join(''):'<p class="task-checklist-empty">Nenhuma etapa adicionada.</p>';
+    list.querySelectorAll('[data-task-checklist-text]').forEach(resizeTaskChecklistTextarea);
   }
   function addTaskChecklistItem() {
     const items=readTaskChecklistDraft(true);
@@ -1913,7 +1919,7 @@
   document.addEventListener('click',event=>{const action=event.target.closest('[data-home-action]');if(action){openHomeAction(action.dataset.homeAction);return;}if(event.target.closest('[data-open-tasks]'))setPage('tasks');});
   $('taskForm').addEventListener('submit',saveTaskFromForm);
   $('taskForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'task'));
-  $('taskForm').addEventListener('input',()=>{taskDialogDirty=true;});
+  $('taskForm').addEventListener('input',event=>{taskDialogDirty=true;if(event.target.matches('[data-task-checklist-text]'))resizeTaskChecklistTextarea(event.target);});
   $('taskForm').addEventListener('change',()=>{taskDialogDirty=true;});
   $('taskChecklistAddBtn').addEventListener('click',addTaskChecklistItem);
   $('taskChecklistList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-task-checklist-item]');if(!button)return;button.closest('[data-task-checklist-row]')?.remove();renderTaskChecklist(readTaskChecklistDraft(true));taskDialogDirty=true;});
