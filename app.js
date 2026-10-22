@@ -938,8 +938,8 @@
     balance.textContent=financeState.accountBalance===null?'Aguardando saldo':financeMoney(financeState.accountBalance);
     const updated=financeState.balanceUpdatedAt?new Date(financeState.balanceUpdatedAt):null,updatedValid=updated&&!Number.isNaN(updated.getTime()),stale=updatedValid&&Date.now()-updated.getTime()>2*60*60*1000;
     balanceUpdated.textContent=updatedValid?`${stale?'Último saldo conhecido':'Consulta'} · ${updated.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'O Radar ainda não recebeu saldo.';
-    if(document.activeElement!==cashboxInput)cashboxInput.value=financeState.cashboxAmount===null?'':String(financeState.cashboxAmount);
-    cashboxValue.textContent=financeState.cashboxAmount===null?'Ainda não informado':financeMoney(financeState.cashboxAmount);
+    if(document.activeElement!==cashboxInput)cashboxInput.value='';
+    cashboxValue.textContent=financeState.cashboxAmount===null?'Total guardado: ainda não informado':`Total guardado: ${financeMoney(financeState.cashboxAmount)}`;
     const next=getNextPlannedIncome();
     if(!next){daily.textContent='—';nextLabel.textContent='Próximo recebimento: cadastre uma entrada prevista no TNM.';return;}
     const nextDate=dateAtNoon(next.date),todayDate=dateAtNoon(todayKey()),rawDays=nextDate&&todayDate?Math.round((nextDate-todayDate)/86400000):0,days=Math.max(1,rawDays);
@@ -947,11 +947,12 @@
     daily.textContent=financeState.accountBalance===null?'—':financeMoney(financeState.accountBalance/days);
   }
   async function saveFinanceCashbox() {
-    const raw=$('financeCashboxInput').value.trim();let amount=null;
-    if(raw!==''){const parsed=Number(raw);if(!Number.isFinite(parsed)||parsed<0){showToast('Informe um valor válido para a Caixinha de Contas.');return;}amount=Math.round(parsed*100)/100;}
-    const now=nowISO();financeState=normalizeFinanceState({...financeState,cashboxAmount:amount,cashboxUpdatedAt:now,updatedAt:now});localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));renderFinanceBudget();renderHouseholdBuckets();
-    if(session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast('Caixinha salva e sincronizada.');}catch{showToast('Salva neste aparelho; sincronização pendente.');}}
-    else showToast('Caixinha salva neste aparelho.');
+    const input=$('financeCashboxInput'),raw=input.value.trim();if(raw===''){showToast('Digite quanto quer adicionar à Caixinha.');return;}
+    const deposit=Number(raw);if(!Number.isFinite(deposit)||deposit<=0){showToast('Informe um valor maior que zero para adicionar.');return;}
+    const current=Math.max(0,Number(financeState.cashboxAmount)||0),total=Math.round((current+deposit)*100)/100,now=nowISO();
+    financeState=normalizeFinanceState({...financeState,cashboxAmount:total,cashboxUpdatedAt:now,updatedAt:now});localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));input.value='';renderFinanceBudget();renderHouseholdBuckets();
+    if(session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast(`${financeMoney(deposit)} adicionados. Total da Caixinha: ${financeMoney(total)}.`);}catch{showToast(`Depósito salvo neste aparelho; sincronização pendente. Total: ${financeMoney(total)}.`);}}
+    else showToast(`${financeMoney(deposit)} adicionados. Total da Caixinha: ${financeMoney(total)}.`);
   }
   function financeDateForOccurrence(anchorDate,occurrenceNumber) {
     const anchor=dateAtNoon(anchorDate);if(!anchor)return anchorDate;
