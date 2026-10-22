@@ -860,6 +860,22 @@
     const today=todayKey();
     return finances.filter(entry=>!entry.deletedAt&&entry.kind==='income'&&entry.status==='planned'&&entry.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'))[0]||null;
   }
+  const HOUSEHOLD_BILLS=[{id:'fut-terca',title:'Fut terça',day:7,amount:110},{id:'aluguel',title:'Aluguel',day:9,amount:583},{id:'s24',title:'Parcela S24 — pai',day:10,amount:207,knownUntil:'2027-07-10'},{id:'internet',title:'Internet',day:15,amount:50},{id:'energia',title:'Energia',day:18,amount:250},{id:'mei',title:'MEI',day:20,amount:87},{id:'condominio',title:'Condomínio',day:27,amount:180}];
+  function renderHouseholdBuckets() {
+    const grid=$('householdBucketsGrid'),summary=$('householdBucketsSummary'),overallFill=$('householdBucketsOverallFill'),overallTrack=$('householdBucketsOverallTrack'),freeLabel=$('householdBucketsFree');if(!grid||!summary||!overallFill||!overallTrack||!freeLabel)return;
+    const s24Task=tasks.find(task=>!task.deletedAt&&String(task.title||'').toLocaleLowerCase('pt-BR').includes('s24')&&task.recurrence?.frequency==='monthly'),fallback=HOUSEHOLD_BILLS.find(bill=>bill.id==='s24').knownUntil,s24Until=isDateKey(s24Task?.recurrence?.until)?s24Task.recurrence.until:fallback,today=todayKey();
+    const bills=HOUSEHOLD_BILLS.filter(bill=>bill.id!=='s24'||today<=s24Until).map(bill=>({...bill,until:bill.id==='s24'?s24Until:null})).sort((a,b)=>a.day-b.day),total=bills.reduce((sum,bill)=>sum+bill.amount,0),cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),covered=Math.min(total,cashbox),overallPercent=total?Math.min(100,covered/total*100):0;
+    summary.textContent=`${financeMoney(covered)} de ${financeMoney(total)} reservados`;
+    overallFill.style.width=`${overallPercent.toFixed(2)}%`;overallTrack.setAttribute('aria-valuenow',String(Math.round(overallPercent)));
+    freeLabel.classList.toggle('covered',cashbox>=total);freeLabel.textContent=cashbox>=total?`Contas de casa cobertas. Livre para outras despesas: ${financeMoney(cashbox-total)}.`:`Faltam ${financeMoney(total-cashbox)} para completar as contas de casa.`;
+    let available=cashbox;
+    grid.innerHTML=bills.map(bill=>{
+      const funded=Math.min(bill.amount,available);available=Math.max(0,available-funded);
+      const missing=Math.max(0,bill.amount-funded),percent=bill.amount?Math.min(100,funded/bill.amount*100):0,complete=missing===0;
+      const dueLabel=`Vence dia ${String(bill.day).padStart(2,'0')}`,untilLabel=bill.until?`Última parcela: ${dateAtNoon(bill.until)?.toLocaleDateString('pt-BR')||bill.until}`:'';
+      return `<article class="household-bucket${complete?' complete':''}"><div class="household-bucket-head"><div><h4>${escapeHTML(bill.title)}</h4><span>${dueLabel}</span></div><strong>${escapeHTML(financeMoney(bill.amount))}</strong></div>${untilLabel?`<small class="household-bucket-until">${escapeHTML(untilLabel)}</small>`:''}<div class="household-bucket-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}" aria-label="${escapeHTML(bill.title)}: ${Math.round(percent)}% reservado"><span style="width:${percent.toFixed(2)}%"></span></div><div class="household-bucket-details"><span>${escapeHTML(financeMoney(funded))} reservados</span><b>${complete?'Completo':`Faltam ${escapeHTML(financeMoney(missing))}`}</b></div></article>`;
+    }).join('');
+  }
   function renderFinanceBudget() {
     const balance=$('financeAccountBalance'),balanceUpdated=$('financeBalanceUpdated'),cashboxInput=$('financeCashboxInput'),cashboxValue=$('financeCashboxValue'),daily=$('financeDailyAllowance'),nextLabel=$('financeNextIncomeLabel');
     if(!balance||!balanceUpdated||!cashboxInput||!cashboxValue||!daily||!nextLabel)return;
@@ -877,7 +893,7 @@
   async function saveFinanceCashbox() {
     const raw=$('financeCashboxInput').value.trim();let amount=null;
     if(raw!==''){const parsed=Number(raw);if(!Number.isFinite(parsed)||parsed<0){showToast('Informe um valor válido para a Caixinha de Contas.');return;}amount=Math.round(parsed*100)/100;}
-    const now=nowISO();financeState=normalizeFinanceState({...financeState,cashboxAmount:amount,cashboxUpdatedAt:now,updatedAt:now});localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));renderFinanceBudget();
+    const now=nowISO();financeState=normalizeFinanceState({...financeState,cashboxAmount:amount,cashboxUpdatedAt:now,updatedAt:now});localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));renderFinanceBudget();renderHouseholdBuckets();
     if(session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast('Caixinha salva e sincronizada.');}catch{showToast('Salva neste aparelho; sincronização pendente.');}}
     else showToast('Caixinha salva neste aparelho.');
   }
@@ -919,7 +935,7 @@
   }
   function renderFinancePage() {
     const monthLabel=$('financeMonthLabel'),summary=$('financeSummary'),list=$('financeEntriesList'),upcomingList=$('financeUpcomingList');if(!monthLabel||!summary||!list||!upcomingList)return;
-    ensureFinanceHorizon();renderFinanceBudget();
+    ensureFinanceHorizon();renderFinanceBudget();renderHouseholdBuckets();
     const monthDate=dateAtNoon(`${financeMonth}-01`)||new Date(),rawMonth=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
     monthLabel.textContent=rawMonth.charAt(0).toLocaleUpperCase('pt-BR')+rawMonth.slice(1);
     const entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===financeMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
