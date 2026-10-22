@@ -1094,6 +1094,43 @@
     body.tnm-fullscreen-mode .view-mode-switch { gap:1px; padding:2px; }
     body.tnm-fullscreen-mode .view-mode-switch button { min-height:26px; padding:3px 5px; font-size:.59rem; }
     #calendarStatus.is-error { color:#ffb0b8; }
+    /* PC now opens directly on Planner; Finance cards use a consistent responsive order. */
+    #homePage { display:none !important; }
+    .main-nav { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+    .nav-indicator { width:calc((100% - 24px)/3); }
+    .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .finance-new-entry-row { width:100%; margin:0 0 10px; }
+    #financeAddBtn { display:flex; width:100%; min-height:46px; justify-content:center; padding:8px 12px; font-size:.84rem; }
+    .finance-list-heading { display:block; margin:4px 0 10px; }
+    .finance-list-heading p { margin:0; }
+    .household-buckets-heading { align-items:flex-start; }
+    #householdBucketsSummary { display:grid; box-sizing:border-box; place-items:center; flex:none; width:min(180px,40vw); min-height:82px; padding:9px; border:1px solid #52627e; border-radius:13px; background:#1d293f; color:#dce6ff; font-size:.76rem; line-height:1.2; text-align:center; white-space:normal; overflow-wrap:anywhere; aspect-ratio:1.45/1; }
+    #householdBucketsSummary.positive { border-color:#4c80c5; background:#183653; color:#d5e6ff; }
+    #householdBucketsSummary.zero { border-color:#aa8733; background:#3b321d; color:#ffe4a0; }
+    .household-bucket-head span,.household-bucket-head > strong,.household-bucket-until { color:#ff8b8b !important; }
+    .household-buckets-free { margin:8px 0 0; padding:10px 12px; border:1px solid #8c6d30; border-radius:12px; background:#392f1e; color:#ffda83; font-size:.76rem; font-weight:850; line-height:1.35; }
+    .household-buckets-free.covered { border-color:#477cb8; background:#16304b; color:#d0e4ff; }
+    .household-buckets-grid { align-items:stretch; }
+    .household-bucket { display:flex; flex-direction:column; min-height:186px; }
+    .household-bucket-toggle { margin-top:auto; }
+    @media(max-width:600px) {
+      .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-areas:"balance daily"; gap:8px; }
+      .finance-budget-card.balance { grid-area:balance; }
+      .finance-budget-card.daily { grid-area:daily; }
+      .finance-budget-card.cashbox { grid-area:auto; }
+      .finance-summary { grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:6px; }
+      .finance-summary-card { padding:8px 5px; }
+      .finance-summary-card.balance { grid-column:auto; }
+      .finance-summary-card span { font-size:.56rem; line-height:1.15; }
+      .finance-summary-card strong { margin:4px 0; font-size:.76rem; }
+      .finance-summary-card small { font-size:.54rem; line-height:1.15; }
+      #financeAddBtn { min-height:44px; padding:7px 8px; font-size:.78rem; }
+      .finance-cashbox-section { margin:10px 0 14px; }
+      .finance-cashbox-section .finance-budget-card { width:100%; }
+      #householdBucketsSummary { width:min(142px,42vw); min-height:76px; padding:7px; font-size:.64rem; }
+      .household-buckets-free { padding:9px 10px; font-size:.7rem; }
+      .household-bucket { min-height:188px; }
+    }
   </style>
   </style>
 </head>
@@ -1105,7 +1142,7 @@
       <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
     </header>
 
-    <section id="homePage" class="page active" aria-label="Início">
+    <section id="homePage" class="page" aria-label="Início">
       <div class="home-heading"><h2 class="home-week-title">MINHA SEMANA</h2><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <section class="home-task-section home-events-section" aria-label="Próximos eventos"><h3>Próximos eventos</h3><div id="homeUpcomingEventsList" class="home-section-list"></div></section>
       <div class="home-stats" aria-label="Atalhos da semana">
@@ -1122,7 +1159,7 @@
       </div>
     </section>
 
-    <section id="tasksPage" class="page" aria-label="Planner de tarefas">
+    <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
       <div class="page-heading"><div><h2>PLANNER</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <div class="planner-section-buttons">
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
@@ -1138,15 +1175,16 @@
       <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <section class="finance-budget-grid" aria-label="Saldo e valor diário">
         <article class="finance-budget-card balance"><span>SALDO ATUAL EM CONTA</span><strong id="financeAccountBalance">Aguardando saldo</strong><small id="financeBalanceUpdated">O Radar ainda não recebeu saldo.</small></article>
-        <article class="finance-budget-card daily"><span>PARA GASTAR POR DIA</span><strong id="financeDailyAllowance">—</strong><small id="financeNextIncomeLabel">Dividido até o próximo dia 05 do mês.</small></article>
-        <article class="finance-budget-card cashbox"><label for="financeCashboxInput">ADICIONAR À CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor a adicionar à Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Adicionar</button></div><small id="financeCashboxValue">Ainda não informado</small></article>
+        <article class="finance-budget-card daily"><span>LIBERADO PRA GASTAR HOJE</span><strong id="financeDailyAllowance">—</strong><small id="financeNextIncomeLabel">Dividido até o próximo dia 05 do mês.</small></article>
       </section>
-      <section class="household-buckets-panel" aria-label="Caixinhas das contas de casa"><div class="household-buckets-heading"><div><h3>CAIXINHAS DAS CONTAS</h3><small id="householdBucketsMonth" class="household-buckets-month"></small></div><strong id="householdBucketsSummary"></strong></div><p class="household-buckets-caption">O saldo da Caixinha é distribuído de cima para baixo, na ordem dos vencimentos.</p><div class="household-buckets-overall-track" id="householdBucketsOverallTrack" role="progressbar" aria-label="Progresso total das contas de casa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="householdBucketsOverallFill"></span></div><div class="household-buckets-grid" id="householdBucketsGrid"></div><p class="household-buckets-free" id="householdBucketsFree" aria-live="polite"></p></section>
-      <p class="finance-formula-note">Saldo atual ÷ dias até a próxima ENTRADA. A Caixinha é informativa e não é subtraída do cálculo.</p>
-      <section class="finance-upcoming" aria-label="Próximos recebimentos nos próximos 30 dias"><div class="finance-upcoming-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span class="finance-upcoming-window">30 DIAS · TOQUE NA LINHA</span></div><div class="finance-upcoming-list" id="financeUpcomingList" aria-live="polite"></div></section>
+      <p class="finance-formula-note">A Caixinha não é descontada do cálculo diário.</p>
       <div class="finance-month-toolbar"><button class="btn ghost small" id="financePrevMonth" type="button" aria-label="Mês anterior">‹</button><strong id="financeMonthLabel" aria-live="polite"></strong><button class="btn ghost small" id="financeNextMonth" type="button" aria-label="Próximo mês">›</button></div>
       <div class="finance-summary" id="financeSummary"></div>
-      <div class="finance-list-heading"><p class="muted">Previsto = ainda não entrou/saiu. Realizado = já recebido/pago.<small>Toque no nome para ver detalhes, editar ou excluir.</small></p><button class="btn primary small" id="financeAddBtn" type="button">＋ Lançamento</button></div>
+      <div class="finance-new-entry-row"><button class="btn primary finance-new-entry" id="financeAddBtn" type="button"><span aria-hidden="true">＋</span> NOVO LANÇAMENTO</button></div>
+      <section class="finance-upcoming" aria-label="Próximos recebimentos nos próximos 30 dias"><div class="finance-upcoming-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span class="finance-upcoming-window">30 DIAS</span></div><div class="finance-upcoming-list" id="financeUpcomingList" aria-live="polite"></div></section>
+      <section class="household-buckets-panel" aria-label="Caixinhas de contas"><div class="household-buckets-heading"><div><h3>CAIXINHAS DE CONTAS</h3><small id="householdBucketsMonth" class="household-buckets-month"></small></div><strong id="householdBucketsSummary"></strong></div><p class="household-buckets-caption">O saldo da Caixinha é distribuído de cima para baixo, na ordem dos vencimentos.</p><div class="household-buckets-overall-track" id="householdBucketsOverallTrack" role="progressbar" aria-label="Progresso total das contas de casa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="householdBucketsOverallFill"></span></div><p class="household-buckets-free" id="householdBucketsFree" aria-live="polite"></p><div class="household-buckets-grid" id="householdBucketsGrid"></div></section>
+      <section class="finance-cashbox-section" aria-label="Adicionar à Caixinha"><article class="finance-budget-card cashbox"><label for="financeCashboxInput">ADICIONAR À CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor a adicionar à Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Adicionar</button></div><small id="financeCashboxValue">Ainda não informado</small></article></section>
+      <div class="finance-list-heading"><p class="muted">Previsto = ainda não entrou/saiu. Realizado = já recebido/pago.<small>Toque no nome para ver detalhes, editar ou excluir.</small></p></div>
       <div class="finance-entry-list" id="financeEntriesList" aria-live="polite"></div>
     </section>
 
@@ -1191,8 +1229,7 @@
 
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
-    <button class="nav-btn" type="button" data-page="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span>RESUMO</span></button>
-    <button class="nav-btn" type="button" data-page="tasks"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span>PLANNER</span></button>
+    <button class="nav-btn" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span>PLANNER</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
     <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
   </nav>
@@ -1214,7 +1251,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=107" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=112',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=108" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=113',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

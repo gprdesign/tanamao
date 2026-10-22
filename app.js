@@ -90,8 +90,7 @@
   const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
   let viewMode=storedViewMode==='pc'||storedViewMode==='mobile'?storedViewMode:(isAndroidDevice||(window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc');
   const storedPage = localStorage.getItem(PAGE_KEY);
-  let currentPage = storedPage==='log'?'finance':['home','tasks','finance','notes','settings'].includes(storedPage)?storedPage:'home';
-  if(viewMode==='mobile'&&currentPage==='home')currentPage='tasks';
+  let currentPage = storedPage==='log'?'finance':['tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
@@ -636,9 +635,9 @@
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
-    if(viewMode==='mobile'&&page==='home')page='tasks';
-    if(!['home','tasks','finance','notes','settings'].includes(page))return;
-    const pageOrder=['home','tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
+    if(page==='home')page='tasks';
+    if(!['tasks','finance','notes','settings'].includes(page))return;
+    const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
     pendingLogLockId='';pendingLogUnlockId='';
     if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
@@ -790,7 +789,7 @@
   function setViewMode(mode) {
     if(!['pc','mobile'].includes(mode)||mode===viewMode)return;
     viewMode=mode;localStorage.setItem(VIEW_MODE_KEY,viewMode);syncViewModeSwitch();
-    if(viewMode==='mobile'&&currentPage==='home'){setPage('tasks');return;}
+    if(currentPage==='home'){setPage('tasks');return;}
     updateNavIndicator(currentPage);if(currentPage==='tasks')renderTasks();
   }
   function syncFullscreenButton() {
@@ -1005,9 +1004,9 @@
     const today=todayKey(),month=householdBillCycleKey(),monthDate=dateAtNoon(`${month}-01`),states=currentHouseholdBillStates(),s24Task=tasks.find(task=>!task.deletedAt&&String(task.title||'').toLocaleLowerCase('pt-BR').includes('s24')&&task.recurrence?.frequency==='monthly'),fallback=HOUSEHOLD_BILLS.find(bill=>bill.id==='s24').knownUntil,s24Until=isDateKey(s24Task?.recurrence?.until)?s24Task.recurrence.until:fallback;
     monthNode.textContent=(monthDate?monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}):month).toLocaleUpperCase('pt-BR');
     const bills=HOUSEHOLD_BILLS.filter(bill=>bill.id!=='s24'||today<=s24Until).map(bill=>({...bill,until:bill.id==='s24'?s24Until:null})).sort((a,b)=>a.day-b.day),unpaid=bills.filter(bill=>!states[bill.id]?.paid),total=unpaid.reduce((sum,bill)=>sum+bill.amount,0),cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),covered=Math.min(total,cashbox),overallPercent=total?Math.min(100,covered/total*100):100;
-    summary.textContent=total?`${financeMoney(covered)} de ${financeMoney(total)} reservados`:'Tudo pago';
+    summary.textContent=total?`${financeMoney(covered)} de ${financeMoney(total)} reservados`:'Tudo pago';summary.classList.toggle('positive',cashbox>0);summary.classList.toggle('zero',cashbox===0);
     overallFill.style.width=`${overallPercent.toFixed(2)}%`;overallTrack.setAttribute('aria-valuenow',String(Math.round(overallPercent)));
-    freeLabel.classList.toggle('covered',cashbox>=total);freeLabel.textContent=!unpaid.length?`Todas as contas estão pagas. Saldo livre na Caixinha: ${financeMoney(cashbox)}.`:cashbox>=total?`Contas pendentes cobertas. Livre para outras despesas: ${financeMoney(cashbox-total)}.`:`Faltam ${financeMoney(total-cashbox)} para completar as contas de casa.`;
+    freeLabel.classList.toggle('covered',cashbox>=total);freeLabel.textContent=!unpaid.length?'Todas as contas de casa estão pagas. Você conseguiu!':`Faltam ${financeMoney(Math.max(0,total-cashbox))} para completar as contas de casa. Você consegue!`;
     let available=cashbox;
     grid.innerHTML=bills.map(bill=>{
       const state=states[bill.id]||{},paid=Boolean(state.paid),deducted=Math.max(0,Number(state.deductedAmount)||0),funded=paid?bill.amount:Math.min(bill.amount,available);
