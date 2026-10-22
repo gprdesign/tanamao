@@ -862,7 +862,7 @@
   function renderTasks() {
     const all=visibleTasks('tasks'), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
     const overdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
-    $('weekLabel').textContent=formatWeekRange(weekStart);
+    $('weekLabel').textContent=formatWeekRange(weekStart);$('todayBtn').textContent=viewMode==='mobile'?'ATUAL':'SEMANA ATUAL';
     const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
     for (let i=0;i<7;i++) {
       const date=addDays(weekStart,i);
