@@ -258,7 +258,7 @@
     .note-tag-choice input { width:16px; min-height:16px; height:16px; margin:0; padding:0; accent-color:var(--accent); }
     .note-tags-preview { display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
     .note-tag-pill { padding:3px 6px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:.6rem; font-weight:750; }
-    #noteContent { min-height:105px; }
+    #noteContent { min-height:280px; }
     .filter-tag-option[aria-pressed="true"] { border-color:var(--accent); background:#243452; }
     .filter-tag-option[aria-pressed="true"]::after { content:'✓'; margin-left:auto; color:var(--accent); font-weight:900; }
     #autoBackupStatus { margin:8px 0 0; font-size:.75rem; }
@@ -589,7 +589,7 @@
     .note-new-tag-row { margin-top:8px; }
     .note-tag-list { display:flex; flex-wrap:wrap; gap:7px; }
     .note-tag-choice { min-height:42px; }
-    #noteContent { min-height:190px; }
+    #noteContent { min-height:280px; }
     #taskContent { min-height:145px; }
     @media(max-width:600px) {
       .home-day-columns { gap:6px; }
@@ -602,7 +602,7 @@
       .week-dock { width:calc(100% - 20px); min-height:50px; bottom:calc(82px + env(safe-area-inset-bottom,0px)); }
       .week-dock #prevWeekBtn,.week-dock #nextWeekBtn { flex:none; width:42px; min-width:42px; height:42px; padding:0; font-size:1.65rem; line-height:1; }
       .week-dock #todayBtn { flex:none; min-width:82px; min-height:42px; padding:6px 13px; font-size:.82rem; }
-      #noteContent { min-height:220px; }
+      #noteContent { min-height:300px; }
       #taskContent { min-height:170px; }
       #noteTitle { margin-top:0; }
       .app-dialog { padding:16px; }
@@ -617,7 +617,7 @@
       .planner-section-buttons { gap:12px; margin-bottom:10px; }
       .week-dock #prevWeekBtn,.week-dock #nextWeekBtn { flex:none; width:48px; min-width:48px; height:48px; padding:0; font-size:1.8rem; line-height:1; }
       .week-dock #todayBtn { min-width:96px; min-height:48px; font-size:.9rem; }
-      #noteContent { min-height:230px; }
+      #noteContent { min-height:320px; }
       #taskContent { min-height:180px; }
     }
     @media(max-width:380px) {
@@ -1062,7 +1062,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=96" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=94',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=97" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=95',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
