@@ -3,6 +3,7 @@
 
   const CLOUD = window.NMM_SUPABASE || {};
   const CLOUD_READY = Boolean(CLOUD.url && CLOUD.publishableKey);
+  const GOOGLE_CALENDAR_CLIENT_ID = String(window.TNM_GOOGLE_CALENDAR_CLIENT_ID||'').trim();
   const TASKS_KEY = 'tnm.weekly.tasks.v1';
   const NOTES_KEY = 'tnm.weekly.notes.v1';
   const LOGS_KEY = 'tnm.weekly.logs.v1';
@@ -25,6 +26,7 @@
   const LAST_TAG_KEY = 'tnm.weekly.lastTag.v1';
   const AUTO_BACKUP_KEY = 'tnm.weekly.autobackup.v1';
   const CALENDAR_EVENTS_KEY = 'tnm.weekly.calendarEvents.v1';
+  const CALENDAR_SYNC_META_KEY = 'tnm.weekly.calendarSync.v1';
   const AUTO_BACKUP_EVERY = 5*60*1000;
   const WEEK_KEY = 'tnm.weekly.week.v1';
   const PAGE_KEY = 'tnm.weekly.page.v1';
@@ -74,6 +76,14 @@
   let tags = [];
   let calendarEvents = readStored(CALENDAR_EVENTS_KEY,[]);
   if(!Array.isArray(calendarEvents))calendarEvents=[];
+  let availableGoogleCalendars=[];
+  let googleCalendarAccessToken='';
+  let googleCalendarAccessTokenExpiresAt=0;
+  let calendarSyncInProgress=false;
+  let calendarStatusMessage='';
+  let calendarStatusFailed=false;
+  let calendarLastSyncAt=String(readStored(CALENDAR_SYNC_META_KEY,'')||'');
+  let calendarAutoSyncTimer=null;
   let session = readStored(SESSION_KEY,null);
   const storedPage = localStorage.getItem(PAGE_KEY);
   let currentPage = storedPage==='log'?'finance':['home','tasks','finance','notes','settings'].includes(storedPage)?storedPage:'home';
@@ -186,6 +196,90 @@
   function getUpcomingCalendarEvents(){const today=todayKey(),now=Date.now();return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>event.allDay?event.startAt>=today:Date.parse(event.startAt)>=now).sort(calendarEventOrder);}
   function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderHomeEvents();}
   window.TNMCalendarBridge=Object.freeze({replaceEvents:setCalendarEvents});
+  function calendarTokenIsValid(){return Boolean(googleCalendarAccessToken&&Date.now()<googleCalendarAccessTokenExpiresAt-60000);}
+  function setCalendarStatus(message,failed=false){calendarStatusMessage=String(message||'');calendarStatusFailed=Boolean(failed);const node=$('calendarStatus');if(node){node.textContent=calendarStatusMessage;node.classList.toggle('is-error',calendarStatusFailed);}}
+  function renderCalendarFilters(){
+    const list=$('calendarFilters');if(!list)return;
+    if(!availableGoogleCalendars.length){list.innerHTML=`<p class="muted">${GOOGLE_CALENDAR_CLIENT_ID?'Conecte o Google Calendar para carregar as agendas.':'A configuração do Google Calendar está incompleta.'}</p>`;return;}
+    const selected=new Set(userSettings.calendarIds);
+    list.innerHTML=availableGoogleCalendars.map(calendar=>{
+      const meta=calendar.primary?'Agenda principal':calendar.accessRole==='owner'?'Sua agenda':calendar.accessRole==='reader'?'Compartilhada · leitura':'Compartilhada · edição';
+      return `<label class="calendar-filter-row"><input type="checkbox" data-calendar-id="${escapeHTML(calendar.id)}"${selected.has(calendar.id)?' checked':''}><span><span class="calendar-filter-name">${escapeHTML(calendar.summary)}</span><small class="calendar-filter-meta">${escapeHTML(meta)}</small></span></label>`;
+    }).join('');
+  }
+  function renderCalendarSyncUI(){
+    const connect=$('calendarConnectBtn'),sync=$('calendarSyncBtn');if(!connect||!sync)return;
+    if(!calendarStatusMessage){
+      const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null,valid=last&&!Number.isNaN(last.getTime());
+      setCalendarStatus(!GOOGLE_CALENDAR_CLIENT_ID?'Falta configurar a conexão OAuth do Google Calendar.':valid?`Última sincronização: ${last.toLocaleString('pt-BR')}. Toque em Sincronizar para atualizar.`:'Conecte sua conta para carregar os calendários.');
+    }
+    connect.disabled=!GOOGLE_CALENDAR_CLIENT_ID;connect.textContent=calendarTokenIsValid()?'Atualizar agendas':'Conectar Google Calendar';
+    sync.disabled=!GOOGLE_CALENDAR_CLIENT_ID||!userSettings.calendarIds.length||calendarSyncInProgress;sync.textContent=calendarSyncInProgress?'Sincronizando…':'Sincronizar agora';
+    renderCalendarFilters();
+  }
+  function requestGoogleCalendarAccessToken(){
+    if(!GOOGLE_CALENDAR_CLIENT_ID)return Promise.reject(new Error('Client ID do Google Calendar não configurado.'));
+    const oauth=window.google?.accounts?.oauth2;if(!oauth)return Promise.reject(new Error('O serviço de autorização do Google não carregou. Atualize a página e tente novamente.'));
+    return new Promise((resolve,reject)=>{
+      const client=oauth.initTokenClient({client_id:GOOGLE_CALENDAR_CLIENT_ID,scope:'https://www.googleapis.com/auth/calendar.readonly',callback:response=>{
+        if(response?.error||!response?.access_token){googleCalendarAccessToken='';googleCalendarAccessTokenExpiresAt=0;reject(new Error(response?.error_description||response?.error||'Autorização do Google não concluída.'));return;}
+        googleCalendarAccessToken=String(response.access_token);googleCalendarAccessTokenExpiresAt=Date.now()+Math.max(60,Number(response.expires_in)||3600)*1000;resolve(googleCalendarAccessToken);
+      },error_callback:error=>reject(new Error(error?.message||'A janela de autorização foi fechada.'))});
+      try{client.requestAccessToken({prompt:''});}catch(error){reject(error);}
+    });
+  }
+  async function googleCalendarApi(url,token){
+    const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`,Accept:'application/json'}});let data={};try{data=await response.json();}catch{}
+    if(!response.ok){if(response.status===401){googleCalendarAccessToken='';googleCalendarAccessTokenExpiresAt=0;}throw new Error(data.error?.message||`Google Calendar respondeu ${response.status}.`);}
+    return data;
+  }
+  async function loadGoogleCalendars(token){
+    const data=await googleCalendarApi('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250',token);
+    availableGoogleCalendars=(Array.isArray(data.items)?data.items:[]).map(item=>({id:String(item.id||''),summary:String(item.summary||item.id||'Agenda'),primary:Boolean(item.primary),accessRole:String(item.accessRole||'reader')})).filter(item=>item.id).sort((a,b)=>a.primary?-1:b.primary?1:a.summary.localeCompare(b.summary,'pt-BR'));
+    const ids=new Set(availableGoogleCalendars.map(item=>item.id));
+    if(!userSettings.calendarIdsConfigured){const primary=availableGoogleCalendars.find(item=>item.primary)||availableGoogleCalendars[0];userSettings.calendarIds=primary?[primary.id]:[];userSettings.calendarIdsConfigured=true;saveUserSettings();}
+    else {const kept=userSettings.calendarIds.filter(id=>ids.has(id));if(kept.length!==userSettings.calendarIds.length){userSettings.calendarIds=kept;saveUserSettings();}}
+    renderCalendarFilters();return availableGoogleCalendars;
+  }
+  async function fetchGoogleCalendarEvents(token,calendar){
+    const base=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events`,params=new URLSearchParams({timeMin:new Date().toISOString(),timeMax:new Date(Date.now()+30*86400000).toISOString(),singleEvents:'true',orderBy:'startTime',maxResults:'2500',showDeleted:'false'}),events=[];
+    while(true){const data=await googleCalendarApi(`${base}?${params.toString()}`,token);for(const event of Array.isArray(data.items)?data.items:[])events.push({...event,id:`${calendar.id}:${event.id||makeId()}`,calendarId:calendar.id,summary:event.summary||calendar.summary});if(!data.nextPageToken)break;params.set('pageToken',data.nextPageToken);}
+    return events;
+  }
+  async function syncGoogleCalendar(interactive=false){
+    if(calendarSyncInProgress)return;
+    if(!GOOGLE_CALENDAR_CLIENT_ID){setCalendarStatus('Falta configurar a conexão OAuth do Google Calendar.',true);return;}
+    if(!userSettings.calendarIds.length){setCalendarStatus(availableGoogleCalendars.length?'Marque pelo menos uma agenda para sincronizar.':'Conecte o Google Calendar para carregar as agendas.');renderCalendarSyncUI();return;}
+    calendarSyncInProgress=true;renderCalendarSyncUI();
+    try{
+      let token=calendarTokenIsValid()?googleCalendarAccessToken:'';
+      if(!token){if(!interactive){setCalendarStatus('Autorização expirada. Toque em “Sincronizar agora” para reconectar.');return;}token=await requestGoogleCalendarAccessToken();}
+      if(!availableGoogleCalendars.length)await loadGoogleCalendars(token);
+      const selected=userSettings.calendarIds.map(id=>availableGoogleCalendars.find(calendar=>calendar.id===id)).filter(Boolean);
+      if(!selected.length){setCalendarStatus('Nenhuma agenda selecionada para sincronizar.');return;}
+      const batches=await Promise.all(selected.map(calendar=>fetchGoogleCalendarEvents(token,calendar))),events=batches.flat();
+      setCalendarEvents(events);calendarLastSyncAt=nowISO();localStorage.setItem(CALENDAR_SYNC_META_KEY,JSON.stringify(calendarLastSyncAt));
+      setCalendarStatus(`Sincronizado às ${new Date(calendarLastSyncAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${events.length} eventos nos próximos 30 dias.`);
+    }catch(error){setCalendarStatus(`Não consegui sincronizar: ${error?.message||'erro desconhecido'}`,true);}
+    finally{calendarSyncInProgress=false;renderCalendarSyncUI();}
+  }
+  async function connectGoogleCalendar(){
+    if(!GOOGLE_CALENDAR_CLIENT_ID){setCalendarStatus('Falta configurar a conexão OAuth do Google Calendar.',true);return;}
+    setCalendarStatus('Aguardando autorização do Google Calendar…');
+    try{const token=await requestGoogleCalendarAccessToken();await loadGoogleCalendars(token);if(!userSettings.calendarIds.length){setCalendarStatus('Agendas carregadas. Marque quais quer sincronizar.');return;}await syncGoogleCalendar(false);}
+    catch(error){setCalendarStatus(`Não consegui conectar: ${error?.message||'erro desconhecido'}`,true);}
+    finally{renderCalendarSyncUI();}
+  }
+  function handleCalendarFilterChange(){
+    const list=$('calendarFilters');if(!list)return;
+    userSettings.calendarIds=Array.from(list.querySelectorAll('input[data-calendar-id]:checked')).map(input=>input.dataset.calendarId).filter(Boolean);userSettings.calendarIdsConfigured=true;saveUserSettings();renderCalendarFilters();
+    if(!userSettings.calendarIds.length){setCalendarEvents([]);setCalendarStatus('Nenhuma agenda selecionada; os eventos foram removidos da Home.');renderCalendarSyncUI();return;}
+    void syncGoogleCalendar(true);
+  }
+  function startCalendarAutoSync(){
+    if(calendarAutoSyncTimer)return;
+    calendarAutoSyncTimer=window.setInterval(()=>{if(document.visibilityState!=='visible'||!userSettings.calendarIds.length||calendarSyncInProgress)return;if(calendarTokenIsValid())void syncGoogleCalendar(false);else if(googleCalendarAccessToken)setCalendarStatus('A autorização expirou. Toque em Sincronizar para reconectar.');},15*60*1000);
+  }
   function normalizeTag(value) {
     if (!value || typeof value !== 'object' || !String(value.id || '').trim() || !String(value.name || '').trim()) return null;
     return {id:String(value.id),name:String(value.name).trim().replace(/\s+/g,' ').slice(0,32),color:validTagColor(value.color)?String(value.color).toLowerCase():'#8bafff',createdAt:String(value.createdAt || nowISO()),updatedAt:String(value.updatedAt || value.createdAt || nowISO()),deletedAt:value.deletedAt?String(value.deletedAt):null};
@@ -285,7 +379,8 @@
       }
       householdBillCycles[month]=normalized;
     }
-    return {summaryTimes:times.sort(),calendarIds:Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[],overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    const calendarIds=Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[];
+    return {summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -408,7 +503,7 @@
   function removeSummaryTime(time) {
     userSettings.summaryTimes=userSettings.summaryTimes.filter(item=>item!==time);saveUserSettings();showToast(userSettings.summaryTimes.length?'Horário removido.':'Resumo diário desativado.');
   }
-  function renderSettings() { renderSummarySettings(); }
+  function renderSettings() { renderSummarySettings(); renderCalendarSyncUI(); }
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }
@@ -2126,6 +2221,9 @@
   $('financeForm').addEventListener('input',()=>{financeDialogDirty=true;});
   $('financeForm').addEventListener('change',()=>{financeDialogDirty=true;});
   $('financeCashboxSaveBtn').addEventListener('click',()=>{void saveFinanceCashbox();});
+  $('calendarConnectBtn').addEventListener('click',()=>{void connectGoogleCalendar();});
+  $('calendarSyncBtn').addEventListener('click',()=>{void syncGoogleCalendar(true);});
+  $('calendarFilters').addEventListener('change',handleCalendarFilterChange);
   $('financeAddBtn').addEventListener('click',()=>openFinanceDialog());
   $('financePrevMonth').addEventListener('click',()=>shiftFinanceMonth(-1));
   $('financeNextMonth').addEventListener('click',()=>shiftFinanceMonth(1));
@@ -2159,7 +2257,7 @@
   $('privateLockBtn').addEventListener('click',()=>{void lockPrivateNotes();});
   $('privateCancelEditBtn').addEventListener('click',()=>{privateNoteDirty=false;$('privateNoteForm').reset();$('privateNoteForm').hidden=true;$('privateNoteId').value='';});
   $('privateNotesList').addEventListener('click',handlePrivateNotesClick);
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&privateNotesUnlocked)privateHiddenAt=Date.now();else if(privateHiddenAt&&Date.now()-privateHiddenAt>=5*60*1000)lockPrivateNotes();});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&privateNotesUnlocked)privateHiddenAt=Date.now();else if(privateHiddenAt&&Date.now()-privateHiddenAt>=5*60*1000)lockPrivateNotes();if(document.visibilityState==='visible'&&calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);});
 
   $('exportBtn').addEventListener('click',exportBackup);
   document.addEventListener('dragend',()=>{handleDragEnd();noteDragId='';clearDropStyles();});
@@ -2199,7 +2297,7 @@
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&floatingActionMenu){event.preventDefault();event.stopPropagation();closeFloatingActionMenu();}},true);
   document.addEventListener('scroll',()=>{if(floatingActionMenu)closeFloatingActionMenu();},true);
   window.addEventListener('resize',()=>updateNavIndicator());
-  window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud(); });
+  window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false); });
 
-  applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); void initializeAuth();
+  applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
 })();

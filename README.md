@@ -6,7 +6,7 @@ Planner semanal pessoal, minimalista, inspirado no Weeklo.
 
 - Planner semanal em duas colunas: ATRASADO, SEG, TER, QUA, QUI, SEX, SÁB e DOM.
 - Home “MINHA SEMANA” com Próximos eventos, atalhos, Atrasado e as listas Hoje/Amanhã lado a lado; tags abaixo dos títulos.
-- Adaptador local para próximos eventos, pronto para receber os eventos do Google Calendar futuramente.
+- Sincronização Google Calendar somente leitura: agendas selecionadas, próximos 30 dias, exibidos na Home e atualizados a cada 15 min enquanto a autorização estiver válida.
 - Planner semanal mostra todas as tarefas em cada dia; arraste no mouse ou use o puxador de toque para reordenar e mudar a data.
 - Planejar e Concluídas ficam lado a lado e abrem painéis exclusivos na própria tela, em grades de 3×2 com botão MAIS.
 - Tarefas mantêm conteúdo, link, checklist de etapas e conclusão no armazenamento local e na sincronização.
