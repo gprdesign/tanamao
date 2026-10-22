@@ -14,6 +14,7 @@
   const FINANCE_MONTH_KEY = 'tnm.weekly.financeMonth.v1';
   const LOG_RANGE_KEY = 'tnm.weekly.logsRange.v1';
   const ZOOM_KEY = 'tnm.weekly.zoom.v1';
+  const VIEW_MODE_KEY = 'tnm.weekly.viewMode.v1';
   const USER_SETTINGS_KEY = 'tnm.weekly.userSettings.v1';
   const PRIVATE_VAULT_KEY = 'tnm.weekly.privateVault.v1';
   const PRIVATE_ROWS_KEY = 'tnm.weekly.privateRows.v1';
@@ -85,8 +86,12 @@
   let calendarLastSyncAt=String(readStored(CALENDAR_SYNC_META_KEY,'')||'');
   let calendarAutoSyncTimer=null;
   let session = readStored(SESSION_KEY,null);
+  const storedViewMode=localStorage.getItem(VIEW_MODE_KEY);
+  const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
+  let viewMode=storedViewMode==='pc'||storedViewMode==='mobile'?storedViewMode:(isAndroidDevice||(window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc');
   const storedPage = localStorage.getItem(PAGE_KEY);
   let currentPage = storedPage==='log'?'finance':['home','tasks','finance','notes','settings'].includes(storedPage)?storedPage:'home';
+  if(viewMode==='mobile'&&currentPage==='home')currentPage='tasks';
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
@@ -107,7 +112,7 @@
   let taskDialogDirty = false;
   let noteDialogDirty = false;
   let financeDialogDirty = false;
-  let appFullscreenMode = /Android/i.test(navigator.userAgent||'');
+  let appFullscreenMode = isAndroidDevice;
   let lastTaskCtrlEnterAt = 0;
   let lastNoteCtrlEnterAt = 0;
   let authMessage = '';
@@ -193,8 +198,10 @@
     return {id:String(value.id||`${title}:${startAt}`),title,startAt,allDay,location:String(value.location||'').trim().slice(0,180),url:normalizeLink(value.htmlLink||value.url||'')};
   }
   function calendarEventOrder(a,b){return String(a.startAt).localeCompare(String(b.startAt))||String(a.title).localeCompare(String(b.title),'pt-BR');}
+  function getCalendarEventsForDate(date){return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>(event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt)))===date).sort(calendarEventOrder);}
+  function calendarEventTimeLabel(event){if(event.allDay)return '';const date=new Date(event.startAt);return Number.isFinite(date.getTime())?date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';}
   function getUpcomingCalendarEvents(){const today=todayKey(),now=Date.now();return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>event.allDay?event.startAt>=today:Date.parse(event.startAt)>=now).sort(calendarEventOrder);}
-  function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderHomeEvents();}
+  function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderHomeEvents();if(currentPage==='tasks')renderTasks();}
   window.TNMCalendarBridge=Object.freeze({replaceEvents:setCalendarEvents});
   function calendarTokenIsValid(){return Boolean(googleCalendarAccessToken&&Date.now()<googleCalendarAccessTokenExpiresAt-60000);}
   function setCalendarStatus(message,failed=false){calendarStatusMessage=String(message||'');calendarStatusFailed=Boolean(failed);const node=$('calendarStatus');if(node){node.textContent=calendarStatusMessage;node.classList.toggle('is-error',calendarStatusFailed);}}
@@ -242,7 +249,7 @@
     renderCalendarFilters();return availableGoogleCalendars;
   }
   async function fetchGoogleCalendarEvents(token,calendar){
-    const base=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events`,params=new URLSearchParams({timeMin:new Date().toISOString(),timeMax:new Date(Date.now()+30*86400000).toISOString(),singleEvents:'true',orderBy:'startTime',maxResults:'2500',showDeleted:'false'}),events=[];
+    const base=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events`,weekBeginning=new Date(`${startOfWeek(todayKey())}T00:00:00`),params=new URLSearchParams({timeMin:weekBeginning.toISOString(),timeMax:new Date(Date.now()+30*86400000).toISOString(),singleEvents:'true',orderBy:'startTime',maxResults:'2500',showDeleted:'false'}),events=[];
     while(true){const data=await googleCalendarApi(`${base}?${params.toString()}`,token);for(const event of Array.isArray(data.items)?data.items:[])events.push({...event,id:`${calendar.id}:${event.id||makeId()}`,calendarId:calendar.id,summary:event.summary||calendar.summary});if(!data.nextPageToken)break;params.set('pageToken',data.nextPageToken);}
     return events;
   }
@@ -259,7 +266,7 @@
       if(!selected.length){setCalendarStatus('Nenhuma agenda selecionada para sincronizar.');return;}
       const batches=await Promise.all(selected.map(calendar=>fetchGoogleCalendarEvents(token,calendar))),events=batches.flat();
       setCalendarEvents(events);calendarLastSyncAt=nowISO();localStorage.setItem(CALENDAR_SYNC_META_KEY,JSON.stringify(calendarLastSyncAt));
-      setCalendarStatus(`Sincronizado às ${new Date(calendarLastSyncAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${events.length} eventos nos próximos 30 dias.`);
+      setCalendarStatus(`Sincronizado às ${new Date(calendarLastSyncAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${getUpcomingCalendarEvents().length} eventos nos próximos 30 dias.`);
     }catch(error){setCalendarStatus(`Não consegui sincronizar: ${error?.message||'erro desconhecido'}`,true);}
     finally{calendarSyncInProgress=false;renderCalendarSyncUI();}
   }
@@ -629,6 +636,7 @@
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
+    if(viewMode==='mobile'&&page==='home')page='tasks';
     if(!['home','tasks','finance','notes','settings'].includes(page))return;
     const pageOrder=['home','tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
@@ -774,6 +782,17 @@
     }
     dialog.close();
   }
+  function syncViewModeSwitch() {
+    document.body.dataset.viewMode=viewMode;document.body.classList.toggle('view-mobile',viewMode==='mobile');
+    $('viewModePcBtn')?.setAttribute('aria-pressed',String(viewMode==='pc'));
+    $('viewModeMobileBtn')?.setAttribute('aria-pressed',String(viewMode==='mobile'));
+  }
+  function setViewMode(mode) {
+    if(!['pc','mobile'].includes(mode)||mode===viewMode)return;
+    viewMode=mode;localStorage.setItem(VIEW_MODE_KEY,viewMode);syncViewModeSwitch();
+    if(viewMode==='mobile'&&currentPage==='home'){setPage('tasks');return;}
+    updateNavIndicator(currentPage);if(currentPage==='tasks')renderTasks();
+  }
   function syncFullscreenButton() {
     const button=$('fullscreenToggleBtn');if(!button)return;
     document.body.classList.toggle('tnm-fullscreen-mode',appFullscreenMode);
@@ -847,16 +866,18 @@
     const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
     for (let i=0;i<7;i++) {
       const date=addDays(weekStart,i);
-      cells.push({kind:'day',title:DAY_LABELS[i],date,tasks:open.filter(task=>task.executionDate===date).sort(taskOrder)});
+      cells.push({kind:'day',title:DAY_LABELS[i],date,tasks:open.filter(task=>task.executionDate===date).sort(taskOrder),calendarEvents:getCalendarEventsForDate(date)});
     }
     $('weekGrid').innerHTML=cells.map(cell=>{
       const dayKey=cell.kind==='overdue'?'overdue':cell.date;
       const completed=all.filter(task=>task.completedAt&&(cell.kind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:task.executionDate===cell.date));
       const label=cell.kind==='overdue'?'ATRASADO':cell.title, dateText=cell.date?formatDate(cell.date,{day:'2-digit',month:'2-digit'}):'';
       const cards=cell.tasks.map(task=>taskCard(task,{compact:true,late:Boolean(task.executionDate&&task.executionDate<todayKey()),linked:cell.kind==='overdue',draggable:true})).join('');
+      const calendarEvents=cell.calendarEvents||[],eventLines=calendarEvents.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
+      const calendarBlock=eventLines?`<div class="planner-calendar-events" aria-label="Eventos do Google Calendar">${eventLines}</div><div class="planner-calendar-task-divider" role="separator" aria-label="Tarefas"></div>`:'';
       const empty=cell.kind==='overdue'?'Nada atrasado':'Sem tarefas';
       const extra=completed.length?`${completed.length} concluídas`:'';
-      return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div><div class="day-task-list" data-day-drop="${cell.date||''}">${cards||`<div class="day-empty">${empty}</div>`}</div>${extra?`<div class="day-extra-count">${escapeHTML(extra)}</div>`:''}</section>`;
+      return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div><div class="day-task-list" data-day-drop="${cell.date||''}">${calendarBlock}${cards||`<div class="day-empty">${empty}</div>`}</div>${extra?`<div class="day-extra-count">${escapeHTML(extra)}</div>`:''}</section>`;
     }).join('');
     const unplanned=open.filter(task=>!task.executionDate).sort(taskOrder), completed=all.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     $('unplannedCount').textContent=String(unplanned.length); $('completedCount').textContent=String(completed.length);
@@ -2230,6 +2251,8 @@
   $('financeRecurrence').addEventListener('change',updateFinanceRecurrenceUI);
   $('closeFinanceDialog').addEventListener('click',()=>$('financeDialog').close());
   $('fullscreenToggleBtn').addEventListener('click',toggleAppFullscreen);
+  $('viewModePcBtn').addEventListener('click',()=>setViewMode('pc'));
+  $('viewModeMobileBtn').addEventListener('click',()=>setViewMode('mobile'));
   $('financeDeleteBtn').addEventListener('click',()=>deleteFinanceEntry($('financeId').value));
   $('financeStopSeriesBtn').addEventListener('click',()=>stopFinanceSeries($('financeId').value));
   $('addSummaryTimeBtn').addEventListener('click',addSummaryTime);
@@ -2291,5 +2314,5 @@
   window.addEventListener('resize',()=>updateNavIndicator());
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false); });
 
-  syncFullscreenButton();applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
+  syncViewModeSwitch();syncFullscreenButton();applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
 })();

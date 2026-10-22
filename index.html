@@ -1053,16 +1053,36 @@
     body.tnm-fullscreen-mode .sub-dock { bottom:calc(70px + env(safe-area-inset-bottom,0px)); }
     body.tnm-fullscreen-mode .fullscreen-toggle { right:calc(72px + env(safe-area-inset-right,0px)); bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
     body.tnm-fullscreen-mode[data-page="tasks"] .fullscreen-toggle,body.tnm-fullscreen-mode[data-page="notes"] .fullscreen-toggle { bottom:calc(148px + env(safe-area-inset-bottom,0px)); }
+    .planner-calendar-events { display:grid; gap:3px; min-width:0; padding:1px 0; }
+    .planner-calendar-event { min-width:0; color:#d6e0f1; font-size:.68rem; font-weight:650; line-height:1.25; overflow-wrap:anywhere; }
+    .planner-calendar-task-divider { width:100%; height:1px; margin:2px 0; background:linear-gradient(90deg,#53627e99,#53627e33); }
+    .view-mode-switch { display:inline-flex; flex:none; align-items:center; gap:2px; padding:3px; border:1px solid #394663; border-radius:10px; background:rgba(17,24,39,.9); }
+    .view-mode-switch button { min-height:30px; padding:4px 7px; border:0; border-radius:7px; background:transparent; color:var(--muted); font-size:.67rem; font-weight:850; }
+    .view-mode-switch button[aria-pressed="true"] { background:#789cf0; color:#10172a; }
+    body.view-mobile .main-nav { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    body.view-mobile .nav-indicator { width:calc((100% - 24px)/3); }
+    body.view-mobile .nav-btn[data-page="home"] { display:none !important; }
+    body.view-mobile #homePage.active { display:none !important; }
+    body.view-mobile .planner-income-panel { display:none !important; }
+    body.view-mobile[data-page="tasks"] .week-grid { grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-auto-rows:max-content; align-content:start; gap:8px; overflow-y:auto; overscroll-behavior:contain; }
+    body.view-mobile[data-page="tasks"] .day-column { min-height:0; padding:9px 10px; overflow:visible; }
+    body.view-mobile[data-page="tasks"] .day-task-list { flex:none; min-height:0; max-height:none; overflow:visible; gap:6px; }
+    body.view-mobile[data-page="tasks"].planner-expanded .week-grid { flex:none; min-height:0; grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-auto-rows:max-content; overflow:visible; }
+    body.view-mobile[data-page="notes"] #notesPage,body.view-mobile[data-page="notes"] #notesDock,body.view-mobile #noteDialog { zoom:.85; }
+    body.view-mobile .header-actions { gap:4px; }
+    body.view-mobile .header-actions .btn { min-height:30px; padding:4px 5px; font-size:.66rem; }
+    body.tnm-fullscreen-mode .view-mode-switch { gap:1px; padding:2px; }
+    body.tnm-fullscreen-mode .view-mode-switch button { min-height:26px; padding:3px 5px; font-size:.59rem; }
     #calendarStatus.is-error { color:#ffb0b8; }
   </style>
   </style>
 </head>
 <body>
-  <script>if(/Android/i.test(navigator.userAgent||''))document.body.classList.add('tnm-fullscreen-mode');</script>
+  <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');if(android)document.body.classList.add('tnm-fullscreen-mode');})();</script>
   <main class="wrap">
     <header class="app-header">
       <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div><h1>Tá na mão!</h1><p>Seu planner semanal</p></div></div>
-      <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
+      <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
     </header>
 
     <section id="homePage" class="page active" aria-label="Início">
@@ -1174,7 +1194,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=104" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=104',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=105" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=105',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
