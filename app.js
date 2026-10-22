@@ -96,6 +96,8 @@
   let authBusy = false;
   let taskDialogDirty = false;
   let noteDialogDirty = false;
+  let financeDialogDirty = false;
+  let appFullscreenMode = false;
   let lastTaskCtrlEnterAt = 0;
   let lastNoteCtrlEnterAt = 0;
   let authMessage = '';
@@ -645,9 +647,51 @@
     }
     persistPageFilters();renderFilterButton();renderAll();renderFilterTagList();
   }
+  function pushDialogHistory(dialog) {
+    const previousState=history.state&&typeof history.state==='object'?history.state:{};
+    const token=makeId();
+    history.pushState({...previousState,tnmDialogToken:token},'',location.href);
+    dialog.dataset.historyToken=token;
+  }
+  function showAppDialog(dialog,reuseHistoryToken='') {
+    if(!dialog||dialog.open)return;
+    if(reuseHistoryToken)dialog.dataset.historyToken=reuseHistoryToken;else pushDialogHistory(dialog);
+    dialog.showModal();
+  }
+  function handleDialogBack(dialog) {
+    if(!dialog?.open)return;
+    closeFloatingActionMenu();
+    if(dialog.id==='taskDialog'){closeTaskDialogSafely();return;}
+    if(dialog.id==='noteDialog'){closeNoteDialogSafely();return;}
+    if(dialog.id==='financeDialog'){
+      if(financeDialogDirty){const saved=saveFinanceFromForm({preventDefault(){}});if(!saved&&dialog.open)return;}
+      if(dialog.open)dialog.close();
+      return;
+    }
+    dialog.close();
+  }
+  function syncFullscreenButton() {
+    const button=$('fullscreenToggleBtn');if(!button)return;
+    document.body.classList.toggle('tnm-fullscreen-mode',appFullscreenMode);
+    button.setAttribute('aria-pressed',String(appFullscreenMode));
+    button.setAttribute('aria-label',appFullscreenMode?'Sair da tela cheia':'Ativar tela cheia');
+    button.title=appFullscreenMode?'Sair da tela cheia':'Tela cheia';
+    button.textContent=appFullscreenMode?'⤢':'⛶';
+  }
+  async function toggleAppFullscreen() {
+    if(appFullscreenMode){
+      if(document.fullscreenElement&&document.exitFullscreen){try{await document.exitFullscreen();}catch{showToast('O navegador não conseguiu sair da tela cheia do sistema.');return;}}
+      appFullscreenMode=false;syncFullscreenButton();return;
+    }
+    appFullscreenMode=true;syncFullscreenButton();
+    const root=document.documentElement;
+    if(typeof root.requestFullscreen!=='function'){showToast('O cabeçalho e a dock foram ocultados, mas este navegador não permite tela cheia do sistema.');return;}
+    try{await root.requestFullscreen({navigationUI:'hide'});}
+    catch{showToast('O cabeçalho e a dock foram ocultados, mas o navegador não liberou tela cheia do sistema.');}
+  }
   function openFilterDialog() {
     $('tagMessage').textContent=''; $('newTagName').value='';
-    renderFilterTagList(); $('filterDialog').showModal();
+    renderFilterTagList(); showAppDialog($('filterDialog'));
   }
   function hslToHex(h,s=74,l=62) {
     s/=100; l/=100;
@@ -681,7 +725,7 @@
     list.innerHTML=active.length?active.map(tag=>`<form class="tag-manager-row" data-edit-tag="${escapeHTML(tag.id)}"><input type="color" name="color" value="${escapeHTML(tag.color)}" aria-label="Cor da tag ${escapeHTML(tag.name)}"><input type="text" name="name" maxlength="32" value="${escapeHTML(tag.name)}" aria-label="Nome da tag ${escapeHTML(tag.name)}" ${tag.id===FINANCE_ENTRY_TAG_ID||tag.id===FINANCE_EXIT_TAG_ID?'readonly':''} required><button class="btn small" type="submit">SALVAR</button></form>`).join(''):'<p class="empty">Nenhuma tag cadastrada.</p>';
   }
   function openTagManager(logId='') {
-    pendingLogAddTagId=String(logId||'');$('tagManagerStatus').textContent='';$('managedTagName').value='';$('managedTagColor').value=randomTagColor();renderTagManager();$('tagManagerDialog').showModal();
+    pendingLogAddTagId=String(logId||'');$('tagManagerStatus').textContent='';$('managedTagName').value='';$('managedTagColor').value=randomTagColor();renderTagManager();showAppDialog($('tagManagerDialog'));
   }
   function addManagedTag(event) {
     event.preventDefault();const raw=$('managedTagName').value.trim().replace(/\s+/g,' ');if(!raw)return;
@@ -886,13 +930,13 @@
   function updateFinanceRecurrenceUI() { $('financeInstallmentWrap').hidden=$('financeRecurrence').value!=='monthly'; }
   function openFinanceDialog(entryId='') {
     const entry=entryId?finances.find(item=>item.id===String(entryId)&&!item.deletedAt):null,series=Boolean(entry?.seriesId&&entry?.recurrence?.frequency==='monthly');
-    $('financeForm').reset();$('financeId').value=entry?.id||'';$('financeDialogTitle').textContent=entry?'Editar movimentação':'Nova movimentação';
+    financeDialogDirty=false;$('financeForm').reset();$('financeId').value=entry?.id||'';$('financeDialogTitle').textContent=entry?'Editar movimentação':'Nova movimentação';
     $('financeTitle').value=entry?.title||'';$('financeDirection').value=entry?.kind||'expense';$('financeAmount').value=entry?String(entry.amount):'';$('financeDate').value=entry?.date||todayKey();$('financeStatus').value=entry?.status||'planned';
     $('financeRecurrence').value=entry?.recurrence?'monthly':'once';$('financeInstallmentCount').value=entry?.installmentCount?String(entry.installmentCount):'';
     $('financeRecurrence').disabled=series;$('financeInstallmentCount').disabled=series;updateFinanceRecurrenceUI();
     $('financeSeriesInfo').hidden=!series;$('financeSeriesInfo').textContent=series?(entry.installmentCount?`Parcela ${entry.occurrenceNumber}/${entry.installmentCount}.`:'Movimentação mensal contínua.') : '';
     $('financeApplyFutureWrap').hidden=!series;$('financeApplyFuture').checked=true;$('financeStopSeriesBtn').hidden=!series||Boolean(entry.recurrence?.seriesStopped);$('financeDeleteBtn').hidden=!entry;
-    $('financeDialog').showModal();
+    showAppDialog($('financeDialog'));
   }
   function makeFinanceOccurrence({title,kind,amount,date,status,seriesId,occurrenceNumber,installmentCount,anchorDate}) {
     const now=nowISO(),recurrence={frequency:'monthly',anchorDate,installmentCount:installmentCount||null,seriesStopped:false,seriesId};
@@ -917,7 +961,7 @@
     }else if(repeat==='monthly'){
       const seriesId=makeId();finances.push(makeFinanceOccurrence({title,kind,amount,date,status,seriesId,occurrenceNumber:1,installmentCount,anchorDate:date}));
     }else finances.push({id:makeId(),title,kind,amount,date,status,recurrence:null,seriesId:'',occurrenceNumber:null,installmentCount:null,createdAt:now,updatedAt:now,deletedAt:null});
-    $('financeDialog').close();saveFinanceEntries();showToast(existing?'Movimentação atualizada.':'Movimentação adicionada.');return true;
+    financeDialogDirty=false;$('financeDialog').close();saveFinanceEntries();showToast(existing?'Movimentação atualizada.':'Movimentação adicionada.');return true;
   }
   function toggleFinanceStatus(entryId) {
     const entry=finances.find(item=>item.id===String(entryId)&&!item.deletedAt);if(!entry)return;
@@ -1151,7 +1195,7 @@
     if(activeDayKind==='day'&&!activeDayDate)return;
     $('dayDialogTitle').textContent=activeDayKind==='day'?formatDate(activeDayDate,{weekday:'long',day:'2-digit',month:'2-digit'}):'ATRASADO';
     $('dayDialogAddBtn').hidden=activeDayKind!=='day';$('dayDialogPrevBtn').hidden=activeDayKind!=='day';$('dayDialogNextBtn').hidden=activeDayKind!=='day';dayDialogTouchStart=null;
-    renderDayDialog(); $('dayDialog').showModal();
+    renderDayDialog(); showAppDialog($('dayDialog'));
   }
   function navigateDayDialog(offset) {
     if(activeDayKind!=='day'||!isDateKey(activeDayDate))return;
@@ -1192,7 +1236,7 @@
     if(items.length>=50){showToast('O checklist aceita até 50 etapas.');return;}
     items.push({id:makeId(),text:'',completed:false});renderTaskChecklist(items);$('taskChecklistList').querySelector('[data-task-checklist-row]:last-child [data-task-checklist-text]')?.focus();taskDialogDirty=true;
   }
-  function openTaskDialog(taskId='',suggestedDate='') {
+  function openTaskDialog(taskId='',suggestedDate='',reuseHistoryToken='') {
     taskDialogDirty=false;lastTaskCtrlEnterAt=0;
     const task=taskId ? tasks.find(item=>item.id===String(taskId) && !item.deletedAt) : null;
     $('taskForm').reset();
@@ -1204,7 +1248,7 @@
     const recurrence=task?.recurrence||null;$('taskRecurrence').value=recurrence?.frequency||'';$('recurrenceInterval').value=String(recurrence?.interval||1);$('recurrenceUntil').value=recurrence?.until||'';
     document.querySelectorAll('[name="recurrenceWeekday"]').forEach(box=>{box.checked=Boolean(recurrence?.weekdays?.includes(Number(box.value)));});updateTaskRecurrenceUI(false);
     $('deleteTaskBtn').classList.toggle('hidden',!task);
-    $('taskDialog').showModal();
+    showAppDialog($('taskDialog'),reuseHistoryToken);
     requestAnimationFrame(()=>{ $('taskChecklistList').querySelectorAll('[data-task-checklist-text]').forEach(resizeTaskChecklistTextarea); });
   }
   function closeTaskDialog() { taskDialogDirty=false;if ($('taskDialog').open) $('taskDialog').close(); }
@@ -1535,7 +1579,7 @@
     $('lockNoteBtn').classList.toggle('hidden',!note);
     $('noteTitle').value=note?.title || ''; $('noteContent').value=note?.content || '';
     renderNoteTagChoices(note?.tagIds||[]);$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';renderLinkInputs('noteLinksList',noteLinks(note));
-    $('noteDialog').showModal();
+    showAppDialog($('noteDialog'));
   }
   function saveNote(event,close=true) {
     event?.preventDefault?.();
@@ -1949,7 +1993,7 @@
   $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
   $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=6;renderTasks();});
   $('completedMoreBtn').addEventListener('click',()=>{completedVisibleLimit+=6;renderTasks();});
-  $('dayDialogAddBtn').addEventListener('click',()=>{const date=activeDayKind==='day'?activeDayDate:'';$('dayDialog').close();openTaskDialog('',date);});
+  $('dayDialogAddBtn').addEventListener('click',()=>{const date=activeDayKind==='day'?activeDayDate:'',dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog('',date,token);});
   $('dayDialogPrevBtn').addEventListener('click',()=>navigateDayDialog(-1));
   $('dayDialogNextBtn').addEventListener('click',()=>navigateDayDialog(1));
   $('dayDialog').addEventListener('touchstart',handleDayDialogTouchStart,{passive:true});
@@ -1987,6 +2031,8 @@
   $('logsList').addEventListener('change',handleLogTagChange);
   document.querySelectorAll('[data-log-range]').forEach(button=>button.addEventListener('click',()=>setLogRange(button.dataset.logRange)));
   $('financeForm').addEventListener('submit',saveFinanceFromForm);
+  $('financeForm').addEventListener('input',()=>{financeDialogDirty=true;});
+  $('financeForm').addEventListener('change',()=>{financeDialogDirty=true;});
   $('financeCashboxSaveBtn').addEventListener('click',()=>{void saveFinanceCashbox();});
   $('financeAddBtn').addEventListener('click',()=>openFinanceDialog());
   $('financePrevMonth').addEventListener('click',()=>shiftFinanceMonth(-1));
@@ -1994,6 +2040,7 @@
   $('financeEntriesList').addEventListener('click',handleFinanceClick);
   $('financeRecurrence').addEventListener('change',updateFinanceRecurrenceUI);
   $('closeFinanceDialog').addEventListener('click',()=>$('financeDialog').close());
+  $('fullscreenToggleBtn').addEventListener('click',toggleAppFullscreen);
   $('financeDeleteBtn').addEventListener('click',()=>deleteFinanceEntry($('financeId').value));
   $('financeStopSeriesBtn').addEventListener('click',()=>stopFinanceSeries($('financeId').value));
   $('addSummaryTimeBtn').addEventListener('click',addSummaryTime);
@@ -2027,10 +2074,11 @@
   document.addEventListener('touchend',event=>finishTouchDrag(event),true);
   document.addEventListener('touchcancel',event=>finishTouchDrag(event,true),true);
   for(const dialog of document.querySelectorAll('dialog')){
-    dialog.addEventListener('cancel',event=>{
-      if(!['taskDialog','noteDialog'].includes(dialog.id))return;
-      event.preventDefault();
-      if(dialog.id==='taskDialog')closeTaskDialogSafely();else closeNoteDialogSafely();
+    dialog.addEventListener('cancel',event=>{event.preventDefault();handleDialogBack(dialog);});
+    dialog.addEventListener('close',()=>{
+      const token=dialog.dataset.historyToken;if(!token)return;
+      delete dialog.dataset.historyToken;
+      if(history.state?.tnmDialogToken===token)history.back();
     });
     dialog.addEventListener('click',event=>{
       if(event.target!==dialog)return;
@@ -2041,6 +2089,14 @@
       }
     });
   }
+  window.addEventListener('popstate',event=>{
+    const openDialogs=Array.from(document.querySelectorAll('dialog[open]'));
+    const dialog=openDialogs[openDialogs.length-1];if(!dialog)return;
+    if(dialog.dataset.historyToken&&event.state?.tnmDialogToken===dialog.dataset.historyToken)return;
+    handleDialogBack(dialog);
+    if(dialog.open)pushDialogHistory(dialog);
+  });
+  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&appFullscreenMode){appFullscreenMode=false;syncFullscreenButton();}});
   document.addEventListener('click',captureActionMenuClick,true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&floatingActionMenu){event.preventDefault();event.stopPropagation();closeFloatingActionMenu();}},true);
   document.addEventListener('scroll',()=>{if(floatingActionMenu)closeFloatingActionMenu();},true);
