@@ -1069,10 +1069,10 @@
     body.view-mobile[data-page="tasks"] .day-task-list { flex:none; min-height:0; max-height:none; overflow:visible; gap:6px; }
     body.view-mobile[data-page="tasks"] #weekBoard { display:flex !important; flex-direction:column; grid-template-columns:none !important; grid-template-rows:none !important; }
     body.view-mobile[data-page="tasks"] #weekGrid { grid-column:auto; grid-row:auto; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; padding-bottom:calc(122px + env(safe-area-inset-bottom,0px)); scroll-padding-bottom:calc(122px + env(safe-area-inset-bottom,0px)); }
-    body.view-mobile[data-page="tasks"] #weekDock { position:fixed !important; left:50% !important; right:auto !important; bottom:calc(70px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; display:grid !important; grid-template-columns:34px minmax(0,1fr) 74px 34px 64px !important; grid-template-rows:42px !important; gap:3px; align-items:center; justify-content:stretch; width:min(640px,calc(100vw - 24px)) !important; max-width:calc(100vw - 24px) !important; min-height:46px; height:auto !important; padding:3px 4px; grid-column:auto !important; grid-row:auto !important; margin:0 !important; }
+    body.view-mobile[data-page="tasks"] #weekDock { position:fixed !important; left:50% !important; right:auto !important; bottom:calc(70px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; display:grid !important; grid-template-columns:34px minmax(0,1fr) 86px 34px 64px !important; grid-template-rows:42px !important; gap:3px; align-items:center; justify-content:stretch; width:min(640px,calc(100vw - 24px)) !important; max-width:calc(100vw - 24px) !important; min-height:46px; height:auto !important; padding:3px 4px; grid-column:auto !important; grid-row:auto !important; margin:0 !important; }
     body.view-mobile[data-page="tasks"] #weekDock #prevWeekBtn { grid-column:1; grid-row:1; width:34px; min-width:34px; height:34px; min-height:34px; padding:0; }
     body.view-mobile[data-page="tasks"] #weekDock #weekLabel { grid-column:2; grid-row:1; width:100%; min-width:0; flex:none; font-size:.64rem; text-align:center; }
-    body.view-mobile[data-page="tasks"] #weekDock #todayBtn { grid-column:3; grid-row:1; width:74px; min-width:74px; min-height:34px; padding:4px 5px; font-size:.56rem; white-space:nowrap; }
+    body.view-mobile[data-page="tasks"] #weekDock #todayBtn { grid-column:3; grid-row:1; width:86px; min-width:86px; min-height:34px; padding:4px 5px; font-size:.54rem; white-space:nowrap; }
     body.view-mobile[data-page="tasks"] #weekDock #nextWeekBtn { grid-column:4; grid-row:1; width:34px; min-width:34px; height:34px; min-height:34px; padding:0; }
     body.view-mobile[data-page="tasks"] #weekDock .subdock-sync { grid-column:5; grid-row:1; width:64px; min-width:64px; min-height:34px; padding:4px 3px; font-size:.54rem; white-space:nowrap; }
     body.view-mobile[data-page="tasks"].planner-expanded #weekGrid { flex:none; min-height:0; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; overflow:visible; padding-bottom:0; scroll-padding-bottom:0; }
@@ -1203,6 +1203,6 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="./app.js?v=105" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=109',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=110',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
