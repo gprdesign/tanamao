@@ -545,6 +545,18 @@
     .home-event-title { color:var(--text); font-size:.82rem; font-weight:800; line-height:1.3; overflow-wrap:anywhere; }
     .home-event-location { display:block; margin-top:3px; color:var(--muted); font-size:.68rem; }
     .home-event-link { display:grid; place-items:center; width:32px; height:32px; border:1px solid #ffffff20; border-radius:9px; color:var(--accent); text-decoration:none; }
+    .planner-income-panel { margin:4px 0 8px; padding:0 2px; }
+    .planner-income-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:2px; }
+    .planner-income-heading h3 { margin:0; color:var(--muted); font-size:.72rem; letter-spacing:.04em; }
+    .planner-income-heading span { color:var(--muted); font-size:.6rem; font-weight:800; }
+    .planner-income-lines { display:grid; max-height:128px; overflow:auto; overscroll-behavior:contain; }
+    .planner-income-row { display:grid; grid-template-columns:48px minmax(0,1fr) auto; align-items:center; gap:8px; width:100%; min-height:36px; padding:6px 4px; border:0; border-bottom:1px solid #ffffff18; background:transparent; color:var(--text); font:inherit; text-align:left; cursor:pointer; }
+    .planner-income-row:last-child { border-bottom:0; }
+    .planner-income-row time { color:var(--muted); font-size:.66rem; font-weight:800; }
+    .planner-income-name { min-width:0; font-size:.75rem; overflow-wrap:anywhere; }
+    .planner-income-row strong { color:#8fe0b5; font-size:.75rem; white-space:nowrap; }
+    .planner-income-empty { margin:0; padding:5px 4px; color:var(--muted); font-size:.68rem; }
+    .planner-income-row:focus-visible,.finance-upcoming-row:focus-visible,.finance-entry-open:focus-visible { outline:2px solid #8bafff; outline-offset:2px; }
     .planner-section-buttons { display:grid; flex:none; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0 0 6px; }
     .planner-section-buttons .planner-section-btn { min-width:0; margin:0; }
     .planner-panel { width:100%; }
@@ -600,6 +612,10 @@
       .home-tag-pill { font-size:.54rem; padding:3px 5px; }
       .planner-section-buttons { gap:6px; }
       .planner-section-buttons .planner-section-btn { padding:7px 8px; font-size:.76rem; }
+      .planner-income-row { grid-template-columns:42px minmax(0,1fr) auto; gap:6px; }
+      .planner-income-name,.planner-income-row strong { font-size:.68rem; }
+      .household-bucket-toggle { min-height:32px; padding:4px; font-size:.61rem; }
+      .finance-entry-open { font-size:.82rem; }
       .week-dock { width:calc(100% - 20px); min-height:50px; bottom:calc(82px + env(safe-area-inset-bottom,0px)); }
       .week-dock #prevWeekBtn,.week-dock #nextWeekBtn { flex:none; width:42px; min-width:42px; height:42px; padding:0; font-size:1.65rem; line-height:1; }
       .week-dock #todayBtn { flex:none; min-width:82px; min-height:42px; padding:6px 13px; font-size:.82rem; }
@@ -879,7 +895,7 @@
     .finance-upcoming-heading h3 { margin:0; font-size:.8rem; letter-spacing:.04em; }
     .finance-upcoming-window { color:var(--muted); font-size:.66rem; font-weight:800; }
     .finance-upcoming-list { display:grid; gap:6px; }
-    .finance-upcoming-row { display:grid; grid-template-columns:58px minmax(0,1fr) auto; align-items:center; gap:8px; padding:8px 9px; border:1px solid var(--line); border-radius:10px; background:rgba(20,27,45,.72); }
+    .finance-upcoming-row { display:grid; grid-template-columns:58px minmax(0,1fr) auto; align-items:center; gap:8px; width:100%; padding:8px 9px; border:1px solid var(--line); border-radius:10px; background:rgba(20,27,45,.72); color:var(--text); font:inherit; text-align:left; cursor:pointer; }
     .finance-upcoming-date { color:var(--muted); font-size:.7rem; font-weight:800; }
     .finance-upcoming-title { min-width:0; font-size:.8rem; overflow-wrap:anywhere; }
     .finance-upcoming-amount { color:#8fe0b5; font-size:.8rem; font-weight:850; white-space:nowrap; }
@@ -899,6 +915,7 @@
     .household-buckets-panel { margin:12px 0; padding:14px; border:1px solid #405673; border-radius:14px; background:#121b2d; }
     .household-buckets-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .household-buckets-heading h3 { margin:0; font-size:.84rem; letter-spacing:.04em; }
+    .household-buckets-month { display:block; margin-top:3px; color:var(--muted); font-size:.64rem; font-weight:800; text-transform:capitalize; }
     #householdBucketsSummary { color:#c5d6ff; font-size:.78rem; text-align:right; }
     .household-buckets-caption { margin:5px 0 9px; color:var(--muted); font-size:.68rem; line-height:1.35; }
     .household-buckets-overall-track { height:8px; overflow:hidden; border-radius:99px; background:#26354e; }
@@ -917,6 +934,8 @@
     .household-bucket-details { display:flex; justify-content:space-between; gap:5px; margin-top:6px; color:var(--muted); font-size:.63rem; }
     .household-bucket-details b { color:#ffcc83; text-align:right; }
     .household-bucket.complete .household-bucket-details b { color:#8fe0b5; }
+    .household-bucket-toggle { width:100%; min-height:34px; margin-top:8px; padding:5px 8px; border:1px solid #52627e; border-radius:8px; background:#202b42; color:#ffd166; font-size:.67rem; font-weight:850; cursor:pointer; }
+    .household-bucket-toggle.is-paid { border-color:#397653; background:#17332a; color:#9be7ba; }
     .household-buckets-free { margin:10px 0 0; padding:9px 10px; border-radius:9px; background:#1d293f; color:#ffcc83; font-size:.75rem; font-weight:800; }
     .household-buckets-free.covered { background:#17332a; color:#9be7ba; }
     .finance-formula-note { margin:0 0 12px; color:var(--muted); font-size:.65rem; text-align:center; }
@@ -929,11 +948,14 @@
     .finance-summary-card.balance strong { color:#c5d6ff; }
     .finance-list-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:4px 0 10px; }
     .finance-list-heading p { margin:0; font-size:.72rem; }
+    .finance-list-heading p small { display:block; margin-top:3px; color:var(--muted); font-size:.62rem; }
     .finance-entry-list { display:grid; gap:8px; }
     .finance-entry { display:grid; grid-template-columns:56px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px; border:1px solid var(--line); border-radius:12px; background:#151e32; }
     .finance-entry-date { color:var(--muted); font-size:.7rem; font-weight:800; text-align:center; text-transform:capitalize; }
     .finance-entry-main { display:grid; gap:4px; min-width:0; }
     .finance-entry-main strong { overflow-wrap:anywhere; font-size:.84rem; }
+    .finance-entry-open { display:flex; align-items:center; justify-content:space-between; gap:6px; width:100%; min-width:0; min-height:28px; padding:0; border:0; background:transparent; color:var(--text); font:inherit; font-size:.84rem; font-weight:800; text-align:left; cursor:pointer; }
+    .finance-entry-main .finance-entry-open > span { display:inline; flex:none; color:var(--muted); font-size:1.15rem; }
     .finance-entry-main span { display:flex; align-items:center; gap:5px; flex-wrap:wrap; color:var(--muted); font-size:.67rem; }
     .finance-flow-tag { display:inline-block; padding:2px 6px; border-radius:999px; font-size:.58rem; font-weight:900; letter-spacing:.02em; }
     .finance-flow-tag.income { color:#8fe0b5; background:#17332a; }
@@ -1045,6 +1067,7 @@
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
         <button class="planner-section-btn completed-box" id="completedBtn" type="button" aria-expanded="false" aria-controls="completedPanel">Concluídas <span id="completedCount">0</span></button>
       </div>
+      <section class="planner-income-panel" aria-label="Próximos recebimentos"><div class="planner-income-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span>30 DIAS · TOQUE PARA VER</span></div><div class="planner-income-lines" id="plannerUpcomingIncomeList" aria-live="polite"></div></section>
       <div class="planner-panel" id="planningPanel" hidden><div class="task-tile-grid" id="planningList"></div><button class="btn more-btn" id="planningMoreBtn" type="button">MAIS</button></div>
       <div class="planner-panel completed-panel" id="completedPanel" hidden><div class="task-tile-grid" id="completedList"></div><button class="btn more-btn" id="completedMoreBtn" type="button">MAIS</button></div>
       <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="todayBtn" type="button">SEMANA ATUAL</button><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav></div>
@@ -1057,12 +1080,12 @@
         <article class="finance-budget-card daily"><span>PARA GASTAR POR DIA</span><strong id="financeDailyAllowance">—</strong><small id="financeNextIncomeLabel">Próximo recebimento: cadastre uma entrada prevista no TNM.</small></article>
         <article class="finance-budget-card cashbox"><label for="financeCashboxInput">CAIXINHA DE CONTAS</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor da Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Salvar</button></div><small id="financeCashboxValue">Ainda não informado</small></article>
       </section>
-      <section class="household-buckets-panel" aria-label="Caixinhas das contas de casa"><div class="household-buckets-heading"><h3>CAIXINHAS DAS CONTAS</h3><strong id="householdBucketsSummary"></strong></div><p class="household-buckets-caption">O saldo da Caixinha é distribuído de cima para baixo, na ordem dos vencimentos.</p><div class="household-buckets-overall-track" id="householdBucketsOverallTrack" role="progressbar" aria-label="Progresso total das contas de casa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="householdBucketsOverallFill"></span></div><div class="household-buckets-grid" id="householdBucketsGrid"></div><p class="household-buckets-free" id="householdBucketsFree" aria-live="polite"></p></section>
+      <section class="household-buckets-panel" aria-label="Caixinhas das contas de casa"><div class="household-buckets-heading"><div><h3>CAIXINHAS DAS CONTAS</h3><small id="householdBucketsMonth" class="household-buckets-month"></small></div><strong id="householdBucketsSummary"></strong></div><p class="household-buckets-caption">O saldo da Caixinha é distribuído de cima para baixo, na ordem dos vencimentos.</p><div class="household-buckets-overall-track" id="householdBucketsOverallTrack" role="progressbar" aria-label="Progresso total das contas de casa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="householdBucketsOverallFill"></span></div><div class="household-buckets-grid" id="householdBucketsGrid"></div><p class="household-buckets-free" id="householdBucketsFree" aria-live="polite"></p></section>
       <p class="finance-formula-note">Saldo atual ÷ dias até a próxima ENTRADA. A Caixinha é informativa e não é subtraída do cálculo.</p>
-      <section class="finance-upcoming" aria-label="Próximos recebimentos nos próximos 30 dias"><div class="finance-upcoming-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span class="finance-upcoming-window">PRÓXIMOS 30 DIAS</span></div><div class="finance-upcoming-list" id="financeUpcomingList" aria-live="polite"></div></section>
+      <section class="finance-upcoming" aria-label="Próximos recebimentos nos próximos 30 dias"><div class="finance-upcoming-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span class="finance-upcoming-window">30 DIAS · TOQUE NA LINHA</span></div><div class="finance-upcoming-list" id="financeUpcomingList" aria-live="polite"></div></section>
       <div class="finance-month-toolbar"><button class="btn ghost small" id="financePrevMonth" type="button" aria-label="Mês anterior">‹</button><strong id="financeMonthLabel" aria-live="polite"></strong><button class="btn ghost small" id="financeNextMonth" type="button" aria-label="Próximo mês">›</button></div>
       <div class="finance-summary" id="financeSummary"></div>
-      <div class="finance-list-heading"><p class="muted">Previsto = ainda não entrou/saiu. Realizado = já recebido/pago.</p><button class="btn primary small" id="financeAddBtn" type="button">＋ Lançamento</button></div>
+      <div class="finance-list-heading"><p class="muted">Previsto = ainda não entrou/saiu. Realizado = já recebido/pago.<small>Toque no nome para ver detalhes, editar ou excluir.</small></p><button class="btn primary small" id="financeAddBtn" type="button">＋ Lançamento</button></div>
       <div class="finance-entry-list" id="financeEntriesList" aria-live="polite"></div>
     </section>
 
@@ -1118,7 +1141,9 @@
   <dialog id="filterDialog" class="app-dialog"><div class="dialog-head"><h2>Filtros</h2><button class="btn ghost small" id="closeFilterDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">As mesmas tags aparecem em todas as páginas, mas a seleção vale somente para a página aberta.</p><div class="filter-tag-list" id="filterTagList"></div><button class="btn small" id="clearFiltersBtn" type="button">Limpar seleção</button><form id="tagForm" class="tag-create"><div class="field"><label for="newTagName">Cadastrar nova tag</label><input id="newTagName" maxlength="32" required placeholder="Ex.: Casa"></div><button class="btn primary" type="submit">＋ Criar</button></form><p class="tag-status" id="tagMessage" aria-live="polite"></p></dialog>
   <dialog id="tagManagerDialog" class="app-dialog"><div class="dialog-head"><h2>Gerenciar tags</h2><button class="btn ghost small" id="closeTagManager" type="button" aria-label="Fechar">✕</button></div><form id="tagManagerAddForm" class="tag-manager-add"><div class="field"><label for="managedTagName">Nova tag</label><input id="managedTagName" maxlength="32" required placeholder="Nome da tag"></div><div class="field"><label for="managedTagColor">Cor</label><input id="managedTagColor" type="color" value="#8bafff" aria-label="Cor da nova tag"></div><button class="btn primary small" type="submit">＋ ADC</button></form><p class="tag-status" id="tagManagerStatus" aria-live="polite"></p><div id="tagManagerList" class="tag-manager-list"></div></dialog>
 
-  <dialog id="financeDialog" class="app-dialog"><form id="financeForm"><div class="dialog-head"><h2 id="financeDialogTitle">Nova movimentação</h2><button class="btn ghost small" id="closeFinanceDialog" type="button" aria-label="Fechar">✕</button></div><input id="financeId" type="hidden"><div class="finance-form-grid"><div class="field"><label for="financeTitle">Descrição</label><input id="financeTitle" maxlength="180" required placeholder="Ex.: salário, aluguel"></div><div class="field"><label for="financeDirection">Movimento</label><select id="financeDirection"><option value="expense">Saída</option><option value="income">Entrada</option></select></div><div class="field"><label for="financeAmount">Valor por movimentação (R$)</label><input id="financeAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="0,00"></div><div class="field"><label for="financeDate">Data</label><input id="financeDate" type="date" required></div><div class="field"><label for="financeStatus">Situação</label><select id="financeStatus"><option value="planned">Previsto</option><option value="realized">Realizado</option></select></div><div class="field"><label for="financeRecurrence">Repetição</label><select id="financeRecurrence"><option value="once">Uma vez</option><option value="monthly">Mensalmente</option></select></div><div class="field" id="financeInstallmentWrap" hidden><label for="financeInstallmentCount">Número de parcelas <span class="muted">(opcional)</span></label><input id="financeInstallmentCount" type="number" min="2" max="240" step="1" inputmode="numeric" placeholder="Vazio = mensal contínua"></div></div><p class="dialog-hint">O valor é por mês/parcela. Uma recorrência mensal sem número de parcelas continua até você encerrá-la.</p><p class="dialog-hint finance-series-info" id="financeSeriesInfo" hidden></p><label class="finance-future-option" id="financeApplyFutureWrap" hidden><input id="financeApplyFuture" type="checkbox"> Aplicar descrição e valor às próximas previsões</label><div class="form-actions dialog-save-actions"><button class="btn danger" id="financeDeleteBtn" type="button" hidden>Excluir</button><button class="btn danger" id="financeStopSeriesBtn" type="button" hidden>Encerrar recorrência</button><button class="btn primary" type="submit">Salvar</button></div></form></dialog>
+  <dialog id="financeDialog" class="app-dialog"><form id="financeForm"><div class="dialog-head"><h2 id="financeDialogTitle">Novo lançamento</h2><button class="btn ghost small" id="closeFinanceDialog" type="button" aria-label="Fechar">✕</button></div><input id="financeId" type="hidden"><div class="finance-form-grid"><div class="field"><label for="financeTitle">Descrição</label><input id="financeTitle" maxlength="180" required placeholder="Ex.: salário, aluguel"></div><div class="field"><label for="financeDirection">Movimento</label><select id="financeDirection"><option value="expense">Saída</option><option value="income">Entrada</option></select></div><div class="field"><label for="financeAmount">Valor por movimentação (R$)</label><input id="financeAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="0,00"></div><div class="field"><label for="financeDate">Data</label><input id="financeDate" type="date" required></div><div class="field"><label for="financeStatus">Situação</label><select id="financeStatus"><option value="planned">Previsto</option><option value="realized">Realizado</option></select></div><div class="field"><label for="financeRecurrence">Repetição</label><select id="financeRecurrence"><option value="once">Uma vez</option><option value="monthly">Mensalmente</option></select></div><div class="field" id="financeInstallmentWrap" hidden><label for="financeInstallmentCount">Número de parcelas <span class="muted">(opcional)</span></label><input id="financeInstallmentCount" type="number" min="2" max="240" step="1" inputmode="numeric" placeholder="Vazio = mensal contínua"></div></div><p class="dialog-hint">Você pode revisar e alterar os dados aqui. O valor é por mês/parcela; recorrências sem número de parcelas continuam até serem encerradas.</p><p class="dialog-hint finance-series-info" id="financeSeriesInfo" hidden></p><label class="finance-future-option" id="financeApplyFutureWrap" hidden><input id="financeApplyFuture" type="checkbox"> Aplicar descrição e valor às próximas previsões</label><div class="form-actions dialog-save-actions"><button class="btn danger" id="financeDeleteBtn" type="button" hidden>Excluir lançamento</button><button class="btn danger" id="financeStopSeriesBtn" type="button" hidden>Encerrar recorrência</button><button class="btn primary" id="financeSaveBtn" type="submit">Criar lançamento</button></div></form></dialog>
+
+  <dialog id="householdPaymentDialog" class="app-dialog"><div class="dialog-head"><h2>Marcar conta como paga</h2><button class="btn ghost small" id="closeHouseholdPaymentDialog" type="button" aria-label="Cancelar">✕</button></div><p class="dialog-hint" id="householdPaymentPrompt"></p><div class="form-actions dialog-save-actions"><button class="btn primary" id="householdPaymentDeductBtn" type="button">Descontar da Caixinha</button><button class="btn" id="householdPaymentKeepBtn" type="button">Paga sem descontar</button></div></dialog>
 
   <dialog id="dayDialog" class="app-dialog"><div class="dialog-head day-dialog-head"><button class="btn ghost small day-dialog-nav" id="dayDialogPrevBtn" type="button" aria-label="Dia anterior" title="Dia anterior">←</button><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small day-dialog-nav" id="dayDialogNextBtn" type="button" aria-label="Próximo dia" title="Próximo dia">→</button><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint" id="dayDialogHint" hidden></p><div class="form-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
 
@@ -1127,7 +1152,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=99" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=98',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=100" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=99',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

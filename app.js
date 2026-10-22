@@ -274,9 +274,18 @@
     return JSON.parse(new TextDecoder().decode(raw));
   }
   function normalizeUserSettings(value) {
-    const source=value&&typeof value==='object'?value:{};
-    const times=Array.isArray(source.summaryTimes)?Array.from(new Set(source.summaryTimes.map(String).filter(time=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time)))):[];
-    return {summaryTimes:times.sort(),calendarIds:Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[],overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    const source=value&&typeof value==='object'?value:{},times=Array.isArray(source.summaryTimes)?Array.from(new Set(source.summaryTimes.map(String).filter(time=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time)))):[],rawCycles=source.householdBillCycles&&typeof source.householdBillCycles==='object'&&!Array.isArray(source.householdBillCycles)?source.householdBillCycles:{},householdBillCycles={};
+    for(const [month,states] of Object.entries(rawCycles)){
+      if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)||!states||typeof states!=='object'||Array.isArray(states))continue;
+      const normalized={};
+      for(const [billId,state] of Object.entries(states)){
+        if(!/^[a-z0-9-]{1,40}$/i.test(billId)||!state||typeof state!=='object')continue;
+        const rawAmount=Number(state.deductedAmount),deductedAmount=Number.isFinite(rawAmount)?Math.max(0,Math.round(rawAmount*100)/100):0;
+        normalized[billId]={paid:Boolean(state.paid),deductedAmount,paidAt:String(state.paidAt||'')};
+      }
+      householdBillCycles[month]=normalized;
+    }
+    return {summaryTimes:times.sort(),calendarIds:Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[],overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -763,7 +772,7 @@
     }).join('');
     const unplanned=open.filter(task=>!task.executionDate).sort(taskOrder), completed=all.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     $('unplannedCount').textContent=String(unplanned.length); $('completedCount').textContent=String(completed.length);
-    renderPlannerPanels(); renderFilterButton(); renderDialogLists();
+    renderPlannerPanels(); renderPlannerUpcomingIncome(); renderFilterButton(); renderDialogLists();
   }
   function renderPlannerPanels() {
     const planning=visibleTasks('tasks').filter(task=>!task.completedAt&&!task.executionDate).sort(taskOrder);
@@ -775,6 +784,14 @@
     $('completedList').innerHTML=completed.slice(0,completedVisibleLimit).map(task=>taskCard(task,{tile:true,canMove:false})).join('')||'<div class="empty">Nenhuma tarefa concluída.</div>';
     $('planningMoreBtn').hidden=planning.length<=planningVisibleLimit; $('completedMoreBtn').hidden=completed.length<=completedVisibleLimit;
     document.body.classList.toggle('planner-expanded',Boolean(expandedSection));
+  }
+  function renderPlannerUpcomingIncome() {
+    const list=$('plannerUpcomingIncomeList');if(!list)return;
+    const {items}=collectUpcomingFinanceIncome();
+    list.innerHTML=items.length?items.map(entry=>{
+      const id=escapeHTML(entry.id),date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):entry.date;
+      return `<button class="planner-income-row" type="button" data-finance-open="${id}" aria-label="Ver detalhes de ${escapeHTML(entry.title)}"><time>${escapeHTML(dateLabel)}</time><span class="planner-income-name">${escapeHTML(entry.title)}</span><strong>+ ${escapeHTML(financeMoney(entry.amount))}</strong></button>`;
+    }).join(''):'<p class="planner-income-empty">Nenhum recebimento previsto nos próximos 30 dias.</p>';
   }
   function togglePlannerSection(section,forceOpen=false) {
     if (forceOpen) expandedSection=section;
@@ -861,20 +878,59 @@
     return finances.filter(entry=>!entry.deletedAt&&entry.kind==='income'&&entry.status==='planned'&&entry.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'))[0]||null;
   }
   const HOUSEHOLD_BILLS=[{id:'fut-terca',title:'Fut terça',day:7,amount:110},{id:'aluguel',title:'Aluguel',day:9,amount:583},{id:'s24',title:'Parcela S24 — pai',day:10,amount:207,knownUntil:'2027-07-10'},{id:'internet',title:'Internet',day:15,amount:50},{id:'energia',title:'Energia',day:18,amount:250},{id:'mei',title:'MEI',day:20,amount:87},{id:'condominio',title:'Condomínio',day:27,amount:180}];
+  function householdBillCycleKey() { return todayKey().slice(0,7); }
+  function currentHouseholdBillStates() { return userSettings.householdBillCycles?.[householdBillCycleKey()]||{}; }
+  function saveHouseholdBillState(billId,state) {
+    const month=householdBillCycleKey(),cycles=userSettings.householdBillCycles||{},current=cycles[month]||{};
+    userSettings.householdBillCycles={...cycles,[month]:{...current,[billId]:{paid:Boolean(state.paid),deductedAmount:Math.max(0,Math.round((Number(state.deductedAmount)||0)*100)/100),paidAt:String(state.paidAt||'')}}};saveUserSettings();
+  }
+  function setHouseholdCashboxAmount(amount) {
+    const now=nowISO(),value=Math.max(0,Math.round((Number(amount)||0)*100)/100);
+    financeState=normalizeFinanceState({...financeState,cashboxAmount:value,cashboxUpdatedAt:now,updatedAt:now});localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));
+  }
   function renderHouseholdBuckets() {
-    const grid=$('householdBucketsGrid'),summary=$('householdBucketsSummary'),overallFill=$('householdBucketsOverallFill'),overallTrack=$('householdBucketsOverallTrack'),freeLabel=$('householdBucketsFree');if(!grid||!summary||!overallFill||!overallTrack||!freeLabel)return;
-    const s24Task=tasks.find(task=>!task.deletedAt&&String(task.title||'').toLocaleLowerCase('pt-BR').includes('s24')&&task.recurrence?.frequency==='monthly'),fallback=HOUSEHOLD_BILLS.find(bill=>bill.id==='s24').knownUntil,s24Until=isDateKey(s24Task?.recurrence?.until)?s24Task.recurrence.until:fallback,today=todayKey();
-    const bills=HOUSEHOLD_BILLS.filter(bill=>bill.id!=='s24'||today<=s24Until).map(bill=>({...bill,until:bill.id==='s24'?s24Until:null})).sort((a,b)=>a.day-b.day),total=bills.reduce((sum,bill)=>sum+bill.amount,0),cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),covered=Math.min(total,cashbox),overallPercent=total?Math.min(100,covered/total*100):0;
-    summary.textContent=`${financeMoney(covered)} de ${financeMoney(total)} reservados`;
+    const grid=$('householdBucketsGrid'),summary=$('householdBucketsSummary'),monthNode=$('householdBucketsMonth'),overallFill=$('householdBucketsOverallFill'),overallTrack=$('householdBucketsOverallTrack'),freeLabel=$('householdBucketsFree');if(!grid||!summary||!monthNode||!overallFill||!overallTrack||!freeLabel)return;
+    const today=todayKey(),month=householdBillCycleKey(),monthDate=dateAtNoon(`${month}-01`),states=currentHouseholdBillStates(),s24Task=tasks.find(task=>!task.deletedAt&&String(task.title||'').toLocaleLowerCase('pt-BR').includes('s24')&&task.recurrence?.frequency==='monthly'),fallback=HOUSEHOLD_BILLS.find(bill=>bill.id==='s24').knownUntil,s24Until=isDateKey(s24Task?.recurrence?.until)?s24Task.recurrence.until:fallback;
+    monthNode.textContent=(monthDate?monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}):month).toLocaleUpperCase('pt-BR');
+    const bills=HOUSEHOLD_BILLS.filter(bill=>bill.id!=='s24'||today<=s24Until).map(bill=>({...bill,until:bill.id==='s24'?s24Until:null})).sort((a,b)=>a.day-b.day),unpaid=bills.filter(bill=>!states[bill.id]?.paid),total=unpaid.reduce((sum,bill)=>sum+bill.amount,0),cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),covered=Math.min(total,cashbox),overallPercent=total?Math.min(100,covered/total*100):100;
+    summary.textContent=total?`${financeMoney(covered)} de ${financeMoney(total)} reservados`:'Tudo pago';
     overallFill.style.width=`${overallPercent.toFixed(2)}%`;overallTrack.setAttribute('aria-valuenow',String(Math.round(overallPercent)));
-    freeLabel.classList.toggle('covered',cashbox>=total);freeLabel.textContent=cashbox>=total?`Contas de casa cobertas. Livre para outras despesas: ${financeMoney(cashbox-total)}.`:`Faltam ${financeMoney(total-cashbox)} para completar as contas de casa.`;
+    freeLabel.classList.toggle('covered',cashbox>=total);freeLabel.textContent=!unpaid.length?`Todas as contas estão pagas. Saldo livre na Caixinha: ${financeMoney(cashbox)}.`:cashbox>=total?`Contas pendentes cobertas. Livre para outras despesas: ${financeMoney(cashbox-total)}.`:`Faltam ${financeMoney(total-cashbox)} para completar as contas de casa.`;
     let available=cashbox;
     grid.innerHTML=bills.map(bill=>{
-      const funded=Math.min(bill.amount,available);available=Math.max(0,available-funded);
-      const missing=Math.max(0,bill.amount-funded),percent=bill.amount?Math.min(100,funded/bill.amount*100):0,complete=missing===0;
-      const dueLabel=`Vence dia ${String(bill.day).padStart(2,'0')}`,untilLabel=bill.until?`Última parcela: ${dateAtNoon(bill.until)?.toLocaleDateString('pt-BR')||bill.until}`:'';
-      return `<article class="household-bucket${complete?' complete':''}"><div class="household-bucket-head"><div><h4>${escapeHTML(bill.title)}</h4><span>${dueLabel}</span></div><strong>${escapeHTML(financeMoney(bill.amount))}</strong></div>${untilLabel?`<small class="household-bucket-until">${escapeHTML(untilLabel)}</small>`:''}<div class="household-bucket-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}" aria-label="${escapeHTML(bill.title)}: ${Math.round(percent)}% reservado"><span style="width:${percent.toFixed(2)}%"></span></div><div class="household-bucket-details"><span>${escapeHTML(financeMoney(funded))} reservados</span><b>${complete?'Completo':`Faltam ${escapeHTML(financeMoney(missing))}`}</b></div></article>`;
+      const state=states[bill.id]||{},paid=Boolean(state.paid),deducted=Math.max(0,Number(state.deductedAmount)||0),funded=paid?bill.amount:Math.min(bill.amount,available);
+      if(!paid)available=Math.max(0,available-funded);
+      const missing=Math.max(0,bill.amount-funded),percent=paid?100:bill.amount?Math.min(100,funded/bill.amount*100):0,complete=paid||missing===0;
+      const dueLabel=`Vence dia ${String(bill.day).padStart(2,'0')}`,untilLabel=bill.until?`Última parcela: ${dateAtNoon(bill.until)?.toLocaleDateString('pt-BR')||bill.until}`:'',detailLeft=paid?'Paga':`${financeMoney(funded)} reservados`,detailRight=paid?(deducted?`${financeMoney(deducted)} descontados`:'Saldo preservado'):missing?`Faltam ${financeMoney(missing)}`:'Completo';
+      return `<article class="household-bucket${complete?' complete':''}${paid?' is-paid':''}"><div class="household-bucket-head"><div><h4>${escapeHTML(bill.title)}</h4><span>${dueLabel}</span></div><strong>${escapeHTML(financeMoney(bill.amount))}</strong></div>${untilLabel?`<small class="household-bucket-until">${escapeHTML(untilLabel)}</small>`:''}<div class="household-bucket-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}" aria-label="${escapeHTML(bill.title)}: ${Math.round(percent)}% ${paid?'pago':'reservado'}"><span style="width:${percent.toFixed(2)}%"></span></div><div class="household-bucket-details"><span>${escapeHTML(detailLeft)}</span><b>${escapeHTML(detailRight)}</b></div><button class="household-bucket-toggle${paid?' is-paid':''}" type="button" data-household-bill-toggle="${escapeHTML(bill.id)}" aria-pressed="${paid}">${paid?'Marcar não paga':'Marcar paga'}</button></article>`;
     }).join('');
+  }
+  function openHouseholdPaymentDialog(billId) {
+    const bill=HOUSEHOLD_BILLS.find(item=>item.id===String(billId)),dialog=$('householdPaymentDialog');if(!bill||!dialog)return;
+    const cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),deduct=Math.min(cashbox,bill.amount),button=$('householdPaymentDeductBtn');
+    dialog.dataset.billId=bill.id;$('householdPaymentPrompt').textContent=`Posso tirar ${financeMoney(bill.amount)} da Caixinha? Há ${financeMoney(cashbox)} guardados; se o saldo for menor, desconto apenas o valor disponível. Se esta conta foi paga com outro dinheiro, escolha “Paga sem descontar”.`;
+    button.disabled=deduct<=0;button.textContent=deduct<=0?'Sem saldo para descontar':deduct<bill.amount?`Descontar ${financeMoney(deduct)} disponível`:`Sim, descontar ${financeMoney(deduct)}`;
+    showAppDialog(dialog);
+  }
+  async function completeHouseholdBillPayment(deductCashbox) {
+    const dialog=$('householdPaymentDialog'),bill=HOUSEHOLD_BILLS.find(item=>item.id===dialog.dataset.billId);if(!bill){if(dialog.open)dialog.close();return;}
+    const prior=currentHouseholdBillStates()[bill.id];if(prior?.paid){dialog.close();return;}
+    const cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),deductedAmount=deductCashbox?Math.min(cashbox,bill.amount):0,now=nowISO();
+    if(deductedAmount)setHouseholdCashboxAmount(cashbox-deductedAmount);
+    saveHouseholdBillState(bill.id,{paid:true,deductedAmount,paidAt:now});dialog.close();delete dialog.dataset.billId;renderFinancePage();
+    if(deductedAmount&&session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast(`${bill.title} paga; ${financeMoney(deductedAmount)} descontados da Caixinha.`);}catch{showToast('Pagamento salvo; sincronização da Caixinha pendente.');}}
+    else showToast(deductedAmount?`${bill.title} paga; ${financeMoney(deductedAmount)} descontados da Caixinha.`:`${bill.title} marcada como paga; saldo da Caixinha mantido.`);
+  }
+  async function toggleHouseholdBillPaid(billId) {
+    const bill=HOUSEHOLD_BILLS.find(item=>item.id===String(billId));if(!bill)return;
+    const prior=currentHouseholdBillStates()[bill.id];
+    if(!prior?.paid){openHouseholdPaymentDialog(bill.id);return;}
+    const restore=Math.max(0,Number(prior.deductedAmount)||0),question=restore?`Marcar “${bill.title}” como não paga e devolver ${financeMoney(restore)} à Caixinha?`:`Marcar “${bill.title}” como não paga?`;
+    if(!window.confirm(question))return;
+    if(restore){const current=Math.max(0,Number(financeState.cashboxAmount)||0);setHouseholdCashboxAmount(current+restore);}
+    saveHouseholdBillState(bill.id,{paid:false,deductedAmount:0,paidAt:''});renderFinancePage();
+    if(restore&&session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast(`${bill.title} reaberta; ${financeMoney(restore)} devolvidos à Caixinha.`);}catch{showToast('Conta reaberta; sincronização da Caixinha pendente.');}}
+    else showToast(`${bill.title} marcada como não paga.`);
   }
   function renderFinanceBudget() {
     const balance=$('financeAccountBalance'),balanceUpdated=$('financeBalanceUpdated'),cashboxInput=$('financeCashboxInput'),cashboxValue=$('financeCashboxValue'),daily=$('financeDailyAllowance'),nextLabel=$('financeNextIncomeLabel');
@@ -935,14 +991,14 @@
   }
   function renderFinancePage() {
     const monthLabel=$('financeMonthLabel'),summary=$('financeSummary'),list=$('financeEntriesList'),upcomingList=$('financeUpcomingList');if(!monthLabel||!summary||!list||!upcomingList)return;
-    ensureFinanceHorizon();renderFinanceBudget();renderHouseholdBuckets();
+    ensureFinanceHorizon();renderFinanceBudget();renderHouseholdBuckets();renderPlannerUpcomingIncome();
     const monthDate=dateAtNoon(`${financeMonth}-01`)||new Date(),rawMonth=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
     monthLabel.textContent=rawMonth.charAt(0).toLocaleUpperCase('pt-BR')+rawMonth.slice(1);
     const entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===financeMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
     const upcoming=collectUpcomingFinanceIncome(),monthUpcoming=upcoming.items.filter(entry=>entry.date.slice(0,7)===financeMonth),monthListEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id))),totalsEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id))).concat(monthUpcoming);
     upcomingList.innerHTML=upcoming.items.length?upcoming.items.map(entry=>{
       const date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):entry.date;
-      return `<article class="finance-upcoming-row"><time class="finance-upcoming-date" datetime="${escapeHTML(entry.date)}">${escapeHTML(dateLabel)}</time><strong class="finance-upcoming-title">${escapeHTML(entry.title)}</strong><span class="finance-upcoming-amount">+ ${escapeHTML(financeMoney(entry.amount))}</span></article>`;
+      const id=escapeHTML(entry.id);return `<button class="finance-upcoming-row" type="button" data-finance-open="${id}" aria-label="Ver detalhes de ${escapeHTML(entry.title)}"><time class="finance-upcoming-date" datetime="${escapeHTML(entry.date)}">${escapeHTML(dateLabel)}</time><strong class="finance-upcoming-title">${escapeHTML(entry.title)}</strong><span class="finance-upcoming-amount">+ ${escapeHTML(financeMoney(entry.amount))}</span></button>`;
     }).join(''):'<p class="finance-upcoming-empty">Nenhum recebimento previsto nos próximos 30 dias.</p>';
     const income=totalsEntries.filter(entry=>entry.kind==='income'),expense=totalsEntries.filter(entry=>entry.kind==='expense');
     const totalIncome=income.reduce((sum,entry)=>sum+entry.amount,0),realizedIncome=income.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
@@ -954,7 +1010,7 @@
       const id=escapeHTML(entry.id),date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',amountLabel=`${entry.kind==='income'?'+':'−'} ${financeMoney(entry.amount)}`;
       const occurrenceLabel=entry.installmentCount?`Parcela ${entry.occurrenceNumber}/${entry.installmentCount}`:entry.recurrence?'Mensal':'';
       const flowTag=tags.find(tag=>tag.id===entry.tagId&&!tag.deletedAt),flowLabel=flowTag?.name||(entry.kind==='income'?'ENTRADA':'SAÍDA');
-      return `<article class="finance-entry ${entry.kind} ${entry.status}" data-finance-id="${id}"><div class="finance-entry-date">${escapeHTML(dateLabel)}</div><div class="finance-entry-main"><strong>${escapeHTML(entry.title)}</strong><span><b class="finance-flow-tag ${entry.kind}">${escapeHTML(flowLabel)}</b>${occurrenceLabel?` · ${escapeHTML(occurrenceLabel)}`:''}</span></div><div class="finance-entry-actions"><strong class="finance-amount ${entry.kind}">${escapeHTML(amountLabel)}</strong><button class="finance-status-pill ${entry.status}" type="button" data-finance-toggle-status="${id}" aria-label="${entry.status==='planned'?'Marcar como realizado':'Voltar para previsto'}">${entry.status==='planned'?'PREVISTO':'REALIZADO'}</button><button class="finance-icon-button" type="button" data-finance-edit="${id}" aria-label="Editar ${escapeHTML(entry.title)}" title="Editar">✎</button><button class="finance-icon-button danger" type="button" data-finance-delete="${id}" aria-label="Excluir ${escapeHTML(entry.title)}" title="Excluir">×</button></div></article>`;
+      return `<article class="finance-entry ${entry.kind} ${entry.status}" data-finance-id="${id}"><div class="finance-entry-date">${escapeHTML(dateLabel)}</div><div class="finance-entry-main"><button class="finance-entry-open" type="button" data-finance-open="${id}" aria-label="Ver detalhes de ${escapeHTML(entry.title)}">${escapeHTML(entry.title)} <span aria-hidden="true">›</span></button><span><b class="finance-flow-tag ${entry.kind}">${escapeHTML(flowLabel)}</b>${occurrenceLabel?` · ${escapeHTML(occurrenceLabel)}`:''}</span></div><div class="finance-entry-actions"><strong class="finance-amount ${entry.kind}">${escapeHTML(amountLabel)}</strong><button class="finance-status-pill ${entry.status}" type="button" data-finance-toggle-status="${id}" aria-label="${entry.status==='planned'?'Marcar como realizado':'Voltar para previsto'}">${entry.status==='planned'?'PREVISTO':'REALIZADO'}</button><button class="finance-icon-button" type="button" data-finance-edit="${id}" aria-label="Editar ${escapeHTML(entry.title)}" title="Editar">✎</button><button class="finance-icon-button danger" type="button" data-finance-delete="${id}" aria-label="Excluir ${escapeHTML(entry.title)}" title="Excluir">×</button></div></article>`;
     }).join(''):`<p class="empty finance-empty">${escapeHTML(emptyMessage)}</p>`;
   }
   function shiftFinanceMonth(amount) {
@@ -963,7 +1019,7 @@
   function updateFinanceRecurrenceUI() { $('financeInstallmentWrap').hidden=$('financeRecurrence').value!=='monthly'; }
   function openFinanceDialog(entryId='') {
     const entry=entryId?finances.find(item=>item.id===String(entryId)&&!item.deletedAt):null,series=Boolean(entry?.seriesId&&entry?.recurrence?.frequency==='monthly');
-    financeDialogDirty=false;$('financeForm').reset();$('financeId').value=entry?.id||'';$('financeDialogTitle').textContent=entry?'Editar movimentação':'Nova movimentação';
+    financeDialogDirty=false;$('financeForm').reset();$('financeId').value=entry?.id||'';$('financeDialogTitle').textContent=entry?'Detalhes do lançamento':'Novo lançamento';$('financeSaveBtn').textContent=entry?'Salvar alterações':'Criar lançamento';
     $('financeTitle').value=entry?.title||'';$('financeDirection').value=entry?.kind||'expense';$('financeAmount').value=entry?String(entry.amount):'';$('financeDate').value=entry?.date||todayKey();$('financeStatus').value=entry?.status||'planned';
     $('financeRecurrence').value=entry?.recurrence?'monthly':'once';$('financeInstallmentCount').value=entry?.installmentCount?String(entry.installmentCount):'';
     $('financeRecurrence').disabled=series;$('financeInstallmentCount').disabled=series;updateFinanceRecurrenceUI();
@@ -1001,7 +1057,7 @@
     entry.status=entry.status==='planned'?'realized':'planned';entry.updatedAt=nowISO();saveFinanceEntries();showToast(entry.status==='realized'?(entry.kind==='income'?'Entrada marcada como recebida.':'Saída marcada como paga.'):'Movimentação voltou para prevista.');
   }
   function deleteFinanceEntry(entryId) {
-    const entry=finances.find(item=>item.id===String(entryId)&&!item.deletedAt);if(!entry||!window.confirm(`Excluir “${entry.title}” deste mês?`))return;
+    const entry=finances.find(item=>item.id===String(entryId)&&!item.deletedAt);if(!entry)return;const question=entry.seriesId?`Excluir somente esta ocorrência de “${entry.title}”? As próximas permanecem; use “Encerrar recorrência” para interrompê-las.`:`Excluir “${entry.title}” do fluxo financeiro?`;if(!window.confirm(question))return;
     entry.deletedAt=nowISO();entry.updatedAt=entry.deletedAt;saveFinanceEntries();if($('financeDialog').open)$('financeDialog').close();showToast('Movimentação excluída.');
   }
   function stopFinanceSeries(entryId) {
@@ -1015,6 +1071,7 @@
     const status=event.target.closest('[data-finance-toggle-status]');if(status){toggleFinanceStatus(status.dataset.financeToggleStatus);return;}
     const edit=event.target.closest('[data-finance-edit]');if(edit){openFinanceDialog(edit.dataset.financeEdit);return;}
     const remove=event.target.closest('[data-finance-delete]');if(remove){deleteFinanceEntry(remove.dataset.financeDelete);return;}
+    const open=event.target.closest('[data-finance-open]');if(open){openFinanceDialog(open.dataset.financeOpen);return;}
   }
   function requestLogVaultAccess(logId,action) {
     if(action==='lock'){pendingLogLockId=String(logId);pendingLogUnlockId='';}else{pendingLogUnlockId=String(logId);pendingLogLockId='';}
@@ -2071,6 +2128,12 @@
   $('financePrevMonth').addEventListener('click',()=>shiftFinanceMonth(-1));
   $('financeNextMonth').addEventListener('click',()=>shiftFinanceMonth(1));
   $('financeEntriesList').addEventListener('click',handleFinanceClick);
+  $('financeUpcomingList').addEventListener('click',handleFinanceClick);
+  $('plannerUpcomingIncomeList').addEventListener('click',handleFinanceClick);
+  $('householdBucketsGrid').addEventListener('click',event=>{const button=event.target.closest('[data-household-bill-toggle]');if(button)void toggleHouseholdBillPaid(button.dataset.householdBillToggle);});
+  $('householdPaymentDeductBtn').addEventListener('click',()=>{void completeHouseholdBillPayment(true);});
+  $('householdPaymentKeepBtn').addEventListener('click',()=>{void completeHouseholdBillPayment(false);});
+  $('closeHouseholdPaymentDialog').addEventListener('click',()=>$('householdPaymentDialog').close());
   $('financeRecurrence').addEventListener('change',updateFinanceRecurrenceUI);
   $('closeFinanceDialog').addEventListener('click',()=>$('financeDialog').close());
   $('fullscreenToggleBtn').addEventListener('click',toggleAppFullscreen);
