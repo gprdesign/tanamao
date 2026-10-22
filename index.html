@@ -874,6 +874,16 @@
     .task-recurrence-icon { flex:none; color:#a9c4ff; font-size:.82rem; font-weight:900; line-height:1; }
     body[data-page="finance"] .wrap { height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
     body[data-page="finance"] { overflow-x:hidden; overflow-y:auto; }
+    .finance-upcoming { margin:10px 0 14px; padding:11px; border:1px solid #315944; border-radius:14px; background:rgba(20,38,31,.38); }
+    .finance-upcoming-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    .finance-upcoming-heading h3 { margin:0; font-size:.8rem; letter-spacing:.04em; }
+    .finance-upcoming-window { color:var(--muted); font-size:.66rem; font-weight:800; }
+    .finance-upcoming-list { display:grid; gap:6px; }
+    .finance-upcoming-row { display:grid; grid-template-columns:58px minmax(0,1fr) auto; align-items:center; gap:8px; padding:8px 9px; border:1px solid var(--line); border-radius:10px; background:rgba(20,27,45,.72); }
+    .finance-upcoming-date { color:var(--muted); font-size:.7rem; font-weight:800; }
+    .finance-upcoming-title { min-width:0; font-size:.8rem; overflow-wrap:anywhere; }
+    .finance-upcoming-amount { color:#8fe0b5; font-size:.8rem; font-weight:850; white-space:nowrap; }
+    .finance-upcoming-empty { margin:0; padding:8px 4px; color:var(--muted); font-size:.72rem; }
     .finance-month-toolbar { display:flex; align-items:center; justify-content:center; gap:14px; margin:0 0 12px; }
     .finance-month-toolbar button { width:40px; min-width:40px; height:40px; padding:0; font-size:1.5rem; line-height:1; }
     .finance-month-toolbar strong { min-width:170px; text-align:center; }
@@ -947,6 +957,14 @@
       .finance-list-heading p { font-size:.67rem; line-height:1.3; }
       #financeAddBtn { min-height:42px; padding:7px 10px; font-size:.78rem; }
       .finance-form-grid { grid-template-columns:1fr; }
+      .finance-upcoming { margin:8px 0 12px; padding:10px; }
+      .finance-upcoming-heading h3 { font-size:.74rem; }
+      .finance-upcoming-window { font-size:.6rem; }
+      .finance-upcoming-row { grid-template-columns:48px minmax(0,1fr); align-items:start; gap:4px 8px; padding:8px; }
+      .finance-upcoming-date { grid-column:1; grid-row:1/3; align-self:center; font-size:.64rem; }
+      .finance-upcoming-title,.finance-upcoming-amount { grid-column:2; }
+      .finance-upcoming-title { font-size:.78rem; }
+      .finance-upcoming-amount { font-size:.76rem; }
     }
     .note-card .note-card-title,.note-card .note-card-body,.note-card .note-card-body p,.note-card .note-card-content--titleless { font-size:.75rem !important; line-height:1.35; }
     .note-card-footer .item-link,.private-note-card .item-link { margin:0; font-size:.75rem; white-space:normal; }
@@ -1006,6 +1024,7 @@
         <article class="finance-budget-card cashbox"><label for="financeCashboxInput">CAIXINHA DE CONTAS</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor da Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Salvar</button></div><small id="financeCashboxValue">Ainda não informado</small></article>
       </section>
       <p class="finance-formula-note">Saldo atual ÷ dias até a próxima ENTRADA. A Caixinha é informativa e não é subtraída do cálculo.</p>
+      <section class="finance-upcoming" aria-label="Próximos recebimentos nos próximos 30 dias"><div class="finance-upcoming-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span class="finance-upcoming-window">PRÓXIMOS 30 DIAS</span></div><div class="finance-upcoming-list" id="financeUpcomingList" aria-live="polite"></div></section>
       <div class="finance-month-toolbar"><button class="btn ghost small" id="financePrevMonth" type="button" aria-label="Mês anterior">‹</button><strong id="financeMonthLabel" aria-live="polite"></strong><button class="btn ghost small" id="financeNextMonth" type="button" aria-label="Próximo mês">›</button></div>
       <div class="finance-summary" id="financeSummary"></div>
       <div class="finance-list-heading"><p class="muted">Previsto = ainda não entrou/saiu. Realizado = já recebido/pago.</p><button class="btn primary small" id="financeAddBtn" type="button">＋ Lançamento</button></div>
@@ -1073,7 +1092,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=97" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=96',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=98" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=97',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

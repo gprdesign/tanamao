@@ -906,23 +906,40 @@
     if(changed){localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);scheduleSync();}
     return changed;
   }
+  function collectUpcomingFinanceIncome() {
+    const today=todayKey(),lastDay=addDays(today,30),candidates=finances.filter(entry=>!entry.deletedAt&&entry.kind==='income'&&entry.status==='planned'&&entry.date>=today&&entry.date<=lastDay).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
+    const ids=new Set(),seen=new Set(),items=[];
+    for(const entry of candidates){
+      ids.add(String(entry.id));
+      const title=String(entry.title||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('pt-BR'),key=`${entry.date}|${title}|${Math.round(Number(entry.amount||0)*100)}`;
+      if(seen.has(key))continue;
+      seen.add(key);items.push(entry);
+    }
+    return {items,ids};
+  }
   function renderFinancePage() {
-    const monthLabel=$('financeMonthLabel'),summary=$('financeSummary'),list=$('financeEntriesList');if(!monthLabel||!summary||!list)return;
+    const monthLabel=$('financeMonthLabel'),summary=$('financeSummary'),list=$('financeEntriesList'),upcomingList=$('financeUpcomingList');if(!monthLabel||!summary||!list||!upcomingList)return;
     ensureFinanceHorizon();renderFinanceBudget();
     const monthDate=dateAtNoon(`${financeMonth}-01`)||new Date(),rawMonth=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
     monthLabel.textContent=rawMonth.charAt(0).toLocaleUpperCase('pt-BR')+rawMonth.slice(1);
     const entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===financeMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
-    const income=entries.filter(entry=>entry.kind==='income'),expense=entries.filter(entry=>entry.kind==='expense');
+    const upcoming=collectUpcomingFinanceIncome(),monthUpcoming=upcoming.items.filter(entry=>entry.date.slice(0,7)===financeMonth),monthListEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id))),totalsEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id))).concat(monthUpcoming);
+    upcomingList.innerHTML=upcoming.items.length?upcoming.items.map(entry=>{
+      const date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):entry.date;
+      return `<article class="finance-upcoming-row"><time class="finance-upcoming-date" datetime="${escapeHTML(entry.date)}">${escapeHTML(dateLabel)}</time><strong class="finance-upcoming-title">${escapeHTML(entry.title)}</strong><span class="finance-upcoming-amount">+ ${escapeHTML(financeMoney(entry.amount))}</span></article>`;
+    }).join(''):'<p class="finance-upcoming-empty">Nenhum recebimento previsto nos próximos 30 dias.</p>';
+    const income=totalsEntries.filter(entry=>entry.kind==='income'),expense=totalsEntries.filter(entry=>entry.kind==='expense');
     const totalIncome=income.reduce((sum,entry)=>sum+entry.amount,0),realizedIncome=income.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
     const totalExpense=expense.reduce((sum,entry)=>sum+entry.amount,0),realizedExpense=expense.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
     const plannedBalance=totalIncome-totalExpense,realizedBalance=realizedIncome-realizedExpense;
     summary.innerHTML=`<article class="finance-summary-card income"><span>ENTRADAS</span><strong>${financeMoney(totalIncome)}</strong><small>Recebido: ${financeMoney(realizedIncome)}</small></article><article class="finance-summary-card expense"><span>SAÍDAS</span><strong>${financeMoney(totalExpense)}</strong><small>Pago: ${financeMoney(realizedExpense)}</small></article><article class="finance-summary-card balance"><span>SALDO PREVISTO</span><strong>${financeMoney(plannedBalance)}</strong><small>Realizado: ${financeMoney(realizedBalance)}</small></article>`;
-    list.innerHTML=entries.length?entries.map(entry=>{
+    const emptyMessage=entries.length&&monthListEntries.length===0?'Os recebimentos próximos deste mês estão listados acima.':'Nenhuma movimentação neste mês. Adicione entradas e saídas quando quiser.';
+    list.innerHTML=monthListEntries.length?monthListEntries.map(entry=>{
       const id=escapeHTML(entry.id),date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',amountLabel=`${entry.kind==='income'?'+':'−'} ${financeMoney(entry.amount)}`;
       const occurrenceLabel=entry.installmentCount?`Parcela ${entry.occurrenceNumber}/${entry.installmentCount}`:entry.recurrence?'Mensal':'';
       const flowTag=tags.find(tag=>tag.id===entry.tagId&&!tag.deletedAt),flowLabel=flowTag?.name||(entry.kind==='income'?'ENTRADA':'SAÍDA');
       return `<article class="finance-entry ${entry.kind} ${entry.status}" data-finance-id="${id}"><div class="finance-entry-date">${escapeHTML(dateLabel)}</div><div class="finance-entry-main"><strong>${escapeHTML(entry.title)}</strong><span><b class="finance-flow-tag ${entry.kind}">${escapeHTML(flowLabel)}</b>${occurrenceLabel?` · ${escapeHTML(occurrenceLabel)}`:''}</span></div><div class="finance-entry-actions"><strong class="finance-amount ${entry.kind}">${escapeHTML(amountLabel)}</strong><button class="finance-status-pill ${entry.status}" type="button" data-finance-toggle-status="${id}" aria-label="${entry.status==='planned'?'Marcar como realizado':'Voltar para previsto'}">${entry.status==='planned'?'PREVISTO':'REALIZADO'}</button><button class="finance-icon-button" type="button" data-finance-edit="${id}" aria-label="Editar ${escapeHTML(entry.title)}" title="Editar">✎</button><button class="finance-icon-button danger" type="button" data-finance-delete="${id}" aria-label="Excluir ${escapeHTML(entry.title)}" title="Excluir">×</button></div></article>`;
-    }).join(''):'<p class="empty finance-empty">Nenhuma movimentação neste mês. Adicione entradas e saídas quando quiser.</p>';
+    }).join(''):`<p class="empty finance-empty">${escapeHTML(emptyMessage)}</p>`;
   }
   function shiftFinanceMonth(amount) {
     const date=dateAtNoon(`${financeMonth}-01`)||dateAtNoon(todayKey());date.setMonth(date.getMonth()+Number(amount||0));financeMonth=dateKey(date).slice(0,7);localStorage.setItem(FINANCE_MONTH_KEY,financeMonth);renderFinancePage();
