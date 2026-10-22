@@ -1068,9 +1068,9 @@
     body.view-mobile[data-page="tasks"] .day-column { min-height:0; padding:9px 10px; overflow:visible; }
     body.view-mobile[data-page="tasks"] .day-task-list { flex:none; min-height:0; max-height:none; overflow:visible; gap:6px; }
     body.view-mobile[data-page="tasks"] #weekBoard { display:flex !important; flex-direction:column; grid-template-columns:none !important; grid-template-rows:none !important; }
-    body.view-mobile[data-page="tasks"] #weekGrid { grid-column:auto; grid-row:auto; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; }
+    body.view-mobile[data-page="tasks"] #weekGrid { grid-column:auto; grid-row:auto; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; padding-bottom:calc(122px + env(safe-area-inset-bottom,0px)); scroll-padding-bottom:calc(122px + env(safe-area-inset-bottom,0px)); }
     body.view-mobile[data-page="tasks"] #weekDock { position:fixed !important; left:50%; right:auto; bottom:calc(70px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:flex !important; flex-direction:row !important; align-items:center; justify-content:center; width:min(520px,calc(100% - 24px)) !important; height:auto; grid-column:auto; grid-row:auto; }
-    body.view-mobile[data-page="tasks"].planner-expanded #weekGrid { flex:none; min-height:0; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; overflow:visible; }
+    body.view-mobile[data-page="tasks"].planner-expanded #weekGrid { flex:none; min-height:0; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; overflow:visible; padding-bottom:0; scroll-padding-bottom:0; }
     body.view-mobile[data-page="notes"] #notesPage,body.view-mobile[data-page="notes"] #notesDock,body.view-mobile #noteDialog { zoom:.85; }
     body.view-mobile .header-actions { gap:4px; }
     body.view-mobile .header-actions .btn { min-height:30px; padding:4px 5px; font-size:.66rem; }
@@ -1198,6 +1198,6 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="./app.js?v=105" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=106',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=107',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
