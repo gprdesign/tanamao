@@ -354,6 +354,7 @@
     .planner-panel { flex:none; max-height:35dvh; margin-top:4px; padding:6px; overflow:auto; border:1px solid #ffffff20; border-radius:12px; background:rgba(17,24,39,.72); overscroll-behavior:contain; }
     .planner-panel[hidden] { display:none !important; }
     .task-tile-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
+    #planningList { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .task-tile-grid .task-card--tile { grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:4px; min-height:46px; padding:5px; }
     .task-card--tile .task-title-row { gap:4px; }
     .task-card--tile .task-title-row .tag-dot { width:7px; height:7px; margin-top:2px; }
@@ -666,8 +667,10 @@
     .fullscreen-toggle { position:fixed; z-index:22; right:calc(72px + env(safe-area-inset-right,0px)); bottom:calc(84px + env(safe-area-inset-bottom,0px)); display:grid; place-items:center; width:48px; height:48px; padding:0; border:1px solid #8299c6; border-radius:50%; background:rgba(35,51,78,.96); color:#e7eeff; box-shadow:0 6px 20px #0008,inset 0 1px 0 #ffffff24; font-size:1.5rem; line-height:1; }
     body[data-page="tasks"] .fullscreen-toggle,body[data-page="notes"] .fullscreen-toggle { right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(148px + env(safe-area-inset-bottom,0px)); }
     body.tnm-fullscreen-mode .app-header,body.tnm-fullscreen-mode .main-nav { display:none !important; }
-    body.tnm-fullscreen-mode .wrap { padding-bottom:calc(14px + env(safe-area-inset-bottom,0px)); }
+    body.tnm-fullscreen-mode .wrap { padding-top:0; padding-bottom:calc(14px + env(safe-area-inset-bottom,0px)); }
+    body.tnm-fullscreen-mode .sub-dock { bottom:calc(8px + env(safe-area-inset-bottom,0px)); }
     body.tnm-fullscreen-mode .fullscreen-toggle { right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(16px + env(safe-area-inset-bottom,0px)); }
+    body.tnm-fullscreen-mode[data-page="tasks"] .fullscreen-toggle,body.tnm-fullscreen-mode[data-page="notes"] .fullscreen-toggle { bottom:calc(70px + env(safe-area-inset-bottom,0px)); }
     @keyframes refresh-rotate { to { transform:rotate(360deg); } }
     .note-list { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px !important; row-gap:14px !important; column-gap:14px !important; columns:unset; }
     .note-list .note-card { margin:0 !important; }
@@ -918,23 +921,31 @@
     .finance-future-option input { width:18px; height:18px; margin:0; accent-color:#8bafff; }
     #headerTagsBtn[hidden] { display:none !important; }
     @media(max-width:600px) {
-      .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
-      .finance-budget-card { padding:9px 7px; }
-      .finance-budget-card.cashbox { grid-column:1/-1; }
-      .finance-budget-card > span,.finance-budget-card > small,.finance-budget-card > label { font-size:.59rem; }
-      .finance-budget-card > strong { font-size:.82rem; }
-      .finance-formula-note { font-size:.59rem; }
-      .finance-summary { gap:5px; }
-      .finance-summary-card { padding:9px 6px; }
-      .finance-summary-card span,.finance-summary-card small { font-size:.56rem; }
-      .finance-summary-card strong { font-size:.76rem; }
-      .finance-entry { grid-template-columns:45px minmax(0,1fr) auto; gap:6px; padding:8px 6px; }
-      .finance-entry-actions { grid-template-columns:auto 28px 28px; gap:3px; }
-      .finance-icon-button { width:28px; min-width:28px; height:28px; min-height:28px; }
-      .finance-status-pill { min-height:28px; padding:3px 5px; font-size:.53rem; }
-      .finance-amount { font-size:.76rem; }
-      .finance-list-heading { align-items:flex-start; }
-      .finance-list-heading p { font-size:.64rem; }
+      .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-areas:"balance daily" "cashbox cashbox"; gap:8px; }
+      .finance-budget-card.balance { grid-area:balance; }
+      .finance-budget-card.daily { grid-area:daily; }
+      .finance-budget-card.cashbox { grid-area:cashbox; }
+      .finance-budget-card { padding:10px 9px; }
+      .finance-budget-card > span,.finance-budget-card > small,.finance-budget-card > label { font-size:.63rem; }
+      .finance-budget-card > strong { font-size:.9rem; }
+      .finance-cashbox-form input { height:40px; font-size:.9rem; }
+      .finance-cashbox-form button { min-width:68px; min-height:40px; font-size:.76rem; }
+      .finance-formula-note { margin:0 0 12px; font-size:.68rem; line-height:1.35; }
+      .finance-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+      .finance-summary-card { padding:10px 9px; }
+      .finance-summary-card.balance { grid-column:1/-1; }
+      .finance-summary-card span,.finance-summary-card small { font-size:.63rem; }
+      .finance-summary-card strong { font-size:.88rem; }
+      .finance-entry { grid-template-columns:42px minmax(0,1fr); gap:6px 8px; padding:10px; }
+      .finance-entry-date { grid-column:1; grid-row:1/3; align-self:center; font-size:.64rem; }
+      .finance-entry-main { grid-column:2; grid-row:1; }
+      .finance-entry-actions { grid-column:2; grid-row:2; display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:5px; }
+      .finance-amount { grid-column:auto; flex:1 0 100%; text-align:left; font-size:.84rem; }
+      .finance-icon-button { width:30px; min-width:30px; height:30px; min-height:30px; }
+      .finance-status-pill { min-height:30px; padding:4px 7px; font-size:.59rem; }
+      .finance-list-heading { align-items:center; }
+      .finance-list-heading p { font-size:.67rem; line-height:1.3; }
+      #financeAddBtn { min-height:42px; padding:7px 10px; font-size:.78rem; }
       .finance-form-grid { grid-template-columns:1fr; }
     }
     .note-card .note-card-title,.note-card .note-card-body,.note-card .note-card-body p,.note-card .note-card-content--titleless { font-size:.75rem !important; line-height:1.35; }
@@ -991,8 +1002,8 @@
       <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <section class="finance-budget-grid" aria-label="Saldo e valor diário">
         <article class="finance-budget-card balance"><span>SALDO ATUAL EM CONTA</span><strong id="financeAccountBalance">Aguardando saldo</strong><small id="financeBalanceUpdated">O Radar ainda não recebeu saldo.</small></article>
-        <article class="finance-budget-card cashbox"><label for="financeCashboxInput">CAIXINHA DE CONTAS</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor da Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Salvar</button></div><small id="financeCashboxValue">Ainda não informado</small></article>
         <article class="finance-budget-card daily"><span>PARA GASTAR POR DIA</span><strong id="financeDailyAllowance">—</strong><small id="financeNextIncomeLabel">Próximo recebimento: cadastre uma entrada prevista no TNM.</small></article>
+        <article class="finance-budget-card cashbox"><label for="financeCashboxInput">CAIXINHA DE CONTAS</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor da Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Salvar</button></div><small id="financeCashboxValue">Ainda não informado</small></article>
       </section>
       <p class="finance-formula-note">Saldo atual ÷ dias até a próxima ENTRADA. A Caixinha é informativa e não é subtraída do cálculo.</p>
       <div class="finance-month-toolbar"><button class="btn ghost small" id="financePrevMonth" type="button" aria-label="Mês anterior">‹</button><strong id="financeMonthLabel" aria-live="polite"></strong><button class="btn ghost small" id="financeNextMonth" type="button" aria-label="Próximo mês">›</button></div>
@@ -1045,7 +1056,7 @@
     <button class="nav-btn" type="button" data-page="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span>RESUMO</span></button>
     <button class="nav-btn" type="button" data-page="tasks"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span>PLANNER</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
-    <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true">R$</span><span>FINANÇAS</span></button>
+    <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
   </nav>
 
   <dialog id="taskDialog" class="app-dialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><div class="field"><label for="taskRecurrence">Repetição</label><select id="taskRecurrence"><option value="">Não se repete</option><option value="daily">Diariamente</option><option value="weekly">Semanalmente</option><option value="monthly">Mensalmente</option><option value="yearly">Anualmente</option></select></div><div id="recurrenceOptions" class="recurrence-options" hidden><div class="field"><label for="recurrenceInterval">Repetir a cada</label><div class="recurrence-interval-row"><input id="recurrenceInterval" type="number" min="1" max="999" step="1" value="1"><span id="recurrenceUnit">dia(s)</span></div></div><div class="field" id="recurrenceWeekdaysField" hidden><span class="field-label">Dias da semana</span><div class="recurrence-weekdays"><label><input type="checkbox" name="recurrenceWeekday" value="1"> SEG</label><label><input type="checkbox" name="recurrenceWeekday" value="2"> TER</label><label><input type="checkbox" name="recurrenceWeekday" value="3"> QUA</label><label><input type="checkbox" name="recurrenceWeekday" value="4"> QUI</label><label><input type="checkbox" name="recurrenceWeekday" value="5"> SEX</label><label><input type="checkbox" name="recurrenceWeekday" value="6"> SÁB</label><label><input type="checkbox" name="recurrenceWeekday" value="7"> DOM</label></div></div><div class="field"><label for="recurrenceUntil">Repetir até <span class="muted">(opcional)</span></label><input id="recurrenceUntil" type="date"></div><p class="dialog-hint recurrence-hint">Ao concluir uma ocorrência, a próxima será criada automaticamente.</p></div><div class="field"><label for="taskContent">Conteúdo <span class="muted">(opcional)</span></label><textarea id="taskContent" maxlength="20000" placeholder="Detalhes da tarefa…"></textarea></div><section class="task-checklist" aria-label="Checklist da tarefa"><div class="task-checklist-head"><span class="field-label">Checklist</span><button class="btn small" id="taskChecklistAddBtn" type="button">＋ Adicionar item</button></div><div class="task-checklist-list" id="taskChecklistList"></div></section><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="taskLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="taskLinkWrap" hidden><div><label for="taskLink">Endereço do link</label><input id="taskLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="taskLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Sem data, fica em Planejar. Enter no título vai para Conteúdo; Enter no conteúdo cria linha; Enter numa etapa adiciona outra. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions dialog-save-actions"><button class="btn danger" id="deleteTaskBtn" type="button">Excluir</button><button class="btn primary" type="submit">Salvar</button></div></form></dialog>
@@ -1063,6 +1074,6 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
   <script src="./app.js?v=97" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=95',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=96',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
