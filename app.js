@@ -107,7 +107,7 @@
   let taskDialogDirty = false;
   let noteDialogDirty = false;
   let financeDialogDirty = false;
-  let appFullscreenMode = false;
+  let appFullscreenMode = /Android/i.test(navigator.userAgent||'');
   let lastTaskCtrlEnterAt = 0;
   let lastNoteCtrlEnterAt = 0;
   let authMessage = '';
@@ -782,16 +782,9 @@
     button.title=appFullscreenMode?'Sair da tela cheia':'Tela cheia';
     button.textContent=appFullscreenMode?'⤢':'⛶';
   }
-  async function toggleAppFullscreen() {
-    if(appFullscreenMode){
-      if(document.fullscreenElement&&document.exitFullscreen){try{await document.exitFullscreen();}catch{showToast('O navegador não conseguiu sair da tela cheia do sistema.');return;}}
-      appFullscreenMode=false;syncFullscreenButton();return;
-    }
-    appFullscreenMode=true;syncFullscreenButton();
-    const root=document.documentElement;
-    if(typeof root.requestFullscreen!=='function'){showToast('O cabeçalho e a dock foram ocultados, mas este navegador não permite tela cheia do sistema.');return;}
-    try{await root.requestFullscreen({navigationUI:'hide'});}
-    catch{showToast('O cabeçalho e a dock foram ocultados, mas o navegador não liberou tela cheia do sistema.');}
+  function toggleAppFullscreen() {
+    appFullscreenMode=!appFullscreenMode;
+    syncFullscreenButton();
   }
   function openFilterDialog() {
     $('tagMessage').textContent=''; $('newTagName').value='';
@@ -2292,12 +2285,11 @@
     handleDialogBack(dialog);
     if(dialog.open)pushDialogHistory(dialog);
   });
-  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&appFullscreenMode){appFullscreenMode=false;syncFullscreenButton();}});
   document.addEventListener('click',captureActionMenuClick,true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&floatingActionMenu){event.preventDefault();event.stopPropagation();closeFloatingActionMenu();}},true);
   document.addEventListener('scroll',()=>{if(floatingActionMenu)closeFloatingActionMenu();},true);
   window.addEventListener('resize',()=>updateNavIndicator());
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false); });
 
-  applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
+  syncFullscreenButton();applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
 })();
