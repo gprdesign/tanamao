@@ -1077,7 +1077,7 @@
       <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <section class="finance-budget-grid" aria-label="Saldo e valor diário">
         <article class="finance-budget-card balance"><span>SALDO ATUAL EM CONTA</span><strong id="financeAccountBalance">Aguardando saldo</strong><small id="financeBalanceUpdated">O Radar ainda não recebeu saldo.</small></article>
-        <article class="finance-budget-card daily"><span>PARA GASTAR POR DIA</span><strong id="financeDailyAllowance">—</strong><small id="financeNextIncomeLabel">Próximo recebimento: cadastre uma entrada prevista no TNM.</small></article>
+        <article class="finance-budget-card daily"><span>PARA GASTAR POR DIA</span><strong id="financeDailyAllowance">—</strong><small id="financeNextIncomeLabel">Dividido até o próximo dia 05 do mês.</small></article>
         <article class="finance-budget-card cashbox"><label for="financeCashboxInput">ADICIONAR À CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor a adicionar à Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Adicionar</button></div><small id="financeCashboxValue">Ainda não informado</small></article>
       </section>
       <section class="household-buckets-panel" aria-label="Caixinhas das contas de casa"><div class="household-buckets-heading"><div><h3>CAIXINHAS DAS CONTAS</h3><small id="householdBucketsMonth" class="household-buckets-month"></small></div><strong id="householdBucketsSummary"></strong></div><p class="household-buckets-caption">O saldo da Caixinha é distribuído de cima para baixo, na ordem dos vencimentos.</p><div class="household-buckets-overall-track" id="householdBucketsOverallTrack" role="progressbar" aria-label="Progresso total das contas de casa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="householdBucketsOverallFill"></span></div><div class="household-buckets-grid" id="householdBucketsGrid"></div><p class="household-buckets-free" id="householdBucketsFree" aria-live="polite"></p></section>
@@ -1152,7 +1152,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=2" defer></script>
-  <script src="./app.js?v=101" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=100',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=102" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=101',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

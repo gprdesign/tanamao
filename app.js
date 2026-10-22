@@ -873,9 +873,10 @@
     logRange=range;localStorage.setItem(LOG_RANGE_KEY,range);renderLogs();
   }
   function financeMoney(amount) { return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(amount)||0); }
-  function getNextPlannedIncome() {
-    const today=todayKey();
-    return finances.filter(entry=>!entry.deletedAt&&entry.kind==='income'&&entry.status==='planned'&&entry.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'))[0]||null;
+  function getDailyAllowanceEndDate() {
+    const today=dateAtNoon(todayKey());if(!today)return '';
+    const target=new Date(today.getFullYear(),today.getMonth(),5,12);if(today.getDate()>5)target.setMonth(target.getMonth()+1);
+    return dateKey(target);
   }
   const HOUSEHOLD_BILLS=[{id:'fut-terca',title:'Fut terça',day:7,amount:110},{id:'aluguel',title:'Aluguel',day:9,amount:583},{id:'s24',title:'Parcela S24 — pai',day:10,amount:207,knownUntil:'2027-07-10'},{id:'internet',title:'Internet',day:15,amount:50},{id:'energia',title:'Energia',day:18,amount:250},{id:'mei',title:'MEI',day:20,amount:87},{id:'condominio',title:'Condomínio',day:27,amount:180}];
   function householdBillCycleKey() { return todayKey().slice(0,7); }
@@ -940,10 +941,10 @@
     balanceUpdated.textContent=updatedValid?`${stale?'Último saldo conhecido':'Consulta'} · ${updated.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'O Radar ainda não recebeu saldo.';
     if(document.activeElement!==cashboxInput)cashboxInput.value='';
     cashboxValue.textContent=financeState.cashboxAmount===null?'Total guardado: ainda não informado':`Total guardado: ${financeMoney(financeState.cashboxAmount)}`;
-    const next=getNextPlannedIncome();
-    if(!next){daily.textContent='—';nextLabel.textContent='Próximo recebimento: cadastre uma entrada prevista no TNM.';return;}
-    const nextDate=dateAtNoon(next.date),todayDate=dateAtNoon(todayKey()),rawDays=nextDate&&todayDate?Math.round((nextDate-todayDate)/86400000):0,days=Math.max(1,rawDays);
-    nextLabel.textContent=`Próxima entrada: ${nextDate?nextDate.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}):next.date} · ${days} ${days===1?'dia':'dias'}${rawDays===0?' (hoje)':''}`;
+    const endDate=dateAtNoon(getDailyAllowanceEndDate()),todayDate=dateAtNoon(todayKey());
+    if(!endDate||!todayDate){daily.textContent='—';nextLabel.textContent='Data-base do cálculo indisponível.';return;}
+    const rawDays=Math.max(0,Math.round((endDate-todayDate)/86400000)),days=Math.max(1,rawDays),endLabel=endDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    nextLabel.textContent=`Dividido até ${endLabel} · ${days} ${days===1?'dia':'dias'}${rawDays===0?' (hoje; considera 1 dia)':''}`;
     daily.textContent=financeState.accountBalance===null?'—':financeMoney(financeState.accountBalance/days);
   }
   async function saveFinanceCashbox() {
