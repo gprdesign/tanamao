@@ -1078,6 +1078,7 @@
     .calendar-filter-name { min-width:0; font-size:.75rem; font-weight:750; overflow-wrap:anywhere; }
     .calendar-filter-meta { display:block; margin-top:2px; color:var(--muted); font-size:.62rem; font-weight:600; }
     /* Compact header is the default, matching the former fullscreen layout. */
+    body:not(.view-mobile) .wrap { width:100%; max-width:none; margin:0; }
     .app-header { display:flex !important; margin:0 0 6px; gap:6px; }
     .main-nav { display:grid !important; }
     .brand { gap:7px; }
@@ -1286,7 +1287,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=116" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=121',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=117" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=122',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
