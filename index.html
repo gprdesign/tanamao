@@ -101,8 +101,12 @@
     .task-card.has-day-actions .task-main { grid-column:1; grid-row:1; }
     .task-card.has-day-actions .task-actions { grid-column:2; grid-row:1; }
     .task-day-actions { grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; width:100%; }
-    .task-day-action { min-width:0; min-height:34px; padding:5px 4px; border:1px solid #52617b; border-radius:8px; background:#172239; color:var(--text); font-size:.66rem; font-weight:800; line-height:1.1; white-space:normal; }
-    .task-day-action:hover { border-color:var(--accent); background:#22314d; }
+    .task-day-action { min-width:0; min-height:34px; margin:0; padding:6px 10px; border:1px solid #8a6a2e; border-radius:10px; background:linear-gradient(145deg,#33291b,#1e2028); color:#ffd166; font-size:.66rem; font-weight:800; line-height:1.1; text-align:center; white-space:normal; }
+    .task-day-action:hover { border-color:#ffd166; background:linear-gradient(145deg,#40331f,#252832); }
+    .task-day-action--tomorrow { border-color:#a55d31; background:linear-gradient(145deg,#38291f,#1e2028); color:#ffb36b; }
+    .task-day-action--tomorrow:hover { border-color:#ffb36b; background:linear-gradient(145deg,#493222,#252832); }
+    .task-day-action--next-week { border-color:#4c70b8; background:linear-gradient(145deg,#202d49,#1e2028); color:#8fb2ff; }
+    .task-day-action--next-week:hover { border-color:#8fb2ff; background:linear-gradient(145deg,#293a5d,#252832); }
     .task-card.is-dragging { opacity:.45; }
     .task-card.is-drop-target { box-shadow:inset 0 0 0 2px var(--accent); }
     .task-title { min-width:0; overflow-wrap:anywhere; font-size:.82rem; font-weight:700; line-height:1.3; }
