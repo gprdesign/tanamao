@@ -1670,7 +1670,13 @@
   }
   function openDayTaskCompletionConfirm(taskId) {
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);if(!task)return;
-    pendingDayTaskCompletionId=task.id;$('dayCompletionConfirmText').textContent=`Concluir “${task.title}”?`;$('dayCompletionConfirm').hidden=false;$('dayCompletionConfirmBtn').focus();
+    const openSubtasks=normalizeTaskSubtasks(task.subtasks).filter(item=>!item.completed);
+    pendingDayTaskCompletionId=task.id;$('dayCompletionConfirmText').textContent=`Concluir “${task.title}”?`;
+    const warning=$('dayCompletionChecklistWarning'),list=$('dayCompletionChecklistItems');
+    warning.hidden=!openSubtasks.length;
+    $('dayCompletionConfirm').classList.toggle('has-open-subtasks',openSubtasks.length>0);
+    list.replaceChildren(...openSubtasks.map(item=>{const li=document.createElement('li');li.textContent=item.text;return li;}));
+    $('dayCompletionConfirm').hidden=false;$('dayCompletionConfirmBtn').focus();
   }
   function closeDayTaskCompletionConfirm() {
     $('dayCompletionConfirm').hidden=true;pendingDayTaskCompletionId='';
