@@ -115,7 +115,6 @@
   let lastTasksForegroundSyncAt = 0;
   let noteDialogDirty = false;
   let financeDialogDirty = false;
-  let appFullscreenMode = isAndroidDevice;
   let lastTaskCtrlEnterAt = 0;
   let lastNoteCtrlEnterAt = 0;
   let authMessage = '';
@@ -809,18 +808,6 @@
     if(currentPage==='home'){setPage('tasks');return;}
     updateNavIndicator(currentPage);if(currentPage==='tasks')renderTasks();
   }
-  function syncFullscreenButton() {
-    const button=$('fullscreenToggleBtn');if(!button)return;
-    document.body.classList.toggle('tnm-fullscreen-mode',appFullscreenMode);
-    button.setAttribute('aria-pressed',String(appFullscreenMode));
-    button.setAttribute('aria-label',appFullscreenMode?'Sair da tela cheia':'Ativar tela cheia');
-    button.title=appFullscreenMode?'Sair da tela cheia':'Tela cheia';
-    button.textContent=appFullscreenMode?'⤢':'⛶';
-  }
-  function toggleAppFullscreen() {
-    appFullscreenMode=!appFullscreenMode;
-    syncFullscreenButton();
-  }
   function openFilterDialog() {
     $('tagMessage').textContent=''; $('newTagName').value='';
     renderFilterTagList(); showAppDialog($('filterDialog'));
@@ -1403,8 +1390,12 @@
     const open=inDay.filter(task=>!task.completedAt),completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     if(activeDayKind==='all-overdue')sortOverdueTasks(open);else open.sort(taskOrder);
     const lateMode=activeDayKind==='overdue'||activeDayKind==='all-overdue';
-    const groups=[open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode,dayActions:activeDayKind==='day'})).join(''):'<div class="empty">Sem tarefas em aberto.</div>'];
-    if(completed.length)groups.push(`<div class="task-divider">CONCLUÍDAS</div>${completed.map(task=>taskCard(task,{canMove:false})).join('')}`);
+    const events=activeDayKind==='day'?getCalendarEventsForDate(activeDayDate):[];
+    const eventLines=events.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
+    const groups=[];
+    if(eventLines)groups.push(`<section class="day-dialog-events" aria-label="Eventos do Google Calendar"><div class="planner-calendar-events">${eventLines}</div>${open.length?'<div class="planner-calendar-task-divider" role="separator" aria-label="Tarefas"></div>':''}</section>`);
+    groups.push(open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode,dayActions:activeDayKind==='day'})).join(''):'<div class="empty">Sem tarefas em aberto.</div>');
+    if(completed.length)groups.push(`<details class="task-checklist-completed day-dialog-completed"><summary class="task-checklist-section-title">CONCLUÍDAS (${completed.length})</summary><div class="day-dialog-completed-list">${completed.map(task=>taskCard(task,{canMove:false})).join('')}</div></details>`);
     $('dayDialogList').innerHTML=groups.join('');
   }
   function renderDialogLists() { if ($('dayDialog')?.open) renderDayDialog(); }
@@ -2429,7 +2420,6 @@
   $('closeHouseholdPaymentDialog').addEventListener('click',()=>$('householdPaymentDialog').close());
   $('financeRecurrence').addEventListener('change',updateFinanceRecurrenceUI);
   $('closeFinanceDialog').addEventListener('click',()=>$('financeDialog').close());
-  $('fullscreenToggleBtn').addEventListener('click',toggleAppFullscreen);
   $('viewModePcBtn').addEventListener('click',()=>setViewMode('pc'));
   $('viewModeMobileBtn').addEventListener('click',()=>setViewMode('mobile'));
   $('financeDeleteBtn').addEventListener('click',()=>deleteFinanceEntry($('financeId').value));
@@ -2494,5 +2484,5 @@
   window.addEventListener('resize',()=>updateNavIndicator());
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false); });
 
-  syncViewModeSwitch();syncFullscreenButton();applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
+  syncViewModeSwitch();applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
 })();
