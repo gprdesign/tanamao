@@ -123,6 +123,7 @@
   let syncInFlight = false;
   let syncQueued = false;
   let checklistSyncQueue = Promise.resolve();
+  let taskPullInFlight = false;
   let toastTimer = null;
 
   function readStored(key,fallback) {
@@ -2202,9 +2203,19 @@
     session=null; localStorage.removeItem(SESSION_KEY); syncStatus=''; authBusy=false;
     setAuthMessage('Você saiu. Os dados continuam neste aparelho e na conta.'); updateAuthUI();
   }
+  async function refreshTasksFromCloud() {
+    if(document.visibilityState!=='visible'||!session?.user?.id||authBusy||syncInFlight||taskDialogDirty||$('taskDialog')?.open||taskPullInFlight||!CLOUD_READY)return false;
+    taskPullInFlight=true;
+    try{
+      const remoteRows=await fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),remoteTasks=remoteRows.map(rowToTask).filter(Boolean),merged=mergeById(tasks,remoteTasks).map(normalizeTask).filter(Boolean);
+      if(JSON.stringify(merged)!==JSON.stringify(tasks)){tasks=merged;localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));renderAll();}
+      return true;
+    }catch{return false;}
+    finally{taskPullInFlight=false;}
+  }
   function syncTasksOnForeground() {
     if(document.visibilityState!=='visible'||!session?.user?.id||authBusy||syncInFlight||taskDialogDirty||$('taskDialog')?.open||Date.now()-lastTasksForegroundSyncAt<15000)return;
-    lastTasksForegroundSyncAt=Date.now();void syncNow();
+    lastTasksForegroundSyncAt=Date.now();void refreshTasksFromCloud();
   }
   async function syncNow() {
     if (!session?.user?.id) return false;
@@ -2260,6 +2271,7 @@
     setInterval(()=>createAutomaticBackup(true),AUTO_BACKUP_EVERY);
     setInterval(checkWeekRollover,60*1000);
     setInterval(()=>{void refreshFinanceCloudData();},5*60*1000);
+    setInterval(syncTasksOnForeground,15*1000);
     document.addEventListener('visibilitychange',()=>{
       checkWeekRollover();
       if(document.visibilityState==='visible'){void refreshFinanceCloudData();syncTasksOnForeground();}
