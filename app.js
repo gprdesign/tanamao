@@ -99,6 +99,8 @@
   let observedCurrentWeek=startOfWeek(observedToday);
   let dragTaskId = '';
   let noteDragId = '';
+  let checklistDragId = '';
+  let checklistDragGroup = '';
   let expandedSection = '';
   let planningVisibleLimit = 6;
   let completedVisibleLimit = 6;
@@ -109,6 +111,7 @@
   let dayDialogTouchStart = null;
   let authBusy = false;
   let taskDialogDirty = false;
+  let lastTasksForegroundSyncAt = 0;
   let noteDialogDirty = false;
   let financeDialogDirty = false;
   let appFullscreenMode = isAndroidDevice;
@@ -119,6 +122,7 @@
   let syncTimer = null;
   let syncInFlight = false;
   let syncQueued = false;
+  let checklistSyncQueue = Promise.resolve();
   let toastTimer = null;
 
   function readStored(key,fallback) {
@@ -332,11 +336,21 @@
   }
   function normalizeTaskSubtasks(value) {
     if(!Array.isArray(value))return [];
-    return value.slice(0,50).map(item=>{
+    const rows=value.slice(0,50).map((item,index)=>{
       const raw=item&&typeof item==='object'?item:{text:item},text=String(raw.text??raw.title??'').trim().slice(0,180);
-      return text?{id:String(raw.id||makeId()),text,completed:raw.completed===true||raw.done===true||raw.checked===true}:null;
-    }).filter(Boolean);
+      if(!text)return null;
+      const rawOrder=raw.order,rawDoneOrder=raw.completedOrder;
+      return {id:String(raw.id||makeId()),text,completed:raw.completed===true||raw.done===true||raw.checked===true,order:rawOrder!==null&&rawOrder!==''&&Number.isFinite(Number(rawOrder))?Number(rawOrder):index,completedOrder:rawDoneOrder!==null&&rawDoneOrder!==''&&Number.isFinite(Number(rawDoneOrder))?Number(rawDoneOrder):null};
+    }).filter(Boolean).sort((a,b)=>a.order-b.order);
+    let doneOrder=0;
+    return rows.map((item,index)=>{
+      item.order=index;
+      if(item.completed){if(item.completedOrder===null)item.completedOrder=doneOrder;doneOrder=Math.max(doneOrder,Number(item.completedOrder)+1);}
+      else delete item.completedOrder;
+      return item;
+    });
   }
+
   function normalizeTask(value) {
     if (!value || typeof value !== 'object' || !String(value.title || '').trim()) return null;
     const legacyArea=value.area==='outros' ? 'outro' : (['vida','trabalho'].includes(value.area) ? value.area : 'vida');
@@ -1421,23 +1435,128 @@
   function toggleLinkAttachment(kind) { $(`${kind}LinkWrap`).hidden=false;$(`${kind}LinkToggle`).hidden=true;$(`${kind}Link`).focus(); }
   function clearLinkAttachment(kind) { $(`${kind}Link`).value='';$(`${kind}LinkWrap`).hidden=true;$(`${kind}LinkToggle`).hidden=false; }
   function readTaskChecklistDraft(includeEmpty=false) {
-    return Array.from($('taskChecklistList').querySelectorAll('[data-task-checklist-row]')).map(row=>({id:String(row.dataset.checklistId||makeId()),text:String(row.querySelector('[data-task-checklist-text]')?.value||'').trim().slice(0,180),completed:Boolean(row.querySelector('[data-task-checklist-done]')?.checked)})).filter(item=>includeEmpty||item.text).slice(0,50);
+    return Array.from($('taskChecklistList').querySelectorAll('[data-task-checklist-row]')).map((row,index)=>{
+      const completed=Boolean(row.querySelector('[data-task-checklist-done]')?.checked),order=Number(row.dataset.checklistOrder),completedOrder=Number(row.dataset.checklistCompletedOrder);
+      return {id:String(row.dataset.checklistId||makeId()),text:String(row.querySelector('[data-task-checklist-text]')?.value||'').trim().slice(0,180),completed,order:Number.isFinite(order)?order:index,completedOrder:completed&&Number.isFinite(completedOrder)?completedOrder:null};
+    }).filter(item=>includeEmpty||item.text).slice(0,50).sort((a,b)=>a.order-b.order);
   }
+
   function resizeTaskChecklistTextarea(textarea) {
     if(!textarea)return;
     textarea.style.height='auto';
     textarea.style.height=`${Math.max(40,textarea.scrollHeight)}px`;
   }
-  function renderTaskChecklist(items=[]) {
-    const list=$('taskChecklistList'),rows=Array.isArray(items)?items.slice(0,50):[];
-    list.innerHTML=rows.length?rows.map((item,index)=>`<div class="task-checklist-row${item.completed?' is-complete':''}" data-task-checklist-row data-checklist-id="${escapeHTML(item.id||makeId())}"><input type="checkbox" data-task-checklist-done aria-label="Marcar etapa ${index+1} como concluída" ${item.completed?'checked':''}><textarea data-task-checklist-text maxlength="180" rows="1" placeholder="Etapa ${index+1}" aria-label="Texto da etapa ${index+1}">${escapeHTML(item.text||'')}</textarea><button class="btn ghost small task-checklist-remove" type="button" data-remove-task-checklist-item aria-label="Remover etapa ${index+1}" title="Remover etapa">×</button></div>`).join(''):'<p class="task-checklist-empty">Nenhuma etapa adicionada.</p>';
+  function taskChecklistRowHTML(item,index,completed) {
+    const id=String(item.id||makeId()),order=Number.isFinite(Number(item.order))?Number(item.order):index,completedOrder=Number.isFinite(Number(item.completedOrder))?Number(item.completedOrder):index;
+    return `<div class="task-checklist-row${completed?' is-complete':''}" data-task-checklist-row data-checklist-id="${escapeHTML(id)}" data-checklist-order="${order}" data-checklist-completed="${completed?'true':'false'}" data-checklist-completed-order="${completedOrder}" draggable="false"><button class="btn ghost small task-checklist-drag" type="button" draggable="true" data-task-checklist-drag aria-label="Arrastar etapa ${index+1}" title="Arrastar etapa">⠿</button><input type="checkbox" data-task-checklist-done aria-label="Marcar etapa ${index+1} como concluída" ${completed?'checked':''}><textarea data-task-checklist-text maxlength="180" rows="1" placeholder="Etapa ${index+1}" aria-label="Texto da etapa ${index+1}">${escapeHTML(item.text||'')}</textarea><button class="btn ghost small task-checklist-remove" type="button" data-remove-task-checklist-item aria-label="Remover etapa ${index+1}" title="Remover etapa">×</button></div>`;
+  }
+
+  function renderTaskChecklist(items=[],options={}) {
+    const list=$('taskChecklistList'),rows=normalizeTaskSubtasks(Array.isArray(items)?items.slice(0,50):[]),open=rows.filter(item=>!item.completed).sort((a,b)=>a.order-b.order),completed=rows.filter(item=>item.completed).sort((a,b)=>a.completedOrder-b.completedOrder);
+    const openRows=open.map((item,index)=>taskChecklistRowHTML(item,index,false)).join(''),completedRows=completed.map((item,index)=>taskChecklistRowHTML(item,index,true)).join('');
+    const empty=open.length?'':completed.length?'<p class="task-checklist-empty">Nenhuma etapa em aberto.</p>':'<p class="task-checklist-empty">Nenhuma etapa adicionada.</p>';
+    list.innerHTML=`<section class="task-checklist-section task-checklist-open-section"><h4 class="task-checklist-section-title">EM ABERTO (${open.length})</h4><div class="task-checklist-group" data-task-checklist-group="open">${openRows||empty}</div></section>${completed.length?`<details class="task-checklist-section task-checklist-completed" data-task-checklist-group="completed"${options.completedOpen?' open':''}><summary class="task-checklist-section-title">CONCLUÍDAS (${completed.length})</summary><div class="task-checklist-completed-list">${completedRows}</div></details>`:''}`;
     list.querySelectorAll('[data-task-checklist-text]').forEach(resizeTaskChecklistTextarea);
+  }
+  function moveChecklistItemToCompletion(items,id,complete) {
+    const rows=items.slice().sort((a,b)=>a.order-b.order),item=rows.find(row=>row.id===String(id));if(!item)return rows;
+    if(Boolean(item.completed)===Boolean(complete))return rows;
+    item.completed=Boolean(complete);
+    if(complete){const done=rows.filter(row=>row.completed&&row.id!==item.id);item.completedOrder=done.length?Math.max(...done.map(row=>Number(row.completedOrder)||0))+1:0;}
+    else delete item.completedOrder;
+    return rows;
+  }
+
+  function saveTaskChecklistProgress(items) {
+    let taskId=$('taskId').value,task=taskId?tasks.find(item=>item.id===taskId&&!item.deletedAt):null;
+    if(!task){
+      if(!$('taskTitle').value.trim()){showToast('Preencha o título para salvar e sincronizar a checklist.');return false;}
+      if(!saveTaskFromForm({preventDefault(){}},false))return false;
+      taskId=$('taskId').value;task=tasks.find(item=>item.id===taskId&&!item.deletedAt);
+    }
+    if(!task)return false;
+    taskDialogDirty=true;task.subtasks=normalizeTaskSubtasks(items);task.updatedAt=nowISO();saveTasks(false);createAutomaticBackup(false);
+    if(session?.user?.id){void syncTaskChecklistImmediately(task.id).then(ok=>{if(!ok){scheduleSync();showToast('Checklist salva aqui; sincronização pendente.',3200);}});}
+    else showToast('Checklist salva neste aparelho; entre na conta para sincronizar.',3500);
+    return true;
+  }
+  function syncTaskChecklistImmediately(taskId) {
+    const run=async()=>{
+      if(!session?.user?.id||!CLOUD_READY)return false;
+      while(syncInFlight)await new Promise(resolve=>setTimeout(resolve,40));
+      const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task)return false;
+      const hadScheduledSync=Boolean(syncTimer);if(syncTimer){clearTimeout(syncTimer);syncTimer=null;}
+      syncInFlight=true;updateAuthUI();let ok=false;
+      try{
+        const path=`nmm_tasks?id=eq.${encodeURIComponent(task.id)}&owner_id=eq.${encodeURIComponent(session.user.id)}`;
+        const checklistSnapshot=normalizeTaskSubtasks(task.subtasks),updatedAtSnapshot=task.updatedAt;
+        let rows=await cloudRequest(path,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({subtasks:checklistSnapshot,updated_at:updatedAtSnapshot,planner_version:1})});
+        if(!Array.isArray(rows)||!rows.length){
+          const exists=await cloudRequest(`nmm_tasks?select=id&id=eq.${encodeURIComponent(task.id)}&owner_id=eq.${encodeURIComponent(session.user.id)}`);
+          if(Array.isArray(exists)&&exists.length)rows=await cloudRequest(path,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({subtasks:checklistSnapshot,updated_at:updatedAtSnapshot,planner_version:1})});
+          else rows=await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(taskToRow(task))});
+        }
+        if(Array.isArray(rows)&&rows.length){ok=true;syncStatus=`Sincronizado · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;}
+        else syncStatus='Sincronização pendente';
+      }catch{syncStatus='Sincronização pendente';}
+      finally{
+        syncInFlight=false;const queued=syncQueued;syncQueued=false;updateAuthUI();
+        if(hadScheduledSync||queued||syncTimer)scheduleSync();
+      }
+      return ok;
+    };
+    const request=checklistSyncQueue.then(run,run);checklistSyncQueue=request.catch(()=>false);return request;
+  }
+  function handleTaskChecklistToggle(checkbox) {
+    const row=checkbox.closest('[data-task-checklist-row]');if(!row)return;
+    const items=readTaskChecklistDraft(true),id=row.dataset.checklistId,oldCompleted=row.dataset.checklistCompleted==='true',item=items.find(entry=>entry.id===id);
+    if(!item)return;item.completed=oldCompleted;
+    const completedOpen=Boolean($('taskChecklistList').querySelector('.task-checklist-completed')?.open),updated=moveChecklistItemToCompletion(items,id,checkbox.checked);
+    renderTaskChecklist(updated,{completedOpen});saveTaskChecklistProgress(updated);
+  }
+  function reorderTaskChecklist(sourceId,target,clientY=0) {
+    const list=$('taskChecklistList'),source=Array.from(list.querySelectorAll('[data-task-checklist-row]')).find(row=>row.dataset.checklistId===String(sourceId)),targetGroup=target?.closest('[data-task-checklist-group]');
+    if(!source||!targetGroup)return false;
+    const completed=source.dataset.checklistCompleted==='true';if(targetGroup.dataset.taskChecklistGroup!==(completed?'completed':'open'))return false;
+    const items=readTaskChecklistDraft(true).sort((a,b)=>a.order-b.order),group=items.filter(item=>Boolean(item.completed)===completed).sort((a,b)=>completed?a.completedOrder-b.completedOrder:a.order-b.order),from=group.findIndex(item=>item.id===String(sourceId));if(from<0)return false;
+    const originalIds=group.map(item=>item.id),[moving]=group.splice(from,1),targetRow=target.closest('[data-task-checklist-row]');let to=group.length;
+    if(targetRow&&targetRow!==source&&targetRow.dataset.checklistCompleted===(completed?'true':'false')){
+      const targetIndex=group.findIndex(item=>item.id===targetRow.dataset.checklistId);
+      if(targetIndex>=0){const rect=targetRow.getBoundingClientRect();to=targetIndex+(clientY>rect.top+rect.height/2?1:0);}
+    }else if(targetRow===source)return false;
+    to=Math.max(0,Math.min(to,group.length));group.splice(to,0,moving);if(group.every((item,index)=>item.id===originalIds[index]))return false;
+    if(completed)group.forEach((item,index)=>{item.completedOrder=index;});
+    else{
+      const slots=items.filter(item=>!item.completed).sort((a,b)=>a.order-b.order).map(item=>item.order);
+      group.forEach((item,index)=>{item.order=slots[index];});
+    }
+    const updated=items.sort((a,b)=>a.order-b.order),completedOpen=Boolean(list.querySelector('.task-checklist-completed')?.open);renderTaskChecklist(updated,{completedOpen});saveTaskChecklistProgress(updated);return true;
+  }
+
+  function handleTaskChecklistDragStart(event) {
+    const row=event.target.closest('[data-task-checklist-row]');
+    if(!row||!event.target.closest('[data-task-checklist-drag]')){event.preventDefault();return;}
+    checklistDragId=row.dataset.checklistId;checklistDragGroup=row.dataset.checklistCompleted==='true'?'completed':'open';row.classList.add('is-dragging');
+    if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',checklistDragId);}
+  }
+  function handleTaskChecklistDragOver(event) {
+    if(!checklistDragId)return;
+    const targetGroup=event.target.closest('[data-task-checklist-group]');if(!targetGroup||targetGroup.dataset.taskChecklistGroup!==checklistDragGroup)return;
+    event.preventDefault();(event.target.closest('[data-task-checklist-row]')||targetGroup).classList.add('drop-active');
+  }
+  function handleTaskChecklistDrop(event) {
+    if(!checklistDragId)return;
+    const id=checklistDragId,group=checklistDragGroup;checklistDragId='';checklistDragGroup='';
+    const targetGroup=event.target.closest('[data-task-checklist-group]');if(!targetGroup||targetGroup.dataset.taskChecklistGroup!==group)return;
+    event.preventDefault();reorderTaskChecklist(id,event.target,event.clientY);
   }
   function addTaskChecklistItem() {
     const items=readTaskChecklistDraft(true);
     if(items.length>=50){showToast('O checklist aceita até 50 etapas.');return;}
-    items.push({id:makeId(),text:'',completed:false});renderTaskChecklist(items);$('taskChecklistList').querySelector('[data-task-checklist-row]:last-child [data-task-checklist-text]')?.focus();taskDialogDirty=true;
+    const order=items.length?Math.max(...items.map(item=>Number(item.order)||0))+1:0;
+    items.push({id:makeId(),text:'',completed:false,order});renderTaskChecklist(items);$('taskChecklistList').querySelector('[data-task-checklist-group="open"] [data-task-checklist-row]:last-child [data-task-checklist-text]')?.focus();taskDialogDirty=true;
   }
+
   function openTaskDialog(taskId='',suggestedDate='',reuseHistoryToken='') {
     taskDialogDirty=false;lastTaskCtrlEnterAt=0;
     const task=taskId ? tasks.find(item=>item.id===String(taskId) && !item.deletedAt) : null;
@@ -1721,25 +1840,31 @@
   function updateDragHighlight(drag,target) {
     document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
     if(!target)return;
-    const destination=drag.kind==='task'?target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList'):target.closest('.note-card[data-note-id]');
+    let destination;
+    if(drag.kind==='task')destination=target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
+    else if(drag.kind==='checklist'){
+      const sourceGroup=drag.card.closest('[data-task-checklist-group]'),targetGroup=target.closest('[data-task-checklist-group]');
+      if(sourceGroup&&targetGroup&&sourceGroup.dataset.taskChecklistGroup===targetGroup.dataset.taskChecklistGroup)destination=target.closest('[data-task-checklist-row]')||targetGroup;
+    }else destination=target.closest('.note-card[data-note-id]');
     if(destination&&destination!==drag.card)destination.classList.add('drop-active');
   }
-  function finishDragAt(drag,target,cancel=false) {
+  function finishDragAt(drag,target,cancel=false,clientY=0) {
     if(pointerDrag!==drag)return;
     pointerDrag=null;drag.card.classList.remove('is-dragging');
     if(drag.wasDraggable!==null)drag.card.setAttribute('draggable',drag.wasDraggable);
     document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
     if(cancel||!target)return;
     if(drag.kind==='task')performTaskDrop(drag.id,target);
+    else if(drag.kind==='checklist')reorderTaskChecklist(drag.id,target,clientY);
     else {const note=target.closest('.note-card[data-note-id]');if(note)reorderNoteBefore(drag.id,note.dataset.noteId);}
   }
   function startPointerDrag(event) {
     if(event.pointerType==='mouse'||event.pointerType==='touch'||event.button!==0||pointerDrag)return;
-    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]');
-    if(!taskHandle&&!noteHandle)return;
-    const kind=taskHandle?'task':'note',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle.closest('.note-card[data-note-id]');
+    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]');
+    if(!taskHandle&&!noteHandle&&!checklistHandle)return;
+    const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle.dataset.touchDragNote,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
+    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
     card.setAttribute('draggable','false');card.classList.add('is-dragging');try{event.target.setPointerCapture(event.pointerId);}catch{}
   }
   function movePointerDrag(event) {
@@ -1748,15 +1873,15 @@
   }
   function finishPointerDrag(event,cancel=false) {
     if(!pointerDrag||pointerDrag.source!=='pointer'||event.pointerId!==pointerDrag.pointerId)return;
-    finishDragAt(pointerDrag,document.elementFromPoint(event.clientX,event.clientY),cancel);
+    finishDragAt(pointerDrag,document.elementFromPoint(event.clientX,event.clientY),cancel,event.clientY);
   }
   function startTouchDrag(event) {
     if(pointerDrag)return;
-    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),touch=event.changedTouches?.[0];
-    if((!taskHandle&&!noteHandle)||!touch)return;
-    const kind=taskHandle?'task':'note',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle.closest('.note-card[data-note-id]');
+    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]'),touch=event.changedTouches?.[0];
+    if((!taskHandle&&!noteHandle&&!checklistHandle)||!touch)return;
+    const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle.dataset.touchDragNote,touchId:touch.identifier,source:'touch',card,wasDraggable:card.getAttribute('draggable')};
+    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,source:'touch',card,wasDraggable:card.getAttribute('draggable')};
     card.setAttribute('draggable','false');card.classList.add('is-dragging');
   }
   function moveTouchDrag(event) {
@@ -1767,7 +1892,7 @@
   function finishTouchDrag(event,cancel=false) {
     if(!pointerDrag||pointerDrag.source!=='touch')return;
     const drag=pointerDrag,touch=Array.from(event.changedTouches||[]).find(item=>item.identifier===drag.touchId);
-    finishDragAt(drag,touch?document.elementFromPoint(touch.clientX,touch.clientY):null,cancel);
+    finishDragAt(drag,touch?document.elementFromPoint(touch.clientX,touch.clientY):null,cancel,touch?.clientY||0);
   }
   function renderNoteTagChoices(selected=[]) {
     $('noteTagChoices').innerHTML=tags.filter(tag=>!tag.deletedAt).map(tag=>`<label class="note-tag-choice"><input type="checkbox" value="${escapeHTML(tag.id)}" ${selected.includes(tag.id)?'checked':''}><span class="tag-dot" style="--tag-color:${tag.color}" aria-hidden="true"></span><span>${escapeHTML(tag.name)}</span></label>`).join('');
@@ -2077,6 +2202,10 @@
     session=null; localStorage.removeItem(SESSION_KEY); syncStatus=''; authBusy=false;
     setAuthMessage('Você saiu. Os dados continuam neste aparelho e na conta.'); updateAuthUI();
   }
+  function syncTasksOnForeground() {
+    if(document.visibilityState!=='visible'||!session?.user?.id||authBusy||syncInFlight||taskDialogDirty||$('taskDialog')?.open||Date.now()-lastTasksForegroundSyncAt<15000)return;
+    lastTasksForegroundSyncAt=Date.now();void syncNow();
+  }
   async function syncNow() {
     if (!session?.user?.id) return false;
     authBusy=true; setAuthMessage('Sincronizando…'); updateAuthUI();
@@ -2133,7 +2262,7 @@
     setInterval(()=>{void refreshFinanceCloudData();},5*60*1000);
     document.addEventListener('visibilitychange',()=>{
       checkWeekRollover();
-      if(document.visibilityState==='visible')void refreshFinanceCloudData();
+      if(document.visibilityState==='visible'){void refreshFinanceCloudData();syncTasksOnForeground();}
       const latest=readStored(AUTO_BACKUP_KEY,null), lastAt=latest?.createdAt?Date.parse(latest.createdAt):0;
       if(document.visibilityState==='visible'&&Date.now()-lastAt>=AUTO_BACKUP_EVERY)createAutomaticBackup(true);
     });
@@ -2169,8 +2298,11 @@
   $('taskForm').addEventListener('input',event=>{taskDialogDirty=true;if(event.target.matches('[data-task-checklist-text]'))resizeTaskChecklistTextarea(event.target);});
   $('taskForm').addEventListener('change',()=>{taskDialogDirty=true;});
   $('taskChecklistAddBtn').addEventListener('click',addTaskChecklistItem);
-  $('taskChecklistList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-task-checklist-item]');if(!button)return;button.closest('[data-task-checklist-row]')?.remove();renderTaskChecklist(readTaskChecklistDraft(true));taskDialogDirty=true;});
-  $('taskChecklistList').addEventListener('change',event=>{const checkbox=event.target.closest('[data-task-checklist-done]');if(checkbox)checkbox.closest('[data-task-checklist-row]')?.classList.toggle('is-complete',checkbox.checked);});
+  $('taskChecklistList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-task-checklist-item]');if(!button)return;button.closest('[data-task-checklist-row]')?.remove();renderTaskChecklist(readTaskChecklistDraft(true),{completedOpen:Boolean($('taskChecklistList').querySelector('.task-checklist-completed')?.open)});taskDialogDirty=true;});
+  $('taskChecklistList').addEventListener('change',event=>{const checkbox=event.target.closest('[data-task-checklist-done]');if(checkbox)handleTaskChecklistToggle(checkbox);});
+  $('taskChecklistList').addEventListener('dragstart',handleTaskChecklistDragStart);
+  $('taskChecklistList').addEventListener('dragover',handleTaskChecklistDragOver);
+  $('taskChecklistList').addEventListener('drop',handleTaskChecklistDrop);
   $('taskChecklistList').addEventListener('keydown',event=>{if(event.target.matches('[data-task-checklist-text]')&&event.key==='Enter'&&!(event.ctrlKey||event.metaKey)&&!event.shiftKey){event.preventDefault();event.stopPropagation();addTaskChecklistItem();}});
   $('taskRecurrence').addEventListener('change',()=>updateTaskRecurrenceUI(true));
   $('taskLinkToggle').addEventListener('click',()=>toggleLinkAttachment('task'));
@@ -2277,7 +2409,8 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&privateNotesUnlocked)privateHiddenAt=Date.now();else if(privateHiddenAt&&Date.now()-privateHiddenAt>=5*60*1000)lockPrivateNotes();if(document.visibilityState==='visible'&&calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);});
 
   $('exportBtn').addEventListener('click',exportBackup);
-  document.addEventListener('dragend',()=>{handleDragEnd();noteDragId='';clearDropStyles();});
+  window.addEventListener('focus',syncTasksOnForeground);
+  document.addEventListener('dragend',()=>{handleDragEnd();noteDragId='';checklistDragId='';checklistDragGroup='';clearDropStyles();});
   document.addEventListener('pointerdown',startPointerDrag,true);
   document.addEventListener('pointermove',movePointerDrag,{passive:false});
   document.addEventListener('pointerup',event=>finishPointerDrag(event),true);
