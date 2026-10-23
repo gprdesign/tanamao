@@ -101,14 +101,14 @@
     .task-card.has-day-actions .task-main { grid-column:1; grid-row:1; }
     .task-card.has-day-actions .task-actions { grid-column:2; grid-row:1; }
     .task-card.has-day-actions .task-open { display:-webkit-box !important; -webkit-box-orient:vertical; -webkit-line-clamp:2 !important; max-height:2.4em; white-space:normal !important; overflow:hidden; overflow-wrap:anywhere; word-break:normal; text-overflow:ellipsis; }
-    .task-day-actions { grid-column:1 / -1; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; width:100%; }
-    .task-day-action { min-width:0; min-height:34px; margin:0; padding:6px 10px; border:1px solid #8a6a2e; border-radius:10px; background:linear-gradient(145deg,#33291b,#1e2028); color:#ffd166; font-size:.66rem; font-weight:800; line-height:1.1; text-align:center; white-space:normal; }
+    .task-day-actions { grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) 40px; gap:6px; width:100%; }
+    .task-day-action { min-width:0; min-height:34px; margin:0; padding:5px 5px; border:1px solid #8a6a2e; border-radius:10px; background:linear-gradient(145deg,#33291b,#1e2028); color:#ffd166; font-size:.66rem; font-weight:800; line-height:1.1; text-align:center; white-space:nowrap; }
     .task-day-action:hover { border-color:#ffd166; background:linear-gradient(145deg,#40331f,#252832); }
     .task-day-action--tomorrow { border-color:#a55d31; background:linear-gradient(145deg,#38291f,#1e2028); color:#ffb36b; }
     .task-day-action--tomorrow:hover { border-color:#ffb36b; background:linear-gradient(145deg,#493222,#252832); }
     .task-day-action--next-week { border-color:#4c70b8; background:linear-gradient(145deg,#202d49,#1e2028); color:#8fb2ff; }
     .task-day-action--next-week:hover { border-color:#8fb2ff; background:linear-gradient(145deg,#293a5d,#252832); }
-    .task-day-action--complete { border-color:#38805c; background:linear-gradient(145deg,#18392a,#1e2028); color:#8fe0b5; }
+    .task-day-action--complete { width:40px; height:40px; min-height:40px; justify-self:center; padding:0; aspect-ratio:1 / 1; border-color:#38805c; background:linear-gradient(145deg,#18392a,#1e2028); color:#8fe0b5; }
     .task-day-action--complete:hover { border-color:#8fe0b5; background:linear-gradient(145deg,#20503a,#252832); }
     .day-completion-confirm { position:fixed; z-index:10020; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:flex; align-items:center; gap:10px; width:min(520px,calc(100% - 24px)); padding:11px 12px; border:1px solid #38805c; border-radius:13px; background:linear-gradient(145deg,#14291f,#101729); box-shadow:0 8px 28px #0009; }
     .day-completion-confirm[hidden] { display:none !important; }
@@ -1078,7 +1078,6 @@
     .calendar-filter-name { min-width:0; font-size:.75rem; font-weight:750; overflow-wrap:anywhere; }
     .calendar-filter-meta { display:block; margin-top:2px; color:var(--muted); font-size:.62rem; font-weight:600; }
     /* Compact header is the default, matching the former fullscreen layout. */
-    body:not(.view-mobile) .wrap { width:100%; max-width:none; margin:0; }
     .app-header { display:flex !important; margin:0 0 6px; gap:6px; }
     .main-nav { display:grid !important; }
     .brand { gap:7px; }
@@ -1287,7 +1286,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=117" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=122',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=118" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=123',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
