@@ -100,6 +100,7 @@
     .task-card.has-day-actions { grid-template-columns:minmax(0,1fr) auto; }
     .task-card.has-day-actions .task-main { grid-column:1; grid-row:1; }
     .task-card.has-day-actions .task-actions { grid-column:2; grid-row:1; }
+    .task-card.has-day-actions .task-open { display:-webkit-box !important; -webkit-box-orient:vertical; -webkit-line-clamp:2 !important; max-height:2.4em; white-space:normal !important; overflow:hidden; overflow-wrap:anywhere; word-break:normal; text-overflow:ellipsis; }
     .task-day-actions { grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; width:100%; }
     .task-day-action { min-width:0; min-height:34px; margin:0; padding:6px 10px; border:1px solid #8a6a2e; border-radius:10px; background:linear-gradient(145deg,#33291b,#1e2028); color:#ffd166; font-size:.66rem; font-weight:800; line-height:1.1; text-align:center; white-space:normal; }
     .task-day-action:hover { border-color:#ffd166; background:linear-gradient(145deg,#40331f,#252832); }
@@ -1272,7 +1273,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=112" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=117',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=113" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=118',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
