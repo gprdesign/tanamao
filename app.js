@@ -108,6 +108,7 @@
   let pointerDrag = null;
   let activeDayKind = 'day';
   let activeDayDate = '';
+  let pendingDayTaskCompletionId = '';
   let dayDialogTouchStart = null;
   let authBusy = false;
   let taskDialogDirty = false;
@@ -741,7 +742,7 @@
     const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':'',options.dayActions?'has-day-actions':''].filter(Boolean).join(' ');
     const linked=options.linked?'task-link':'';
     const tag=getTag(task.tagId),taskTag=tagDot(task.tagId),taskHandle=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:'';
-    const dayActions=options.dayActions&&!complete?`<div class="task-day-actions"><button class="task-day-action task-day-action--planning" type="button" data-day-task-action="planning" data-day-task-id="${escapeHTML(task.id)}">PLANEJAR</button><button class="task-day-action task-day-action--tomorrow" type="button" data-day-task-action="tomorrow" data-day-task-id="${escapeHTML(task.id)}">AMANHÃ</button><button class="task-day-action task-day-action--next-week" type="button" data-day-task-action="next-monday" data-day-task-id="${escapeHTML(task.id)}">PRÓX. SEM.</button></div>`:'';
+    const dayActions=options.dayActions&&!complete?`<div class="task-day-actions"><button class="task-day-action task-day-action--planning" type="button" data-day-task-action="planning" data-day-task-id="${escapeHTML(task.id)}">PLANEJAR</button><button class="task-day-action task-day-action--tomorrow" type="button" data-day-task-action="tomorrow" data-day-task-id="${escapeHTML(task.id)}">AMANHÃ</button><button class="task-day-action task-day-action--next-week" type="button" data-day-task-action="next-monday" data-day-task-id="${escapeHTML(task.id)}">SEG</button><button class="task-day-action task-day-action--complete" type="button" data-day-task-action="complete" data-day-task-id="${escapeHTML(task.id)}" aria-label="Concluir tarefa: ${escapeHTML(task.title)}" title="Concluir">✅</button></div>`:'';
     return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}${task.recurrence?' · Tarefa recorrente':''}">
       <div class="task-main"><div class="task-title-row">${taskTag}${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span>':''}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
       <div class="task-actions">${taskMenu(task,options.canMove!==false)}${taskHandle}</div>${dayActions}
@@ -1667,6 +1668,17 @@
     setTaskDate(task.id,date);
     if(date){activeDayDate=date;$('dayDialogTitle').textContent=formatDate(date,{weekday:'long',day:'2-digit',month:'2-digit'});if(startOfWeek(date)!==weekStart){setWeek(date);renderTasks();}renderDayDialog();}
   }
+  function openDayTaskCompletionConfirm(taskId) {
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);if(!task)return;
+    pendingDayTaskCompletionId=task.id;$('dayCompletionConfirmText').textContent=`Concluir “${task.title}”?`;$('dayCompletionConfirm').hidden=false;$('dayCompletionConfirmBtn').focus();
+  }
+  function closeDayTaskCompletionConfirm() {
+    $('dayCompletionConfirm').hidden=true;pendingDayTaskCompletionId='';
+  }
+  function confirmDayTaskCompletion() {
+    const task=tasks.find(item=>item.id===pendingDayTaskCompletionId&&!item.deletedAt&&!item.completedAt);if(!task){closeDayTaskCompletionConfirm();return;}
+    const nextDate=toggleComplete(task.id,true);closeDayTaskCompletionConfirm();showTaskCompletionToast(nextDate);
+  }
   function moveTask(taskId,direction) {
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);
     if (!task) return;
@@ -1711,7 +1723,7 @@
   function handleTaskClick(event) {
     if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();return;}
     const dayAction=event.target.closest('[data-day-task-action]');
-    if(dayAction){event.preventDefault();event.stopPropagation();moveDayDialogTask(dayAction.dataset.dayTaskId,dayAction.dataset.dayTaskAction);return;}
+    if(dayAction){event.preventDefault();event.stopPropagation();if(dayAction.dataset.dayTaskAction==='complete')openDayTaskCompletionConfirm(dayAction.dataset.dayTaskId);else moveDayDialogTask(dayAction.dataset.dayTaskId,dayAction.dataset.dayTaskAction);return;}
     const completion=event.target.closest('[data-toggle-complete-task]');
     if(completion){const complete=completion.dataset.complete==='true',nextDate=toggleComplete(completion.dataset.toggleCompleteTask,complete);if(complete)showTaskCompletionToast(nextDate);else showToast('Tarefa reaberta.');return;}
     const move=event.target.closest('[data-move-task]');
@@ -2338,6 +2350,9 @@
   $('weekGrid').addEventListener('dblclick',handleDayAreaDoubleClick);
   $('homePage').addEventListener('click',handleTaskClick);
   $('dayDialogList').addEventListener('click',handleTaskClick);
+  $('dayCompletionCancelBtn').addEventListener('click',closeDayTaskCompletionConfirm);
+  $('dayCompletionConfirmBtn').addEventListener('click',confirmDayTaskCompletion);
+  $('dayCompletionConfirm').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closeDayTaskCompletionConfirm();}});
   $('planningList').addEventListener('click',handleTaskClick);
   $('completedList').addEventListener('click',handleTaskClick);
   for (const node of [$('weekGrid'),$('dayDialogList'),$('planningPanel'),$('planningBtn'),$('completedPanel'),$('completedBtn')]) {
