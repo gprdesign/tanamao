@@ -741,6 +741,7 @@
     .subdock-item { display:grid; flex:none; place-items:center; min-width:32px; min-height:36px; padding:5px 7px; border:1px solid #53627e; border-radius:10px; background:rgba(25,37,59,.94); color:var(--text); font-size:.62rem; font-weight:850; white-space:nowrap; }
     .subdock-item:active { transform:scale(.97); }
     .subdock-add-note { border-color:#c99626; background:rgba(194,145,35,.88); color:#18130a; }
+    .subdock-add-task { display:none; border-color:#c99626; background:rgba(194,145,35,.88); color:#18130a; }
     #weekLabel { min-width:0; flex:1; font-size:.64rem; text-align:center; }
     .day-column.today-flash { animation:today-flash .45s ease-in-out 2; }
     @keyframes today-flash { 50% { border-color:#a3c0ff; box-shadow:0 0 0 2px #8fb2ff66,0 0 18px #769fff55; } }
@@ -1196,7 +1197,8 @@
     body.view-mobile #dayDialog .day-dialog-list { flex:1 1 auto; min-height:120px; max-height:none; overflow-y:auto; }
     body.view-mobile #dayDialog .day-dialog-head { order:5; flex:none; margin:12px 0 0; padding-top:9px; border-top:1px solid #394663; }
     body.view-mobile[data-page="tasks"] #weekDock,body.view-mobile[data-page="notes"] #notesDock { position:fixed !important; display:flex !important; left:50% !important; right:auto !important; bottom:calc(82px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; z-index:21 !important; width:min(680px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:50px !important; height:50px !important; padding:4px 6px !important; gap:5px !important; border:1px solid #394663 !important; border-radius:17px !important; background:rgba(17,24,39,.76) !important; box-shadow:0 10px 30px #0008 !important; -webkit-backdrop-filter:blur(14px) saturate(145%) !important; backdrop-filter:blur(14px) saturate(145%) !important; }
-    body.view-mobile[data-page="tasks"] #weekDock { display:grid !important; grid-template-columns:38px minmax(0,1fr) 38px !important; grid-template-rows:40px !important; align-items:center !important; justify-content:stretch !important; }
+    body.view-mobile[data-page="tasks"] #weekDock { display:grid !important; grid-template-columns:38px minmax(0,1fr) 38px auto !important; grid-template-rows:40px !important; align-items:center !important; justify-content:stretch !important; }
+    body.view-mobile[data-page="tasks"] #weekDock #weekDockAddTaskBtn { display:flex !important; grid-column:4; grid-row:1; align-items:center; justify-content:center; height:36px; min-height:36px; padding:0 10px; border-radius:10px; font-size:.64rem; }
     body.view-mobile[data-page="tasks"] #weekDock #prevWeekBtn,body.view-mobile[data-page="tasks"] #weekDock #nextWeekBtn { width:36px !important; min-width:36px !important; height:36px !important; min-height:36px !important; border:0 !important; border-radius:10px !important; background:transparent !important; color:var(--muted) !important; }
     body.view-mobile[data-page="tasks"] #weekDock #weekLabel { font-size:.64rem !important; }
     body.view-mobile[data-page="notes"] #notesDock { justify-content:stretch !important; }
@@ -1269,7 +1271,7 @@
       <div class="planner-panel" id="planningPanel" hidden><div class="task-tile-grid" id="planningList"></div><button class="btn more-btn" id="planningMoreBtn" type="button">MAIS</button></div>
       <div class="planner-panel completed-panel" id="completedPanel" hidden><div class="task-tile-grid" id="completedList"></div><button class="btn more-btn" id="completedMoreBtn" type="button">MAIS</button></div>
       <section class="planner-income-panel" aria-label="Próximos recebimentos"><div class="planner-income-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span>30 DIAS · TOQUE PARA VER</span></div><div class="planner-income-lines" id="plannerUpcomingIncomeList" aria-live="polite"></div></section>
-      <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button></nav></div>
+      <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-add-task" id="weekDockAddTaskBtn" type="button">＋ TAREFA</button></nav></div>
     </section>
 
     <section id="financePage" class="page" aria-label="Finanças">
@@ -1351,7 +1353,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=138" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=143',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=139" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=144',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

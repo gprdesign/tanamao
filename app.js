@@ -2450,6 +2450,7 @@
   $('planningBtn').addEventListener('click',()=>togglePlannerSection('planning'));
   $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
   $('plannerAddTaskBtn').addEventListener('click',()=>openTaskDialog());
+  $('weekDockAddTaskBtn').addEventListener('click',()=>openTaskDialog());
   $('dayDialogList').addEventListener('click',event=>{if(!event.target.closest('#dayDialogMobileAddBtn'))return;const date=activeDayKind==='day'?activeDayDate:'',dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog('',date,token);});
   $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=6;renderTasks();});
   $('completedMoreBtn').addEventListener('click',()=>{completedVisibleLimit+=6;renderTasks();});
