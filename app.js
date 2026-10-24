@@ -1108,13 +1108,8 @@
   }
   function collectUpcomingFinanceIncome() {
     const today=todayKey(),lastDay=addDays(today,30),candidates=finances.filter(entry=>!entry.deletedAt&&entry.kind==='income'&&entry.status==='planned'&&entry.date>=today&&entry.date<=lastDay).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
-    const ids=new Set(),seen=new Set(),items=[];
-    for(const entry of candidates){
-      ids.add(String(entry.id));
-      const title=String(entry.title||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('pt-BR'),key=`${entry.date}|${title}|${Math.round(Number(entry.amount||0)*100)}`;
-      if(seen.has(key))continue;
-      seen.add(key);items.push(entry);
-    }
+    const ids=new Set(),items=[];
+    for(const entry of candidates){ids.add(String(entry.id));items.push(entry);}
     return {items,ids};
   }
   function renderFinancePage() {
@@ -1123,18 +1118,18 @@
     const monthDate=dateAtNoon(`${financeMonth}-01`)||new Date(),rawMonth=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
     monthLabel.textContent=rawMonth.charAt(0).toLocaleUpperCase('pt-BR')+rawMonth.slice(1);
     const entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===financeMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
-    const upcoming=collectUpcomingFinanceIncome(),monthUpcoming=upcoming.items.filter(entry=>entry.date.slice(0,7)===financeMonth),monthListEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id))),totalsEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id))).concat(monthUpcoming);
+    const upcoming=collectUpcomingFinanceIncome(),monthListEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id))),totalsEntries=entries;
     upcomingList.innerHTML=upcoming.items.length?upcoming.items.map(entry=>{
       const date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):entry.date;
       const id=escapeHTML(entry.id);return `<button class="finance-upcoming-row" type="button" data-finance-open="${id}" aria-label="Ver detalhes de ${escapeHTML(entry.title)}"><time class="finance-upcoming-date" datetime="${escapeHTML(entry.date)}">${escapeHTML(dateLabel)}</time><strong class="finance-upcoming-title">${escapeHTML(entry.title)}</strong><span class="finance-upcoming-amount">+ ${escapeHTML(financeMoney(entry.amount))}</span></button>`;
     }).join(''):'<p class="finance-upcoming-empty">Nenhum recebimento previsto nos próximos 30 dias.</p>';
     const income=totalsEntries.filter(entry=>entry.kind==='income'),expense=totalsEntries.filter(entry=>entry.kind==='expense');
-    const totalIncome=income.reduce((sum,entry)=>sum+entry.amount,0),realizedIncome=income.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
-    const totalExpense=expense.reduce((sum,entry)=>sum+entry.amount,0),realizedExpense=expense.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
-    const plannedBalance=totalIncome-totalExpense,realizedBalance=realizedIncome-realizedExpense;
-    summary.innerHTML=`<button type="button" class="finance-summary-card balance" data-finance-summary-open="planned" aria-label="Abrir detalhes do previsto em ${escapeHTML(monthLabel.textContent)}"><span>SALDO PREVISTO</span><strong>${financeMoney(plannedBalance)}</strong><small>Realizado: ${financeMoney(realizedBalance)}</small></button><button type="button" class="finance-summary-card income" data-finance-summary-open="income" aria-label="Abrir detalhes das entradas em ${escapeHTML(monthLabel.textContent)}"><span>ENTRADAS</span><strong>${financeMoney(totalIncome)}</strong><small>Recebido: ${financeMoney(realizedIncome)}</small></button><button type="button" class="finance-summary-card expense" data-finance-summary-open="expense" aria-label="Abrir detalhes das saídas em ${escapeHTML(monthLabel.textContent)}"><span>SAÍDAS</span><strong>${financeMoney(totalExpense)}</strong><small>Pago: ${financeMoney(realizedExpense)}</small></button>`;
-    const emptyMessage=entries.length&&monthListEntries.length===0?'Os recebimentos próximos deste mês estão listados acima.':'Nenhuma movimentação neste mês. Adicione entradas e saídas quando quiser.';
-    list.innerHTML=monthListEntries.length?monthListEntries.map(entry=>{
+    const sumMoney=items=>Math.round(items.reduce((sum,entry)=>sum+Math.round(Number(entry.amount||0)*100),0))/100;
+    const totalIncome=sumMoney(income),realizedIncome=sumMoney(income.filter(entry=>entry.status==='realized')),totalExpense=sumMoney(expense),realizedExpense=sumMoney(expense.filter(entry=>entry.status==='realized')),realizedBalance=Math.round((realizedIncome-realizedExpense)*100)/100,plannedBalance=Math.round((totalIncome-totalExpense)*100)/100;
+    summary.innerHTML=`<button type="button" class="finance-summary-card balance" data-finance-summary-open="planned" aria-label="Abrir detalhes do previsto em ${escapeHTML(monthLabel.textContent)}"><span>PREVISTO</span><strong>${financeMoney(plannedBalance)}</strong><small>Realizado: ${financeMoney(realizedBalance)}</small></button><button type="button" class="finance-summary-card income" data-finance-summary-open="income" aria-label="Abrir detalhes das entradas em ${escapeHTML(monthLabel.textContent)}"><span>ENTRADAS</span><strong>${financeMoney(totalIncome)}</strong><small>Recebido: ${financeMoney(realizedIncome)}</small></button><button type="button" class="finance-summary-card expense" data-finance-summary-open="expense" aria-label="Abrir detalhes das saídas em ${escapeHTML(monthLabel.textContent)}"><span>SAÍDAS</span><strong>${financeMoney(totalExpense)}</strong><small>Pago: ${financeMoney(realizedExpense)}</small></button>`;
+    const visibleEntries=monthListEntries.filter(entry=>entry.status==='planned');
+    const emptyMessage=entries.length&&monthListEntries.length===0?'Os recebimentos próximos deste mês estão listados acima.':'Nenhuma movimentação prevista neste mês.';
+    list.innerHTML=visibleEntries.length?visibleEntries.map(entry=>{
       const id=escapeHTML(entry.id),date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',amountLabel=`${entry.kind==='income'?'+':'−'} ${financeMoney(entry.amount)}`;
       const occurrenceLabel=entry.installmentCount?`Parcela ${entry.occurrenceNumber}/${entry.installmentCount}`:entry.recurrence?'Mensal':'';
       const flowTag=tags.find(tag=>tag.id===entry.tagId&&!tag.deletedAt),flowLabel=flowTag?.name||(entry.kind==='income'?'ENTRADA':'SAÍDA');
@@ -1151,7 +1146,7 @@
     const bank=bankTransactions.filter(item=>!item.isInternalTransfer&&dateKey(new Date(item.occurredAt)).slice(0,7)===month).sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt));
     const bankRows=(items)=>items.map(item=>{const d=new Date(item.occurredAt),dateLabel=Number.isNaN(d.getTime())?'':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),kind=item.direction==='income'?'income':'expense',sign=kind==='income'?'+':'−';return `<article class="finance-bank-row ${kind}"><strong>${escapeHTML(item.description||'Movimentação bancária')}</strong><span class="finance-bank-amount">${sign} ${escapeHTML(financeMoney(item.amount))}</span><time>${escapeHTML(dateLabel)}${item.account?` · ${escapeHTML(item.account)}`:''}</time><small>Banco Jota · extrato confirmado</small></article>`;});
     const bankIncome=bank.filter(item=>item.direction==='income'),bankExpense=bank.filter(item=>item.direction==='expense');
-    const normLabel=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,' ').trim(),notImported=item=>!bank.some(tx=>tx.direction===item.kind&&tx.amount.toFixed(2)===item.amount.toFixed(2)&&dateKey(new Date(tx.occurredAt))===item.date&&(()=>{const a=normLabel(tx.description),b=normLabel(item.title);return a&&b&&(a===b||a.includes(b)||b.includes(a));})()),realizedIncomeItems=incomeItems.filter(item=>item.status==='realized'&&notImported(item)),realizedExpenseItems=expenseItems.filter(item=>item.status==='realized'&&notImported(item));
+    const normLabel=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,' ').trim(),sameDescription=(a,b)=>{const x=normLabel(a),y=normLabel(b);if(!x||!y)return false;if(x===y||x.includes(y)||y.includes(x))return true;const xt=new Set(x.split(' ').filter(token=>token.length>1)),yt=new Set(y.split(' ').filter(token=>token.length>1)),overlap=[...xt].filter(token=>yt.has(token)).length;return overlap/Math.max(1,Math.min(xt.size,yt.size))>=.65;},notImported=item=>!bank.some(tx=>tx.direction===item.kind&&Math.round(tx.amount*100)===Math.round(item.amount*100)&&dateKey(new Date(tx.occurredAt))===item.date&&sameDescription(tx.description,item.title)),realizedIncomeItems=incomeItems.filter(item=>item.status==='realized'&&notImported(item)),realizedExpenseItems=expenseItems.filter(item=>item.status==='realized'&&notImported(item));
     incomeBox.innerHTML=[...bankRows(bankIncome),...realizedIncomeItems.map(renderEntry)].join('')||'<p class="finance-detail-empty">Nenhuma entrada bancária ou lançamento realizado neste mês.</p>';
     expenseBox.innerHTML=[...bankRows(bankExpense),...realizedExpenseItems.map(renderEntry)].join('')||'<p class="finance-detail-empty">Nenhuma saída ou lançamento realizado neste mês.</p>';
   }
