@@ -199,12 +199,15 @@
     const title=String(value.summary||value.title||'').trim().slice(0,180);
     const rawStart=value.start?.dateTime||value.start?.date||value.startAt||value.start;
     if(!title||!rawStart)return null;
-    const allDay=/^\d{4}-\d{2}-\d{2}$/.test(String(rawStart));
+    const allDay=/^\d{4}-\d{2}-\d{2}$/.test(String(rawStart)),rawEnd=value.end?.dateTime||value.end?.date||value.endAt||value.end;
     const startDate=allDay?null:new Date(rawStart);
     if(!allDay&&(!startDate||!Number.isFinite(startDate.getTime())))return null;
-    const startAt=allDay?String(rawStart):startDate.toISOString();
-    return {id:String(value.id||`${title}:${startAt}`),title,startAt,allDay,location:String(value.location||'').trim().slice(0,180),url:normalizeLink(value.htmlLink||value.url||'')};
+    const startAt=allDay?String(rawStart):startDate.toISOString();let endAt='';
+    if(rawEnd){if(allDay&&/^\d{4}-\d{2}-\d{2}$/.test(String(rawEnd)))endAt=String(rawEnd);else if(!allDay){const endDate=new Date(rawEnd);if(Number.isFinite(endDate.getTime()))endAt=endDate.toISOString();}}
+    return {id:String(value.id||`${title}:${startAt}`),title,startAt,endAt,allDay,location:String(value.location||'').trim().slice(0,180),url:normalizeLink(value.htmlLink||value.url||'')};
   }
+  function calendarEventIsPast(event){const today=todayKey();if(event.allDay)return event.endAt?event.endAt<=today:event.startAt<today;const end=Date.parse(event.endAt||event.startAt);return Number.isFinite(end)&&end<=Date.now();}
+  function calendarEventClass(event,date){return calendarEventIsPast(event)||(date&&date<todayKey())?' is-past':'';}
   function calendarEventOrder(a,b){return String(a.startAt).localeCompare(String(b.startAt))||String(a.title).localeCompare(String(b.title),'pt-BR');}
   function getCalendarEventsForDate(date){return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>(event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt)))===date).sort(calendarEventOrder);}
   function calendarEventTimeLabel(event){if(event.allDay)return '';const date=new Date(event.startAt);return Number.isFinite(date.getTime())?date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';}
@@ -890,7 +893,7 @@
       const shownTasks=viewMode==='mobile'?cell.tasks.slice(0,3):cell.tasks;
       const extraTaskCount=Math.max(0,cell.tasks.length-shownTasks.length);
       const cards=shownTasks.map(task=>taskCard(task,{compact:true,late:Boolean(task.executionDate&&task.executionDate<todayKey()),linked:cell.kind==='overdue',draggable:true})).join('');
-      const calendarEvents=cell.calendarEvents||[],eventLines=calendarEvents.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
+      const calendarEvents=cell.calendarEvents||[],eventLines=calendarEvents.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event${calendarEventClass(event,cell.date)}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
       const calendarBlock=eventLines?`<div class="planner-calendar-events" aria-label="Eventos do Google Calendar">${eventLines}</div><div class="planner-calendar-task-divider" role="separator" aria-label="Tarefas"></div>`:'';
       const empty=cell.kind==='overdue'?'Nada atrasado':'Sem tarefas';
       const extraParts=[];if(extraTaskCount>0)extraParts.push(`+${extraTaskCount} tarefas`);if(completed.length)extraParts.push(`${completed.length} concluídas`);const extra=extraParts.join(' • ');
@@ -1429,7 +1432,7 @@
     if(activeDayKind==='all-overdue')sortOverdueTasks(open);else open.sort(taskOrder);
     const lateMode=activeDayKind==='overdue'||activeDayKind==='all-overdue';
     const events=activeDayKind==='day'?getCalendarEventsForDate(activeDayDate):[];
-    const eventLines=events.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
+    const eventLines=events.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event${calendarEventClass(event,activeDayDate)}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
     const groups=[];
     if(eventLines)groups.push(`<section class="day-dialog-events" aria-label="Eventos do Google Calendar"><div class="planner-calendar-events">${eventLines}</div>${open.length?'<div class="planner-calendar-task-divider" role="separator" aria-label="Tarefas"></div>':''}</section>`);
     groups.push(open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode,dayActions:activeDayKind==='day'})).join(''):'<div class="empty">Sem tarefas em aberto.</div>');
