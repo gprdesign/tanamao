@@ -741,7 +741,7 @@
     .subdock-item { display:grid; flex:none; place-items:center; min-width:32px; min-height:36px; padding:5px 7px; border:1px solid #53627e; border-radius:10px; background:rgba(25,37,59,.94); color:var(--text); font-size:.62rem; font-weight:850; white-space:nowrap; }
     .subdock-item:active { transform:scale(.97); }
     .subdock-add-note { border-color:#c99626; background:rgba(194,145,35,.88); color:#18130a; }
-    .subdock-add-task { display:none; border-color:#c99626; background:rgba(194,145,35,.88); color:#18130a; }
+    .subdock-add-task { display:none; border-color:#789cf0; background:#789cf0; color:#10172a; }
     #weekLabel { min-width:0; flex:1; font-size:.64rem; text-align:center; }
     .day-column.today-flash { animation:today-flash .45s ease-in-out 2; }
     @keyframes today-flash { 50% { border-color:#a3c0ff; box-shadow:0 0 0 2px #8fb2ff66,0 0 18px #769fff55; } }
@@ -1354,6 +1354,6 @@
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./app.js?v=139" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=144',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=145',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
