@@ -993,9 +993,6 @@
     .finance-cashbox-form button { min-height:36px; }
     .household-buckets-heading h3 { margin:0; font-size:.84rem; letter-spacing:.04em; }
     .household-buckets-month { display:block; margin-top:3px; color:var(--muted); font-size:.64rem; font-weight:800; text-transform:capitalize; }
-    .household-buckets-caption { margin:5px 0 9px; color:var(--muted); font-size:.68rem; line-height:1.35; }
-    .household-buckets-overall-track { height:8px; overflow:hidden; border-radius:99px; background:#26354e; }
-    #householdBucketsOverallFill { display:block; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#5cc99a,#a4e7bd); transition:width .2s ease; }
     .household-buckets-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:10px; }
     .household-bucket { min-width:0; padding:10px; border:1px solid #35445d; border-radius:12px; background:#172238; }
     .household-bucket.complete { border-color:#397653; background:#172a2a; }
@@ -1012,8 +1009,6 @@
     .household-bucket.complete .household-bucket-details b { color:#8fe0b5; }
     .household-bucket-toggle { width:100%; min-height:34px; margin-top:8px; padding:5px 8px; border:1px solid #52627e; border-radius:8px; background:#202b42; color:#ffd166; font-size:.67rem; font-weight:850; cursor:pointer; }
     .household-bucket-toggle.is-paid { border-color:#397653; background:#17332a; color:#9be7ba; }
-    .household-buckets-free { margin:10px 0 0; padding:9px 10px; border-radius:9px; background:#1d293f; color:#ffcc83; font-size:.75rem; font-weight:800; }
-    .household-buckets-free.covered { background:#17332a; color:#9be7ba; }
     .finance-formula-note { margin:0 0 12px; color:var(--muted); font-size:.65rem; text-align:center; }
     .finance-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
     .finance-summary-card { display:flex; flex-direction:column; align-items:flex-start; width:100%; min-width:0; padding:11px 10px; border:1px solid var(--line); border-radius:12px; background:#151e32; color:var(--text); font:inherit; text-align:left; cursor:pointer; }
@@ -1026,6 +1021,7 @@
     .finance-list-heading p { margin:0; font-size:.72rem; }
     .finance-list-heading p small { display:block; margin-top:3px; color:var(--muted); font-size:.62rem; }
     .finance-entry-list { display:grid; gap:8px; }
+    #financeEntriesList[hidden] { display:none !important; }
     .finance-entry { display:grid; grid-template-columns:56px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px; border:1px solid var(--line); border-radius:12px; background:#151e32; }
     .finance-entry-date { color:var(--muted); font-size:.7rem; font-weight:800; text-align:center; text-transform:capitalize; }
     .finance-entry-main { display:grid; gap:4px; min-width:0; }
@@ -1095,14 +1091,12 @@
       .household-buckets-heading .household-buckets-summary { grid-column:1/-1; grid-row:2; }
       .household-buckets-heading .finance-cashbox-section { grid-column:1/-1; grid-row:3; width:100%; }
       .household-buckets-heading h3 { font-size:.74rem; }
-      .household-buckets-caption { font-size:.64rem; }
       .household-buckets-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
       .household-bucket { padding:8px; }
       .household-bucket-head h4 { font-size:.74rem; }
       .household-bucket-head span,.household-bucket-until { font-size:.59rem; }
       .household-bucket-head > strong { font-size:.7rem; }
       .household-bucket-details { font-size:.58rem; }
-      .household-buckets-free { font-size:.7rem; }
       .finance-upcoming { margin:8px 0 12px; padding:10px; }
       .finance-upcoming-heading h3 { font-size:.74rem; }
       .finance-upcoming-window { font-size:.6rem; }
@@ -1196,8 +1190,6 @@
     .household-buckets-heading { align-items:flex-start; }
     .household-buckets-summary { width:100%; }
     .household-bucket-head span,.household-bucket-head > strong,.household-bucket-until { color:#ff8b8b !important; }
-    .household-buckets-free { margin:8px 0 0; padding:10px 12px; border:1px solid #8c6d30; border-radius:12px; background:#392f1e; color:#ffda83; font-size:.76rem; font-weight:850; line-height:1.35; }
-    .household-buckets-free.covered { border-color:#477cb8; background:#16304b; color:#d0e4ff; }
     .household-buckets-grid { align-items:stretch; }
     .household-bucket { display:flex; flex-direction:column; min-height:186px; }
     .household-bucket-toggle { margin-top:auto; }
@@ -1208,7 +1200,6 @@
       .household-buckets-summary-card { min-height:76px; padding:7px; }
       .household-buckets-summary-card span { font-size:.6rem; }
       .household-buckets-summary-card strong { font-size:.78rem; }
-      .household-buckets-free { padding:9px 10px; font-size:.7rem; }
       .household-bucket { min-height:188px; }
     }
   </style>
@@ -1261,9 +1252,8 @@
       <p class="finance-formula-note">A Caixinha não é descontada do cálculo diário.</p>
       <div class="finance-main-grid"><div class="finance-summary" id="financeSummary"></div>
       <section class="finance-upcoming" aria-label="Próximos recebimentos nos próximos 30 dias"><div class="finance-upcoming-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span class="finance-upcoming-window">30 DIAS</span></div><div class="finance-upcoming-list" id="financeUpcomingList" aria-live="polite"></div></section></div>
-      <section class="household-buckets-panel" aria-label="Caixinhas de contas"><div class="household-buckets-heading"><div class="household-buckets-title"><h3>CAIXINHAS DE CONTAS</h3><small id="householdBucketsMonth" class="household-buckets-month"></small></div><section class="finance-cashbox-section" aria-label="Adicionar à Caixinha"><article class="finance-budget-card cashbox"><label for="financeCashboxInput">ADICIONAR À CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor a adicionar à Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Adicionar</button></div><small id="financeCashboxValue">Ainda não informado</small></article></section><div class="household-buckets-summary" id="householdBucketsSummary" aria-label="Resumo das Caixinhas"><article class="household-buckets-summary-card saved"><span>Total guardado:</span><strong id="householdBucketsSaved">R$ 0,00</strong></article><article class="household-buckets-summary-card missing"><span>Faltando:</span><strong id="householdBucketsMissing">R$ 0,00</strong></article></div></div><p class="household-buckets-caption">O saldo da Caixinha é distribuído de cima para baixo, na ordem dos vencimentos.</p><div class="household-buckets-overall-track" id="householdBucketsOverallTrack" role="progressbar" aria-label="Progresso total das contas de casa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="householdBucketsOverallFill"></span></div><p class="household-buckets-free" id="householdBucketsFree" aria-live="polite"></p><div class="household-buckets-grid" id="householdBucketsGrid"></div></section>
-      <div class="finance-list-heading"><p class="muted">Previsto = ainda não entrou/saiu. Realizado = já recebido/pago.<small>Toque no nome para ver detalhes, editar ou excluir.</small></p></div>
-      <div class="finance-entry-list" id="financeEntriesList" aria-live="polite"></div>
+      <section class="household-buckets-panel" aria-label="Caixinhas de contas"><div class="household-buckets-heading"><div class="household-buckets-title"><h3>CAIXINHAS DE CONTAS</h3><small id="householdBucketsMonth" class="household-buckets-month"></small></div><section class="finance-cashbox-section" aria-label="Adicionar à Caixinha"><article class="finance-budget-card cashbox"><label for="financeCashboxInput">ADICIONAR À CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor a adicionar à Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Adicionar</button></div><small id="financeCashboxValue">Ainda não informado</small></article></section><div class="household-buckets-summary" id="householdBucketsSummary" aria-label="Resumo das Caixinhas"><article class="household-buckets-summary-card saved"><span>Total guardado:</span><strong id="householdBucketsSaved">R$ 0,00</strong></article><article class="household-buckets-summary-card missing"><span>Faltando:</span><strong id="householdBucketsMissing">R$ 0,00</strong></article></div></div><div class="household-buckets-grid" id="householdBucketsGrid"></div></section>
+      <div class="finance-entry-list" id="financeEntriesList" aria-live="polite" hidden></div>
     </section>
 
     <section id="logPage" class="page" aria-label="Arquivo de logs" hidden>
@@ -1330,7 +1320,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=122" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=127',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=125" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=130',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
