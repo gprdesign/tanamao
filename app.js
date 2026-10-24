@@ -2337,10 +2337,12 @@
   async function refreshAndSync(event) {
     const button=event?.currentTarget||$('refreshSyncBtn');if(!button||button.disabled)return;
     button.disabled=true;button.setAttribute('aria-busy','true');
-    if(!session?.user?.id){renderAll();showToast('Atualizei o que está salvo neste aparelho. Entre na conta para buscar dados ao vivo.');button.disabled=false;button.removeAttribute('aria-busy');return;}
-    const ok=await syncNow();
-    if(ok){renderAll();showToast('Dados atualizados ao vivo.');}
-    button.disabled=false;button.removeAttribute('aria-busy');
+    try {
+      if(session?.user?.id)await syncNow();
+      else renderAll();
+    } finally {
+      window.location.reload();
+    }
   }
   async function initializeAuth() {
     updateAuthUI();
