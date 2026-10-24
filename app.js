@@ -56,6 +56,7 @@
   let finances = [];
   let bankTransactions = readStored(BANK_TRANSACTIONS_KEY,[]);
   if(!Array.isArray(bankTransactions))bankTransactions=[];
+  let realtimeClient=null,realtimeChannel=null,realtimeRefreshTimer=null,realtimeReconnectTimer=null,realtimePullInFlight=false,realtimeConnected=false;
   let financeSummaryDialogMonth = '';
   let financeState = normalizeFinanceState(readStored(FINANCE_STATE_KEY,{}));
   let financeMonth = /^\d{4}-\d{2}$/.test(localStorage.getItem(FINANCE_MONTH_KEY)||'')?localStorage.getItem(FINANCE_MONTH_KEY):todayKey().slice(0,7);
@@ -426,14 +427,16 @@
     if(!content&&!isLocked)return null;
     return {id:String(value.id||makeId()),content:isLocked?'':content,isLocked,tagId:String(value.tagId??value.tag_id??''),createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
   }
-  function bankTransactionToRow(item) { return {owner_id:session.user.id,transaction_key:item.transactionKey,occurred_at:item.occurredAt,description:item.description,display_name:item.displayName||null,direction:item.direction,amount:item.amount,account:item.account||'',source_message_id:item.sourceMessageId||'',source_consulted_at:item.sourceConsultedAt||item.occurredAt,is_internal_transfer:Boolean(item.isInternalTransfer),planner_version:1,updated_at:nowISO()}; }
+  function bankTransactionToRow(item) { return {owner_id:session.user.id,transaction_key:item.transactionKey,occurred_at:item.occurredAt,description:item.description,...(item.displayName?{display_name:item.displayName}:{}),direction:item.direction,amount:item.amount,account:item.account||'',source_message_id:item.sourceMessageId||'',source_consulted_at:item.sourceConsultedAt||item.occurredAt,is_internal_transfer:Boolean(item.isInternalTransfer),planner_version:1,updated_at:item.updatedAt||nowISO()}; }
   function normalizeBankTransaction(value) {
     if(!value||typeof value!=='object'||!String(value.transactionKey||value.transaction_key||'').trim())return null;
     const amount=Math.round(Number(value.amount)*100)/100,occurredAt=String(value.occurredAt||value.occurred_at||'');
     if(!Number.isFinite(amount)||amount<=0||!Number.isFinite(Date.parse(occurredAt))||!['income','expense'].includes(String(value.direction)))return null;
-    return {transactionKey:String(value.transactionKey||value.transaction_key),occurredAt,description:String(value.description||'').trim().slice(0,180),displayName:String(value.displayName??value.display_name??'').trim().slice(0,180),direction:String(value.direction),amount,account:String(value.account||''),sourceMessageId:String(value.sourceMessageId||value.source_message_id||''),sourceConsultedAt:String(value.sourceConsultedAt||value.source_consulted_at||''),isInternalTransfer:Boolean(value.isInternalTransfer??value.is_internal_transfer)};
+    return {transactionKey:String(value.transactionKey||value.transaction_key),occurredAt,description:String(value.description||'').trim().slice(0,180),displayName:String(value.displayName??value.display_name??'').trim().slice(0,180),updatedAt:String(value.updatedAt||value.updated_at||''),direction:String(value.direction),amount,account:String(value.account||''),sourceMessageId:String(value.sourceMessageId||value.source_message_id||''),sourceConsultedAt:String(value.sourceConsultedAt||value.source_consulted_at||''),isInternalTransfer:Boolean(value.isInternalTransfer??value.is_internal_transfer)};
   }
   bankTransactions=bankTransactions.map(normalizeBankTransaction).filter(Boolean);
+  function mergeBankTransactions(local=[],remote=[]){const map=new Map(remote.map(value=>{const item=normalizeBankTransaction(value);return item?[item.transactionKey,item]:['',null];}).filter(([key,item])=>key&&item));for(const value of local){const item=normalizeBankTransaction(value);if(!item)continue;const old=map.get(item.transactionKey);if(!old){map.set(item.transactionKey,item);continue;}const itemAt=Date.parse(item.updatedAt)||0,oldAt=Date.parse(old.updatedAt)||0,label=item.displayName&&( !old.displayName||itemAt>oldAt)?item.displayName:old.displayName||item.displayName||'';map.set(item.transactionKey,{...old,...(itemAt>oldAt?{updatedAt:item.updatedAt}:{}),displayName:label});}return Array.from(map.values());}
+  async function syncLocalBankDisplayNames(remoteValues=[]){if(!session?.user?.id||!CLOUD_READY)return false;const remoteMap=new Map(remoteValues.map(value=>{const item=normalizeBankTransaction(value);return item?[item.transactionKey,item]:['',null];}).filter(([key,item])=>key&&item)),local=bankTransactions.map(normalizeBankTransaction).filter(item=>item&&item.displayName);try{await Promise.all(local.map(item=>{const remote=remoteMap.get(item.transactionKey),localAt=Date.parse(item.updatedAt)||0,remoteAt=Date.parse(remote?.updatedAt||'')||0;if(remote?.displayName===item.displayName||remote?.displayName&&(!localAt||remoteAt>=localAt))return Promise.resolve();if(!remote)return cloudRequest('nmm_bank_transactions?on_conflict=owner_id,transaction_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(bankTransactionToRow(item))});return cloudRequest(`nmm_bank_transactions?owner_id=eq.${encodeURIComponent(session.user.id)}&transaction_key=eq.${encodeURIComponent(item.transactionKey)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({display_name:item.displayName,updated_at:item.updatedAt||nowISO()})});}));return true;}catch{return false;}}
   function normalizeFinanceState(value) {
     const source=value&&typeof value==='object'?value:{};
     const balanceRaw=source.accountBalance??source.account_balance,cashboxRaw=source.cashboxAmount??source.cashbox_amount;
@@ -1163,7 +1166,10 @@
     const item=bankTransactions.find(row=>row.transactionKey===String(transactionKey));if(!item||item.direction!=='expense')return;
     const next=window.prompt('Nome para exibir nesta saída:',item.displayName||item.description||'');if(next===null)return;
     const name=next.trim().slice(0,180);if(!name){showToast('O nome não pode ficar vazio.');return;}
-    item.displayName=name;localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));createAutomaticBackup(false);renderFinanceSummaryDialog(financeSummaryDialogMonth);if(session?.user?.id){const ok=await syncCloudAndWait();showToast(ok?'Nome da saída atualizado e sincronizado.':'Nome salvo neste aparelho; sincronização pendente.');}else showToast('Nome da saída atualizado neste aparelho.');
+    const oldName=item.displayName||'',oldUpdatedAt=item.updatedAt||'';item.displayName=name;item.updatedAt=nowISO();localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));createAutomaticBackup(false);renderFinanceSummaryDialog(financeSummaryDialogMonth);
+    if(!session?.user?.id){showToast('Nome salvo neste aparelho. Entre na conta para sincronizar.');return;}
+    try{const rows=await cloudRequest(`nmm_bank_transactions?owner_id=eq.${encodeURIComponent(session.user.id)}&transaction_key=eq.${encodeURIComponent(item.transactionKey)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({display_name:name,updated_at:nowISO()})});if(!Array.isArray(rows)||!rows.length)throw new Error('A atualização não foi confirmada no servidor.');showToast('Nome salvo e sincronizado com seus outros aparelhos.');}
+    catch{item.displayName=oldName;item.updatedAt=oldUpdatedAt;localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));createAutomaticBackup(false);renderFinanceSummaryDialog(financeSummaryDialogMonth);showToast('Não consegui sincronizar o nome; a versão anterior foi mantida.',3600);}
   }
   function openFinanceSummaryDialog(kind='planned',month=financeMonth) {
     const safeKind=['planned','income','expense'].includes(kind)?kind:'planned';financeSummaryDialogMonth=/^\\d{4}-\\d{2}$/.test(String(month))?String(month):financeMonth;
@@ -2026,7 +2032,7 @@
   }
   function updateAuthUI() {
     const connected=Boolean(session?.access_token && session?.user?.id);
-    $('authStatus').textContent=connected ? (syncStatus || `Conectado como ${session.user.email || 'sua conta'}`) : 'Modo local';
+    $('authStatus').textContent=connected ? (realtimeConnected?`Conectado ao vivo · ${session.user.email||'sua conta'}`:(syncStatus || `Conectado como ${session.user.email || 'sua conta'}`)) : 'Modo local';
     $('authFields').classList.toggle('hidden',connected);
     $('loginBtn').classList.toggle('hidden',connected);
     $('signupBtn').classList.toggle('hidden',connected);
@@ -2063,7 +2069,7 @@
   async function refreshSession() {
     if (!session?.refresh_token) throw new Error('Sessão expirada. Entre novamente.');
     const data=await authRequest('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
-    storeSession(data);
+    storeSession(data);if(realtimeClient&&session?.access_token)realtimeClient.realtime.setAuth(session.access_token);
   }
   async function ensureSession() {
     if (!session?.access_token) throw new Error('Entre na sua conta para sincronizar.');
@@ -2133,12 +2139,45 @@
     }
     return Array.from(map.values());
   }
+  const REALTIME_TABLES=['nmm_tasks','nmm_notes','nmm_logs','nmm_finance_entries','nmm_finance_state','nmm_bank_transactions','nmm_tags','nmm_user_settings','nmm_private_vaults','nmm_private_notes'];
+  function stopRealtimeSync(){if(realtimeRefreshTimer){clearTimeout(realtimeRefreshTimer);realtimeRefreshTimer=null;}if(realtimeReconnectTimer){clearTimeout(realtimeReconnectTimer);realtimeReconnectTimer=null;}realtimeConnected=false;if(realtimeChannel&&realtimeClient)void realtimeClient.removeChannel(realtimeChannel);realtimeChannel=null;realtimeClient=null;}
+  function scheduleRealtimeRefresh(){if(!session?.user?.id||!realtimeClient)return;clearTimeout(realtimeRefreshTimer);realtimeRefreshTimer=setTimeout(()=>{realtimeRefreshTimer=null;void refreshRealtimeSnapshot();},180);}
+  async function startRealtimeSync(){
+    if(!session?.user?.id||!CLOUD_READY||!window.supabase?.createClient)return;
+    if(realtimeClient&&realtimeChannel)return;
+    if(realtimeReconnectTimer){clearTimeout(realtimeReconnectTimer);realtimeReconnectTimer=null;}
+    stopRealtimeSync();const userId=String(session.user.id);
+    try{
+      realtimeClient=window.supabase.createClient(CLOUD.url,CLOUD.publishableKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});realtimeClient.realtime.setAuth(session.access_token);
+      let channel=realtimeClient.channel(`tnm-user-${userId}`);for(const table of REALTIME_TABLES)channel=channel.on('postgres_changes',{event:'*',schema:'public',table,filter:`owner_id=eq.${userId}`},scheduleRealtimeRefresh);
+      realtimeChannel=channel.subscribe(status=>{if(status==='SUBSCRIBED'){realtimeConnected=true;syncStatus=`Conectado ao vivo · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;updateAuthUI();}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){realtimeConnected=false;updateAuthUI();if(session?.user?.id&&!realtimeReconnectTimer)realtimeReconnectTimer=setTimeout(()=>{realtimeReconnectTimer=null;stopRealtimeSync();if(session?.user?.id)void startRealtimeSync();},3000);}});
+    }catch{stopRealtimeSync();}
+  }
+  async function refreshRealtimeSnapshot(){
+    if(realtimePullInFlight||!session?.user?.id||!CLOUD_READY||authBusy||taskDialogDirty||$('taskDialog')?.open||$('noteDialog')?.open||$('financeDialog')?.open){if(session?.user?.id)setTimeout(scheduleRealtimeRefresh,700);return false;}
+    realtimePullInFlight=true;
+    try{
+      const [taskRows,noteRows,logRows,financeRows,stateRows,bankRows,tagRows,settingRows,vaultRows,privateRows]=await Promise.all([
+        fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),fetchAll('nmm_logs?select=*&planner_version=eq.1'),fetchAll('nmm_finance_entries?select=*&planner_version=eq.1'),fetchAll('nmm_finance_state?select=*&planner_version=eq.1'),fetchAll(`nmm_bank_transactions?select=*&owner_id=eq.${encodeURIComponent(session.user.id)}&planner_version=eq.1`),fetchAll('nmm_tags?select=*&planner_version=eq.1'),fetchAll('nmm_user_settings?select=*&planner_version=eq.1'),fetchAll('nmm_private_vaults?select=*&planner_version=eq.1'),fetchAll('nmm_private_notes?select=*&planner_version=eq.1')
+      ]);
+      tasks=mergeById(tasks,taskRows.map(rowToTask).filter(Boolean)).map(normalizeTask).filter(Boolean);notes=mergeById(notes,noteRows.map(rowToNote).filter(Boolean)).map(normalizeNote).filter(Boolean);logs=mergeById(logs,logRows.map(rowToLog).filter(Boolean)).map(normalizeLog).filter(Boolean);finances=mergeById(finances,financeRows.map(rowToFinance).filter(Boolean)).map(normalizeFinanceEntry).filter(Boolean);tags=ensureDefaultTags(mergeById(tags,tagRows.map(rowToTag).filter(Boolean)).map(normalizeTag).filter(Boolean));prunePageFilters();
+      const remoteStateRow=stateRows.find(row=>row.owner_id===session.user.id),remoteState=remoteStateRow?rowToFinanceState(remoteStateRow):null,localCashboxAt=Date.parse(financeState.cashboxUpdatedAt)||0,remoteCashboxAt=Date.parse(remoteState?.cashboxUpdatedAt||'')||0;
+      if(remoteState)financeState=normalizeFinanceState({accountBalance:remoteState.accountBalance??financeState.accountBalance,balanceUpdatedAt:remoteState.balanceUpdatedAt||financeState.balanceUpdatedAt,cashboxAmount:remoteCashboxAt>=localCashboxAt?remoteState.cashboxAmount:financeState.cashboxAmount,cashboxUpdatedAt:remoteCashboxAt>=localCashboxAt?remoteState.cashboxUpdatedAt:financeState.cashboxUpdatedAt,updatedAt:remoteState.updatedAt||financeState.updatedAt});
+      bankTransactions=mergeBankTransactions(bankTransactions,bankRows);
+      const pendingBankLabels=bankTransactions.some(item=>item.displayName&&item.updatedAt&&(!bankRows.some(row=>row.transaction_key===item.transactionKey&&row.display_name===item.displayName)&&(Date.parse(item.updatedAt)||0)>=(Date.now()-5*60*1000)));if(pendingBankLabels)await syncLocalBankDisplayNames(bankRows);
+      const remoteSettingsRow=settingRows.find(row=>row.owner_id===session.user.id),remoteSettings=remoteSettingsRow?rowToSettings(remoteSettingsRow):null;if(remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(userSettings.updatedAt||''))userSettings=remoteSettings;
+      const remoteVaultRow=vaultRows.find(row=>row.owner_id===session.user.id),remoteVault=remoteVaultRow?rowToPrivateVault(remoteVaultRow):null;if(remoteVault&&(!privateVault||remoteVault.ownerId===session.user.id&&Date.parse(remoteVault.updatedAt)>=Date.parse(privateVault.updatedAt||'')))privateVault=remoteVault;
+      privateCipherRows=mergeById(privateCipherRows,privateRows.map(rowToPrivateNote).filter(Boolean)).map(normalizePrivateRow).filter(Boolean);
+      localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(NOTES_KEY,JSON.stringify(notes));localStorage.setItem(LOGS_KEY,JSON.stringify(logs));localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));localStorage.setItem(TAGS_KEY,JSON.stringify(tags));localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));localStorage.setItem(PRIVATE_ROWS_KEY,JSON.stringify(privateCipherRows));if(privateVault)localStorage.setItem(PRIVATE_VAULT_KEY,JSON.stringify(privateVault));
+      if(privateNotesUnlocked&&privateCryptoKey)setDecryptedVaultItems(await loadDecryptedPrivateNotes());renderAll();if($('financeSummaryDialog')?.open)renderFinanceSummaryDialog(financeSummaryDialogMonth);updateAuthUI();return true;
+    }catch{return false;}finally{realtimePullInFlight=false;}
+  }
   async function refreshFinanceCloudData() {
     if(!session?.user?.id||!CLOUD_READY)return false;
     try{
       const [financeRows,stateRows,bankRows]=await Promise.all([fetchAll('nmm_finance_entries?select=*&planner_version=eq.1'),fetchAll('nmm_finance_state?select=*&planner_version=eq.1'),fetchAll(`nmm_bank_transactions?select=*&owner_id=eq.${encodeURIComponent(session.user.id)}&planner_version=eq.1`)]);
       const remoteEntries=financeRows.map(rowToFinance).filter(Boolean),remoteRow=stateRows.find(row=>row.owner_id===session.user.id)||stateRows[0]||null,remoteState=remoteRow?rowToFinanceState(remoteRow):null,localState=normalizeFinanceState(financeState);
-      const remoteBank=bankRows.map(normalizeBankTransaction).filter(Boolean),bankMap=new Map(remoteBank.map(item=>[item.transactionKey,item]));for(const item of bankTransactions){const normalized=normalizeBankTransaction(item);if(normalized&&!bankMap.has(normalized.transactionKey))bankMap.set(normalized.transactionKey,normalized);}bankTransactions=Array.from(bankMap.values());localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));
+      bankTransactions=mergeBankTransactions(bankTransactions,bankRows);localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));
       const localCashboxAt=Date.parse(localState.cashboxUpdatedAt)||0,remoteCashboxAt=Date.parse(remoteState?.cashboxUpdatedAt||'')||0,localCashboxIsNewer=localCashboxAt>remoteCashboxAt;
       finances=mergeById(finances,remoteEntries).map(normalizeFinanceEntry).filter(Boolean);
       financeState=normalizeFinanceState({accountBalance:remoteState?.accountBalance??localState.accountBalance,balanceUpdatedAt:remoteState?.balanceUpdatedAt||localState.balanceUpdatedAt,cashboxAmount:localCashboxIsNewer?localState.cashboxAmount:(remoteState?remoteState.cashboxAmount:localState.cashboxAmount),cashboxUpdatedAt:localCashboxIsNewer?localState.cashboxUpdatedAt:(remoteState?remoteState.cashboxUpdatedAt:localState.cashboxUpdatedAt),updatedAt:remoteState?.updatedAt||localState.updatedAt});
@@ -2186,9 +2225,9 @@
     localStorage.setItem(PRIVATE_ROWS_KEY,JSON.stringify(privateCipherRows));
     if(foreignLocalVault&&privateNotesUnlocked)await lockPrivateNotes();
     else if(privateNotesUnlocked&&privateCryptoKey)setDecryptedVaultItems(await loadDecryptedPrivateNotes());
+    bankTransactions=mergeBankTransactions(localActiveBank,remoteBank);localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));await syncLocalBankDisplayNames(remoteBank);
     const synced=await syncCloudAndWait();
     if(localCashboxIsNewer)try{await syncFinanceCashboxState();}catch{}
-    const bankMap=new Map(remoteBank.map(item=>[item.transactionKey,item]));for(const item of localActiveBank)if(!bankMap.has(item.transactionKey))bankMap.set(item.transactionKey,item);bankTransactions=Array.from(bankMap.values());localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));
     renderAll(); createAutomaticBackup(false); updateAuthUI();
     return synced;
   }
@@ -2203,6 +2242,7 @@
     try {
       do {
         syncQueued=false;
+        await syncLocalBankDisplayNames();
         const tagRows=tags.map(tagToRow);
         const taskRows=tasks.map(taskToRow);
         const noteRows=notes.map(noteToRow);
@@ -2240,6 +2280,7 @@
     session.user=data.user || await getCurrentUser();
     localStorage.setItem(SESSION_KEY,JSON.stringify(session));
     const ok=await loadCloudData();
+    if(ok)void startRealtimeSync();
     updateAuthUI();
     return ok;
   }
@@ -2267,7 +2308,7 @@
     if(privateNotesUnlocked&&!await lockPrivateNotes()){showToast('Não consegui salvar a edição privada; você continua conectado.');return;}
     authBusy=true; updateAuthUI();
     try { await fetch(`${CLOUD.url}/auth/v1/logout`,{method:'POST',headers:authHeaders({Authorization:`Bearer ${session.access_token}`})}); } catch {}
-    session=null; localStorage.removeItem(SESSION_KEY); syncStatus=''; authBusy=false;
+    stopRealtimeSync();session=null; localStorage.removeItem(SESSION_KEY); syncStatus=''; authBusy=false;
     setAuthMessage('Você saiu. Os dados continuam neste aparelho e na conta.'); updateAuthUI();
   }
   async function refreshTasksFromCloud() {
@@ -2287,7 +2328,7 @@
   async function syncNow() {
     if (!session?.user?.id) return false;
     authBusy=true; setAuthMessage('Sincronizando…'); updateAuthUI();
-    try { const ok=await loadCloudData(); if(ok)setAuthMessage('Sincronização concluída.'); return ok; }
+    try { const ok=await loadCloudData(); if(ok){void startRealtimeSync();setAuthMessage('Sincronização concluída.')} return ok; }
     catch { setAuthMessage('Não consegui atualizar agora; seus dados locais foram mantidos.',true); return false; }
     finally { authBusy=false; updateAuthUI(); }
   }
@@ -2305,7 +2346,7 @@
     authBusy=true; setAuthMessage('Verificando login…'); updateAuthUI();
     try {
       await ensureSession(); session.user=await getCurrentUser(); localStorage.setItem(SESSION_KEY,JSON.stringify(session));
-      await loadCloudData();
+      const ok=await loadCloudData();if(ok)void startRealtimeSync();
     } catch { setAuthMessage('Não consegui verificar a conta agora. Tente sincronizar ou entrar novamente.',true); }
     finally { authBusy=false; updateAuthUI(); }
   }
@@ -2337,6 +2378,7 @@
     setInterval(()=>createAutomaticBackup(true),AUTO_BACKUP_EVERY);
     setInterval(checkWeekRollover,60*1000);
     setInterval(()=>{void refreshFinanceCloudData();},5*60*1000);
+    setInterval(()=>{if(document.visibilityState==='visible'&&session?.user?.id&&!realtimeConnected&&!authBusy)scheduleRealtimeRefresh();},15000);
     setInterval(syncTasksOnForeground,15*1000);
     document.addEventListener('visibilitychange',()=>{
       checkWeekRollover();
