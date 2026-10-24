@@ -710,8 +710,8 @@
     .task-actions .task-menu { align-self:center; }
     .task-card--compact .task-touch-handle,.task-card--tile .task-touch-handle { width:24px; height:26px; margin:0; border-radius:6px; }
     .task-card--compact .task-title-row .tag-dot,.task-card--tile .task-title-row .tag-dot { margin-top:0; }
-    .refresh-sync-btn { position:fixed; z-index:21; right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(148px + env(safe-area-inset-bottom,0px)); display:grid; place-items:center; width:48px; height:48px; padding:0; border:1px solid #8299c6; border-radius:50%; background:rgba(35,51,78,.96); color:#e7eeff; box-shadow:0 6px 20px #0008,inset 0 1px 0 #ffffff24; font-size:1.75rem; line-height:1; }
-    body:not([data-page="tasks"]) .refresh-sync-btn { bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
+    .refresh-sync-btn { position:fixed; z-index:26; right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(148px + env(safe-area-inset-bottom,0px)); display:grid; place-items:center; width:48px; height:48px; padding:0; border:1px solid #8299c6; border-radius:50%; background:rgba(35,51,78,.96); color:#e7eeff; box-shadow:0 6px 20px #0008,inset 0 1px 0 #ffffff24; font-size:1.75rem; line-height:1; }
+    .refresh-sync-btn:disabled { opacity:.8; }
     .refresh-sync-btn span { display:block; }
     .refresh-sync-btn[aria-busy="true"] span { animation:refresh-rotate .8s linear infinite; }
     @keyframes refresh-rotate { to { transform:rotate(360deg); } }
@@ -735,14 +735,11 @@
     body[data-page="notes"] #notesDock { display:flex !important; }
     .subdock-item { display:grid; flex:none; place-items:center; min-width:32px; min-height:36px; padding:5px 7px; border:1px solid #53627e; border-radius:10px; background:rgba(25,37,59,.94); color:var(--text); font-size:.62rem; font-weight:850; white-space:nowrap; }
     .subdock-item:active { transform:scale(.97); }
-    .subdock-sync { min-width:75px; border-color:#8299c6; background:rgba(35,51,78,.96); }
     .subdock-add-note { border-color:#c99626; background:rgba(194,145,35,.88); color:#18130a; }
     #weekLabel { min-width:0; flex:1; font-size:.64rem; text-align:center; }
     #todayBtn { min-width:88px; border-color:#789cf0; color:#dce6ff; }
     .day-column.today-flash { animation:today-flash .45s ease-in-out 2; }
     @keyframes today-flash { 50% { border-color:#a3c0ff; box-shadow:0 0 0 2px #8fb2ff66,0 0 18px #769fff55; } }
-    body[data-page="tasks"] .refresh-sync-btn,body[data-page="notes"] .refresh-sync-btn { display:none !important; }
-    .refresh-sync-btn { bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
     .log-form { display:grid; grid-template-columns:minmax(0,1fr) minmax(130px,180px) auto; align-items:end; gap:7px; margin-bottom:10px; }
     .log-form textarea { min-height:54px; max-height:130px; margin:0; }
     .log-form select { min-width:0; }
@@ -805,8 +802,7 @@
       body[data-page="tasks"] #weekDock #prevWeekBtn,body[data-page="tasks"] #weekDock #nextWeekBtn { align-self:center; width:56px; min-width:56px; height:40px; min-height:40px; padding:0; font-size:1.25rem; line-height:1; }
       body[data-page="tasks"] #weekDock #weekLabel { flex:none; width:100%; min-width:0; font-size:.64rem; line-height:1.15; text-align:center; white-space:normal; overflow-wrap:anywhere; }
       body[data-page="tasks"] #weekDock #todayBtn { width:100%; min-width:0; min-height:48px; padding:6px 2px; font-size:.55rem; line-height:1.1; white-space:normal; }
-      body[data-page="tasks"] #weekDock .subdock-sync { width:100%; min-width:0; min-height:42px; padding:5px 2px; font-size:.5rem; line-height:1.1; white-space:normal; overflow-wrap:anywhere; }
-      body[data-page="tasks"].planner-expanded #weekBoard { flex:none; min-height:350px; }
+        body[data-page="tasks"].planner-expanded #weekBoard { flex:none; min-height:350px; }
       body[data-page="tasks"].planner-expanded #weekGrid { grid-template-rows:repeat(2,minmax(74px,1fr)); }
       .week-arrow-horizontal { display:none; }
       .week-arrow-vertical { display:inline; }
@@ -849,7 +845,6 @@
     .filter-tag-option[aria-pressed="true"]::after { color:#ffd166; }
     .notes-dock { display:flex; align-items:stretch; justify-content:space-between; gap:6px; }
     .notes-dock .subdock-add-note { flex:1 1 0; min-width:0; }
-    .notes-dock .subdock-sync { flex:0 0 auto; min-width:88px; }
     .main-nav { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
     .main-nav .nav-btn { width:100%; min-width:0; }
     .note-card { display:flex !important; flex-direction:column; }
@@ -1153,12 +1148,11 @@
     body.view-mobile[data-page="tasks"] .day-task-list { flex:none; min-height:0; max-height:none; overflow:visible; gap:6px; }
     body.view-mobile[data-page="tasks"] #weekBoard { display:flex !important; flex-direction:column; grid-template-columns:none !important; grid-template-rows:none !important; }
     body.view-mobile[data-page="tasks"] #weekGrid { grid-column:auto; grid-row:auto; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; padding-bottom:calc(122px + env(safe-area-inset-bottom,0px)); scroll-padding-bottom:calc(122px + env(safe-area-inset-bottom,0px)); }
-    body.view-mobile[data-page="tasks"] #weekDock { position:fixed !important; left:50% !important; right:auto !important; bottom:calc(70px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; display:grid !important; grid-template-columns:34px minmax(0,1fr) 86px 34px 64px !important; grid-template-rows:42px !important; gap:3px; align-items:center; justify-content:stretch; width:min(640px,calc(100vw - 24px)) !important; max-width:calc(100vw - 24px) !important; min-height:46px; height:auto !important; padding:3px 4px; grid-column:auto !important; grid-row:auto !important; margin:0 !important; }
+    body.view-mobile[data-page="tasks"] #weekDock { position:fixed !important; left:50% !important; right:auto !important; bottom:calc(70px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; display:grid !important; grid-template-columns:34px minmax(0,1fr) 86px 34px !important; grid-template-rows:42px !important; gap:3px; align-items:center; justify-content:stretch; width:min(560px,calc(100vw - 88px)) !important; max-width:calc(100vw - 88px) !important; min-height:46px; height:auto !important; padding:3px 4px; grid-column:auto !important; grid-row:auto !important; margin:0 !important; }
     body.view-mobile[data-page="tasks"] #weekDock #prevWeekBtn { grid-column:1; grid-row:1; width:34px; min-width:34px; height:34px; min-height:34px; padding:0; }
     body.view-mobile[data-page="tasks"] #weekDock #weekLabel { grid-column:2; grid-row:1; width:100%; min-width:0; flex:none; font-size:.64rem; text-align:center; }
     body.view-mobile[data-page="tasks"] #weekDock #todayBtn { grid-column:3; grid-row:1; width:86px; min-width:86px; min-height:34px; padding:4px 5px; font-size:.54rem; white-space:nowrap; }
     body.view-mobile[data-page="tasks"] #weekDock #nextWeekBtn { grid-column:4; grid-row:1; width:34px; min-width:34px; height:34px; min-height:34px; padding:0; }
-    body.view-mobile[data-page="tasks"] #weekDock .subdock-sync { grid-column:5; grid-row:1; width:64px; min-width:64px; min-height:34px; padding:4px 3px; font-size:.54rem; white-space:nowrap; }
     body.view-mobile[data-page="tasks"].planner-expanded #weekGrid { flex:none; min-height:0; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; overflow:visible; padding-bottom:0; scroll-padding-bottom:0; }
     body.view-mobile[data-page="tasks"] { height:auto !important; min-height:100dvh; overflow-x:hidden !important; overflow-y:auto !important; }
     body.view-mobile[data-page="tasks"] .wrap { display:block !important; height:auto !important; min-height:100dvh; overflow:visible !important; padding-bottom:calc(188px + env(safe-area-inset-bottom,0px)) !important; }
@@ -1239,7 +1233,7 @@
       <div class="planner-panel" id="planningPanel" hidden><div class="task-tile-grid" id="planningList"></div><button class="btn more-btn" id="planningMoreBtn" type="button">MAIS</button></div>
       <div class="planner-panel completed-panel" id="completedPanel" hidden><div class="task-tile-grid" id="completedList"></div><button class="btn more-btn" id="completedMoreBtn" type="button">MAIS</button></div>
       <section class="planner-income-panel" aria-label="Próximos recebimentos"><div class="planner-income-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span>30 DIAS · TOQUE PARA VER</span></div><div class="planner-income-lines" id="plannerUpcomingIncomeList" aria-live="polite"></div></section>
-      <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="todayBtn" type="button">SEMANA ATUAL</button><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav></div>
+      <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="todayBtn" type="button">SEMANA ATUAL</button><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button></nav></div>
     </section>
 
     <section id="financePage" class="page" aria-label="Finanças">
@@ -1290,7 +1284,7 @@
     </section>
   </main>
 
-  <nav class="week-dock sub-dock notes-dock" id="notesDock" aria-label="Ações das notas"><button class="subdock-item subdock-add-note" id="notesDockAddBtn" type="button">＋ NOTA</button><button class="subdock-item subdock-sync refresh-sync-action" type="button" data-refresh-sync aria-label="Atualizar e sincronizar">ATT &amp; SYNC</button></nav>
+  <nav class="week-dock sub-dock notes-dock" id="notesDock" aria-label="Ações das notas"><button class="subdock-item subdock-add-note" id="notesDockAddBtn" type="button">＋ NOTA</button></nav>
 
   <button class="refresh-sync-btn refresh-sync-action" id="refreshSyncBtn" type="button" aria-label="Atualizar página e sincronizar conta" title="Atualizar e sincronizar"><span aria-hidden="true">↻</span></button>
 
@@ -1320,7 +1314,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=126" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=131',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=127" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=132',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

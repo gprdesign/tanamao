@@ -2282,12 +2282,11 @@
     finally { authBusy=false; updateAuthUI(); }
   }
   async function refreshAndSync(event) {
-    const button=event?.currentTarget||$('refreshSyncBtn');
-    if(button.disabled)return;
+    const button=event?.currentTarget||$('refreshSyncBtn');if(!button||button.disabled)return;
     button.disabled=true;button.setAttribute('aria-busy','true');
-    if(!session?.user?.id){showToast('Entre na conta para sincronizar. Atualizando…');setTimeout(()=>window.location.reload(),1200);return;}
+    if(!session?.user?.id){renderAll();showToast('Atualizei o que está salvo neste aparelho. Entre na conta para buscar dados ao vivo.');button.disabled=false;button.removeAttribute('aria-busy');return;}
     const ok=await syncNow();
-    if(ok){window.location.reload();return;}
+    if(ok){renderAll();showToast('Dados atualizados ao vivo.');}
     button.disabled=false;button.removeAttribute('aria-busy');
   }
   async function initializeAuth() {
