@@ -8,6 +8,7 @@
   const NOTES_KEY = 'tnm.weekly.notes.v1';
   const LOGS_KEY = 'tnm.weekly.logs.v1';
   const FINANCE_KEY = 'tnm.weekly.finance.v1';
+  const BANK_TRANSACTIONS_KEY = 'tnm.weekly.bankTransactions.v1';
   const FINANCE_STATE_KEY = 'tnm.weekly.financeState.v1';
   const FINANCE_ENTRY_TAG_ID = 'flow-entry';
   const FINANCE_EXIT_TAG_ID = 'flow-exit';
@@ -53,6 +54,9 @@
   let notes = [];
   let logs = readStored(LOGS_KEY,[]);
   let finances = [];
+  let bankTransactions = readStored(BANK_TRANSACTIONS_KEY,[]);
+  if(!Array.isArray(bankTransactions))bankTransactions=[];
+  let financeSummaryDialogMonth = '';
   let financeState = normalizeFinanceState(readStored(FINANCE_STATE_KEY,{}));
   let financeMonth = /^\d{4}-\d{2}$/.test(localStorage.getItem(FINANCE_MONTH_KEY)||'')?localStorage.getItem(FINANCE_MONTH_KEY):todayKey().slice(0,7);
   if(!Array.isArray(logs))logs=[];
@@ -419,6 +423,14 @@
     if(!content&&!isLocked)return null;
     return {id:String(value.id||makeId()),content:isLocked?'':content,isLocked,tagId:String(value.tagId??value.tag_id??''),createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
   }
+  function bankTransactionToRow(item) { return {owner_id:session.user.id,transaction_key:item.transactionKey,occurred_at:item.occurredAt,description:item.description,direction:item.direction,amount:item.amount,account:item.account||'',source_message_id:item.sourceMessageId||'',source_consulted_at:item.sourceConsultedAt||item.occurredAt,is_internal_transfer:Boolean(item.isInternalTransfer),planner_version:1,updated_at:nowISO()}; }
+  function normalizeBankTransaction(value) {
+    if(!value||typeof value!=='object'||!String(value.transactionKey||value.transaction_key||'').trim())return null;
+    const amount=Math.round(Number(value.amount)*100)/100,occurredAt=String(value.occurredAt||value.occurred_at||'');
+    if(!Number.isFinite(amount)||amount<=0||!Number.isFinite(Date.parse(occurredAt))||!['income','expense'].includes(String(value.direction)))return null;
+    return {transactionKey:String(value.transactionKey||value.transaction_key),occurredAt,description:String(value.description||'').trim().slice(0,180),direction:String(value.direction),amount,account:String(value.account||''),sourceMessageId:String(value.sourceMessageId||value.source_message_id||''),sourceConsultedAt:String(value.sourceConsultedAt||value.source_consulted_at||''),isInternalTransfer:Boolean(value.isInternalTransfer??value.is_internal_transfer)};
+  }
+  bankTransactions=bankTransactions.map(normalizeBankTransaction).filter(Boolean);
   function normalizeFinanceState(value) {
     const source=value&&typeof value==='object'?value:{};
     const balanceRaw=source.accountBalance??source.account_balance,cashboxRaw=source.cashboxAmount??source.cashbox_amount;
@@ -1120,7 +1132,7 @@
     const totalIncome=income.reduce((sum,entry)=>sum+entry.amount,0),realizedIncome=income.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
     const totalExpense=expense.reduce((sum,entry)=>sum+entry.amount,0),realizedExpense=expense.filter(entry=>entry.status==='realized').reduce((sum,entry)=>sum+entry.amount,0);
     const plannedBalance=totalIncome-totalExpense,realizedBalance=realizedIncome-realizedExpense;
-    summary.innerHTML=`<article class="finance-summary-card income"><span>ENTRADAS</span><strong>${financeMoney(totalIncome)}</strong><small>Recebido: ${financeMoney(realizedIncome)}</small></article><article class="finance-summary-card expense"><span>SAÍDAS</span><strong>${financeMoney(totalExpense)}</strong><small>Pago: ${financeMoney(realizedExpense)}</small></article><article class="finance-summary-card balance"><span>SALDO PREVISTO</span><strong>${financeMoney(plannedBalance)}</strong><small>Realizado: ${financeMoney(realizedBalance)}</small></article>`;
+    summary.innerHTML=`<button type="button" class="finance-summary-card balance" data-finance-summary-open="${escapeHTML(financeMonth)}" aria-label="Abrir resumo financeiro de ${escapeHTML(monthLabel.textContent)}"><span>SALDO PREVISTO</span><strong>${financeMoney(plannedBalance)}</strong><small>Realizado: ${financeMoney(realizedBalance)}</small></button><button type="button" class="finance-summary-card income" data-finance-summary-open="${escapeHTML(financeMonth)}" aria-label="Abrir entradas de ${escapeHTML(monthLabel.textContent)}"><span>ENTRADAS</span><strong>${financeMoney(totalIncome)}</strong><small>Recebido: ${financeMoney(realizedIncome)}</small></button><button type="button" class="finance-summary-card expense" data-finance-summary-open="${escapeHTML(financeMonth)}" aria-label="Abrir saídas de ${escapeHTML(monthLabel.textContent)}"><span>SAÍDAS</span><strong>${financeMoney(totalExpense)}</strong><small>Pago: ${financeMoney(realizedExpense)}</small></button>`;
     const emptyMessage=entries.length&&monthListEntries.length===0?'Os recebimentos próximos deste mês estão listados acima.':'Nenhuma movimentação neste mês. Adicione entradas e saídas quando quiser.';
     list.innerHTML=monthListEntries.length?monthListEntries.map(entry=>{
       const id=escapeHTML(entry.id),date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',amountLabel=`${entry.kind==='income'?'+':'−'} ${financeMoney(entry.amount)}`;
@@ -1128,6 +1140,25 @@
       const flowTag=tags.find(tag=>tag.id===entry.tagId&&!tag.deletedAt),flowLabel=flowTag?.name||(entry.kind==='income'?'ENTRADA':'SAÍDA');
       return `<article class="finance-entry ${entry.kind} ${entry.status}" data-finance-id="${id}"><div class="finance-entry-date">${escapeHTML(dateLabel)}</div><div class="finance-entry-main"><button class="finance-entry-open" type="button" data-finance-open="${id}" aria-label="Ver detalhes de ${escapeHTML(entry.title)}">${escapeHTML(entry.title)} <span aria-hidden="true">›</span></button><span><b class="finance-flow-tag ${entry.kind}">${escapeHTML(flowLabel)}</b>${occurrenceLabel?` · ${escapeHTML(occurrenceLabel)}`:''}</span></div><div class="finance-entry-actions"><strong class="finance-amount ${entry.kind}">${escapeHTML(amountLabel)}</strong><button class="finance-status-pill ${entry.status}" type="button" data-finance-toggle-status="${id}" aria-label="${entry.status==='planned'?'Marcar como realizado':'Voltar para previsto'}">${entry.status==='planned'?'PREVISTO':'REALIZADO'}</button><button class="finance-icon-button" type="button" data-finance-edit="${id}" aria-label="Editar ${escapeHTML(entry.title)}" title="Editar">✎</button><button class="finance-icon-button danger" type="button" data-finance-delete="${id}" aria-label="Excluir ${escapeHTML(entry.title)}" title="Excluir">×</button></div></article>`;
     }).join(''):`<p class="empty finance-empty">${escapeHTML(emptyMessage)}</p>`;
+    if($('financeSummaryDialog')?.open)renderFinanceSummaryDialog(financeSummaryDialogMonth);
+  }
+  function renderFinanceSummaryDialog(month) {
+    const planned=$('financeSummaryPlanned'),incomeBox=$('financeSummaryIncome'),expenseBox=$('financeSummaryExpense');if(!planned||!incomeBox||!expenseBox)return;
+    const relevant=finances.filter(item=>!item.deletedAt&&item.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
+    const renderEntry=item=>{const date=dateAtNoon(item.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):item.date,amountLabel=`${item.kind==='income'?'+':'−'} ${financeMoney(item.amount)}`,status=item.status==='planned'?'PREVISTO':'REALIZADO',id=escapeHTML(item.id);return `<article class="finance-bank-row ${item.kind}"><strong>${escapeHTML(item.title)}</strong><span class="finance-bank-amount">${escapeHTML(amountLabel)}</span><time>${escapeHTML(dateLabel)} · ${status}</time><small><button type="button" class="finance-detail-link" data-finance-open="${id}">Abrir lançamento</button></small></article>`;};
+    const plannedItems=relevant.filter(item=>item.status==='planned'),incomeItems=relevant.filter(item=>item.kind==='income'),expenseItems=relevant.filter(item=>item.kind==='expense');
+    planned.innerHTML=plannedItems.length?plannedItems.map(renderEntry).join(''):'<p class="finance-detail-empty">Nenhum lançamento previsto neste mês.</p>';
+    const bank=bankTransactions.filter(item=>!item.isInternalTransfer&&dateKey(new Date(item.occurredAt)).slice(0,7)===month).sort((a,b)=>b.occurredAt.localeCompare(a.occurredAt));
+    const bankRows=(items)=>items.map(item=>{const d=new Date(item.occurredAt),dateLabel=Number.isNaN(d.getTime())?'':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),kind=item.direction==='income'?'income':'expense',sign=kind==='income'?'+':'−';return `<article class="finance-bank-row ${kind}"><strong>${escapeHTML(item.description||'Movimentação bancária')}</strong><span class="finance-bank-amount">${sign} ${escapeHTML(financeMoney(item.amount))}</span><time>${escapeHTML(dateLabel)}${item.account?` · ${escapeHTML(item.account)}`:''}</time><small>Banco Jota · extrato confirmado</small></article>`;});
+    const bankIncome=bank.filter(item=>item.direction==='income'),bankExpense=bank.filter(item=>item.direction==='expense');
+    const normLabel=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,' ').trim(),notImported=item=>!bank.some(tx=>tx.direction===item.kind&&tx.amount.toFixed(2)===item.amount.toFixed(2)&&dateKey(new Date(tx.occurredAt))===item.date&&(()=>{const a=normLabel(tx.description),b=normLabel(item.title);return a&&b&&(a===b||a.includes(b)||b.includes(a));})()),realizedIncomeItems=incomeItems.filter(item=>item.status==='realized'&&notImported(item)),realizedExpenseItems=expenseItems.filter(item=>item.status==='realized'&&notImported(item));
+    incomeBox.innerHTML=[...bankRows(bankIncome),...realizedIncomeItems.map(renderEntry)].join('')||'<p class="finance-detail-empty">Nenhuma entrada bancária ou lançamento realizado neste mês.</p>';
+    expenseBox.innerHTML=[...bankRows(bankExpense),...realizedExpenseItems.map(renderEntry)].join('')||'<p class="finance-detail-empty">Nenhuma saída ou lançamento realizado neste mês.</p>';
+  }
+  function openFinanceSummaryDialog(month=financeMonth) {
+    financeSummaryDialogMonth=/^\\d{4}-\\d{2}$/.test(String(month))?String(month):financeMonth;
+    $('financeSummaryDialogTitle').textContent=`Resumo financeiro · ${(dateAtNoon(`${financeSummaryDialogMonth}-01`)||new Date()).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}`;
+    renderFinanceSummaryDialog(financeSummaryDialogMonth);showAppDialog($('financeSummaryDialog'));
   }
   function shiftFinanceMonth(amount) {
     const date=dateAtNoon(`${financeMonth}-01`)||dateAtNoon(todayKey());date.setMonth(date.getMonth()+Number(amount||0));financeMonth=dateKey(date).slice(0,7);localStorage.setItem(FINANCE_MONTH_KEY,financeMonth);renderFinancePage();
@@ -2095,8 +2126,9 @@
   async function refreshFinanceCloudData() {
     if(!session?.user?.id||!CLOUD_READY)return false;
     try{
-      const [financeRows,stateRows]=await Promise.all([fetchAll('nmm_finance_entries?select=*&planner_version=eq.1'),fetchAll('nmm_finance_state?select=*&planner_version=eq.1')]);
+      const [financeRows,stateRows,bankRows]=await Promise.all([fetchAll('nmm_finance_entries?select=*&planner_version=eq.1'),fetchAll('nmm_finance_state?select=*&planner_version=eq.1'),fetchAll(`nmm_bank_transactions?select=*&owner_id=eq.${encodeURIComponent(session.user.id)}&planner_version=eq.1`)]);
       const remoteEntries=financeRows.map(rowToFinance).filter(Boolean),remoteRow=stateRows.find(row=>row.owner_id===session.user.id)||stateRows[0]||null,remoteState=remoteRow?rowToFinanceState(remoteRow):null,localState=normalizeFinanceState(financeState);
+      const remoteBank=bankRows.map(normalizeBankTransaction).filter(Boolean),bankMap=new Map(remoteBank.map(item=>[item.transactionKey,item]));for(const item of bankTransactions){const normalized=normalizeBankTransaction(item);if(normalized&&!bankMap.has(normalized.transactionKey))bankMap.set(normalized.transactionKey,normalized);}bankTransactions=Array.from(bankMap.values());localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));
       const localCashboxAt=Date.parse(localState.cashboxUpdatedAt)||0,remoteCashboxAt=Date.parse(remoteState?.cashboxUpdatedAt||'')||0,localCashboxIsNewer=localCashboxAt>remoteCashboxAt;
       finances=mergeById(finances,remoteEntries).map(normalizeFinanceEntry).filter(Boolean);
       financeState=normalizeFinanceState({accountBalance:remoteState?.accountBalance??localState.accountBalance,balanceUpdatedAt:remoteState?.balanceUpdatedAt||localState.balanceUpdatedAt,cashboxAmount:localCashboxIsNewer?localState.cashboxAmount:(remoteState?remoteState.cashboxAmount:localState.cashboxAmount),cashboxUpdatedAt:localCashboxIsNewer?localState.cashboxUpdatedAt:(remoteState?remoteState.cashboxUpdatedAt:localState.cashboxUpdatedAt),updatedAt:remoteState?.updatedAt||localState.updatedAt});
@@ -2107,24 +2139,25 @@
   }
   async function loadCloudData() {
     const localTasks=tasks.map(task=>({...task})),localNotes=notes.map(note=>({...note})),localLogs=logs.map(log=>({...log})),localFinances=finances.map(entry=>({...entry})),localFinanceState=normalizeFinanceState({...financeState}),localTags=tags.map(tag=>({...tag})),localSettings={...userSettings},localVault=privateVault?{...privateVault}:null,localPrivateRows=privateCipherRows.map(row=>({...row}));
-    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteFinanceRows,remoteFinanceStateRows,remoteTagRows,remoteSettingRows,remoteVaultRows,remotePrivateRows]=await Promise.all([
+    const [remoteTaskRows,remoteNoteRows,remoteLogRows,remoteFinanceRows,remoteFinanceStateRows,remoteBankRows,remoteTagRows,remoteSettingRows,remoteVaultRows,remotePrivateRows]=await Promise.all([
       fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll(`nmm_notes?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),
       fetchAll('nmm_logs?select=*&planner_version=eq.1'),
       fetchAll('nmm_finance_entries?select=*&planner_version=eq.1'),
       fetchAll('nmm_finance_state?select=*&planner_version=eq.1'),
+      fetchAll(`nmm_bank_transactions?select=*&owner_id=eq.${encodeURIComponent(session.user.id)}&planner_version=eq.1`),
       fetchAll('nmm_tags?select=*&planner_version=eq.1'),
       fetchAll('nmm_user_settings?select=*&planner_version=eq.1'),
       fetchAll('nmm_private_vaults?select=*&planner_version=eq.1'),
       fetchAll('nmm_private_notes?select=*&planner_version=eq.1')
     ]);
-    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean),remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean),remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean),remoteFinances=remoteFinanceRows.map(rowToFinance).filter(Boolean),remoteFinanceStateRow=remoteFinanceStateRows.find(row=>row.owner_id===session.user.id)||remoteFinanceStateRows[0]||null,remoteFinanceState=remoteFinanceStateRow?rowToFinanceState(remoteFinanceStateRow):null,remoteTags=remoteTagRows.map(rowToTag).filter(Boolean),remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null,remoteVault=remoteVaultRows.length?rowToPrivateVault(remoteVaultRows[0]):null,remotePrivateNotes=remotePrivateRows.map(rowToPrivateNote).filter(Boolean);
+    const remoteTasks=remoteTaskRows.map(rowToTask).filter(Boolean),remoteNotes=remoteNoteRows.map(rowToNote).filter(Boolean),remoteLogs=remoteLogRows.map(rowToLog).filter(Boolean),remoteFinances=remoteFinanceRows.map(rowToFinance).filter(Boolean),remoteFinanceStateRow=remoteFinanceStateRows.find(row=>row.owner_id===session.user.id)||remoteFinanceStateRows[0]||null,remoteFinanceState=remoteFinanceStateRow?rowToFinanceState(remoteFinanceStateRow):null,remoteBank=remoteBankRows.map(normalizeBankTransaction).filter(Boolean),remoteTags=remoteTagRows.map(rowToTag).filter(Boolean),remoteSettings=remoteSettingRows.length?rowToSettings(remoteSettingRows[0]):null,remoteVault=remoteVaultRows.length?rowToPrivateVault(remoteVaultRows[0]):null,remotePrivateNotes=remotePrivateRows.map(rowToPrivateNote).filter(Boolean);
     const localCashboxIsNewer=(Date.parse(localFinanceState.cashboxUpdatedAt)||0)>(Date.parse(remoteFinanceState?.cashboxUpdatedAt||'')||0);
     tags=ensureDefaultTags(mergeById(localTags,remoteTags).map(normalizeTag).filter(Boolean));
     prunePageFilters();
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
-    const localActiveTasks=localTasks.filter(item=>!item.deletedAt),localActiveNotes=localNotes.filter(item=>!item.deletedAt),localActiveLogs=localLogs.filter(item=>!item.deletedAt),localActiveFinances=localFinances.filter(item=>!item.deletedAt);
-    if(!remoteTasks.length&&!remoteNotes.length&&!remoteLogs.length&&!remoteFinances.length&&!remoteFinanceStateRows.length&&(localActiveTasks.length||localActiveNotes.length||localActiveLogs.length||localActiveFinances.length)&&!window.confirm('A conta está vazia. Enviar as tarefas, notas, logs e finanças deste aparelho para ela?')){
+    const localActiveTasks=localTasks.filter(item=>!item.deletedAt),localActiveNotes=localNotes.filter(item=>!item.deletedAt),localActiveLogs=localLogs.filter(item=>!item.deletedAt),localActiveFinances=localFinances.filter(item=>!item.deletedAt),localActiveBank=bankTransactions.filter(item=>!item.isInternalTransfer);
+    if(!remoteTasks.length&&!remoteNotes.length&&!remoteLogs.length&&!remoteFinances.length&&!remoteFinanceStateRows.length&&!remoteBank.length&&(localActiveTasks.length||localActiveNotes.length||localActiveLogs.length||localActiveFinances.length||localActiveBank.length)&&!window.confirm('A conta está vazia. Enviar as tarefas, notas, logs e finanças deste aparelho para ela?')){
       setAuthMessage('Nada foi enviado. Seus dados continuam neste aparelho.'); return false;
     }
     tasks=mergeById(localTasks,remoteTasks).map(normalizeTask).filter(Boolean);
@@ -2145,6 +2178,7 @@
     else if(privateNotesUnlocked&&privateCryptoKey)setDecryptedVaultItems(await loadDecryptedPrivateNotes());
     const synced=await syncCloudAndWait();
     if(localCashboxIsNewer)try{await syncFinanceCashboxState();}catch{}
+    const bankMap=new Map(remoteBank.map(item=>[item.transactionKey,item]));for(const item of localActiveBank)if(!bankMap.has(item.transactionKey))bankMap.set(item.transactionKey,item);bankTransactions=Array.from(bankMap.values());localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));
     renderAll(); createAutomaticBackup(false); updateAuthUI();
     return synced;
   }
@@ -2163,13 +2197,14 @@
         const taskRows=tasks.map(taskToRow);
         const noteRows=notes.map(noteToRow);
         const logRows=logs.map(logToRow);
-        const financeRows=finances.map(financeToRow);
+        const financeRows=finances.map(financeToRow),bankRows=bankTransactions.map(normalizeBankTransaction).filter(Boolean).map(bankTransactionToRow);
         const settingsRow=settingsToRow(),vaultRow=privateVaultToRow(),canSyncPrivate=Boolean(privateVault)&&(!privateVault.ownerId||privateVault.ownerId===session.user.id),privateRows=canSyncPrivate?privateCipherRows.map(privateRowToRow):[];
         if (tagRows.length) await cloudRequest('nmm_tags?on_conflict=owner_id,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(tagRows)});
         if (taskRows.length) await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});
         if (noteRows.length) await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});
         if (logRows.length) await cloudRequest('nmm_logs?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(logRows)});
         if (financeRows.length) await cloudRequest('nmm_finance_entries?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(financeRows)});
+        if (bankRows.length) await cloudRequest('nmm_bank_transactions?on_conflict=owner_id,transaction_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(bankRows)});
         await cloudRequest('nmm_user_settings?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(settingsRow)});
         if(vaultRow)await cloudRequest('nmm_private_vaults?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(vaultRow)});
         if(privateRows.length)await cloudRequest('nmm_private_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(privateRows)});
@@ -2266,7 +2301,7 @@
     finally { authBusy=false; updateAuthUI(); }
   }
   function automaticBackupSnapshot() {
-    return {format:'tnm-weekly-autobackup-v6',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),financeState,privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
+    return {format:'tnm-weekly-autobackup-v7',createdAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),bankTransactions,financeState,privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
   }
   function updateAutoBackupStatus(timestamp='') {
     const node=$('autoBackupStatus');
@@ -2302,7 +2337,7 @@
     });
   }
   function exportBackup() {
-    const data={format:'tnm-weekly-backup-v7',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),financeState,privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
+    const data={format:'tnm-weekly-backup-v8',exportedAt:nowISO(),tasks:tasks.filter(task=>!task.deletedAt),notes:notes.filter(note=>!note.deletedAt),logs:logs.filter(log=>!log.deletedAt),financeEntries:finances.filter(entry=>!entry.deletedAt),bankTransactions,financeState,privateVault,privateNotesEncrypted:privateCipherRows,tags:tags.filter(tag=>!tag.deletedAt)};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const link=document.createElement('a'); link.href=url; link.download=`tnm-backup-${todayKey()}.json`; link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000); $('backupMessage').textContent='Backup exportado.';
@@ -2412,6 +2447,9 @@
   $('financePrevMonth').addEventListener('click',()=>shiftFinanceMonth(-1));
   $('financeNextMonth').addEventListener('click',()=>shiftFinanceMonth(1));
   $('financeEntriesList').addEventListener('click',handleFinanceClick);
+  $('financeSummary').addEventListener('click',event=>{const card=event.target.closest('[data-finance-summary-open]');if(card)openFinanceSummaryDialog(card.dataset.financeSummaryOpen);});
+  $('financeSummaryDialog').addEventListener('click',handleFinanceClick);
+  $('closeFinanceSummaryDialog').addEventListener('click',()=>$('financeSummaryDialog').close());
   $('financeUpcomingList').addEventListener('click',handleFinanceClick);
   $('plannerUpcomingIncomeList').addEventListener('click',handleFinanceClick);
   $('householdBucketsGrid').addEventListener('click',event=>{const button=event.target.closest('[data-household-bill-toggle]');if(button)void toggleHouseholdBillPaid(button.dataset.householdBillToggle);});
