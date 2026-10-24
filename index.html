@@ -955,6 +955,14 @@
     .finance-detail-section[data-kind="income"] h3 { color:#8fe0b5; }
     .finance-detail-section[data-kind="expense"] h3 { color:#ffb0b8; }
     .finance-detail-rows { display:grid; gap:7px; }
+    .finance-expense-day { border:1px solid var(--line); border-radius:11px; background:rgba(21,30,50,.55); overflow:hidden; }
+    .finance-expense-day > summary { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:42px; padding:9px 11px; color:#ffd6d8; font-size:.76rem; font-weight:850; cursor:pointer; list-style:none; }
+    .finance-expense-day > summary::-webkit-details-marker { display:none; }
+    .finance-expense-day > summary::after { content:'＋'; flex:none; color:var(--muted); }
+    .finance-expense-day[open] > summary::after { content:'−'; }
+    .finance-expense-day-rows { display:grid; gap:7px; padding:0 8px 8px; }
+    .finance-bank-actions { grid-column:1/-1; display:flex; justify-content:flex-end; }
+    .finance-bank-rename { min-height:30px; padding:4px 8px; border:1px solid #53627e; border-radius:8px; background:#202b42; color:#dce6ff; font-size:.64rem; font-weight:750; }
     .finance-detail-empty { margin:0; color:var(--muted); font-size:.76rem; }
     .finance-bank-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; align-items:center; padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:#151e32; }
     .finance-bank-row strong { min-width:0; overflow-wrap:anywhere; font-size:.78rem; }
@@ -1314,7 +1322,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=127" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=132',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=128" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=133',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
