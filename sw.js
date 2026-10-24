@@ -1,1 +1,20 @@
-Y29uc3QgQ0FDSEVfTkFNRSA9ICd0bm0td2Vla2x5LXY3OCc7CmNvbnN0IEFQUF9GSUxFUyA9IFsnLi8nLCcuL2luZGV4Lmh0bWwnLCcuL2NvbmZpZy5qcz92PTMnLCcuL2FwcC5qcz92PTEyMCcsJy4vbWFuaWZlc3Qud2VibWFuaWZlc3Q/dj0zJywnLi9pY29uLTE5Mi5wbmcnLCcuL2ljb24tNTEyLnBuZycsJy4vYXBwbGUtdG91Y2gtaWNvbi5wbmcnLCcuL2Zhdmljb24ucG5nJ107CnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignaW5zdGFsbCcsIGV2ZW50ID0+IHsKICBldmVudC53YWl0VW50aWwoY2FjaGVzLm9wZW4oQ0FDSEVfTkFNRSkudGhlbihjYWNoZSA9PiBjYWNoZS5hZGRBbGwoQVBQX0ZJTEVTKSkpOwogIHNlbGYuc2tpcFdhaXRpbmcoKTsKfSk7CnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignYWN0aXZhdGUnLCBldmVudCA9PiB7CiAgZXZlbnQud2FpdFVudGlsKGNhY2hlcy5rZXlzKCkudGhlbihrZXlzID0+IFByb21pc2UuYWxsKGtleXMuZmlsdGVyKGtleSA9PiBrZXkgIT09IENBQ0hFX05BTUUpLm1hcChrZXkgPT4gY2FjaGVzLmRlbGV0ZShrZXkpKSkpKTsKICBzZWxmLmNsaWVudHMuY2xhaW0oKTsKfSk7CnNlbGYuYWRkRXZlbnRMaXN0ZW5lcignZmV0Y2gnLCBldmVudCA9PiB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAnR0VUJyB8fCBuZXcgVVJMKGV2ZW50LnJlcXVlc3QudXJsKS5vcmlnaW4gIT09IHNlbGYubG9jYXRpb24ub3JpZ2luKSByZXR1cm47CiAgZXZlbnQucmVzcG9uZFdpdGgoZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihyZXNwb25zZSA9PiB7CiAgICBpZiAocmVzcG9uc2Uub2spIHsKICAgICAgY29uc3QgY29weT1yZXNwb25zZS5jbG9uZSgpOwogICAgICBjYWNoZXMub3BlbihDQUNIRV9OQU1FKS50aGVuKGNhY2hlID0+IGNhY2hlLnB1dChldmVudC5yZXF1ZXN0LGNvcHkpKTsKICAgIH0KICAgIHJldHVybiByZXNwb25zZTsKICB9KS5jYXRjaChhc3luYyAoKSA9PiAoYXdhaXQgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QpKSB8fCBjYWNoZXMubWF0Y2goJy4vaW5kZXguaHRtbCcpKSk7Cn0pOwo=
+const CACHE_NAME = 'tnm-weekly-v78';
+const APP_FILES = ['./','./index.html','./config.js?v=3','./app.js?v=120','./manifest.webmanifest?v=3','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./favicon.png'];
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)));
+  self.skipWaiting();
+});
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
+  event.respondWith(fetch(event.request).then(response => {
+    if (response.ok) {
+      const copy=response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(event.request,copy));
+    }
+    return response;
+  }).catch(async () => (await caches.match(event.request)) || caches.match('./index.html')));
+});
