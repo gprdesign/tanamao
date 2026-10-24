@@ -2378,7 +2378,7 @@
     setInterval(()=>createAutomaticBackup(true),AUTO_BACKUP_EVERY);
     setInterval(checkWeekRollover,60*1000);
     setInterval(()=>{void refreshFinanceCloudData();},5*60*1000);
-    setInterval(()=>{if(document.visibilityState==='visible'&&session?.user?.id&&!realtimeConnected&&!authBusy)scheduleRealtimeRefresh();},15000);
+    setInterval(()=>{if(document.visibilityState==='visible'&&session?.user?.id&&!realtimeConnected&&!authBusy){if(realtimeClient)scheduleRealtimeRefresh();else void refreshRealtimeSnapshot();}},30000);
     setInterval(syncTasksOnForeground,15*1000);
     document.addEventListener('visibilitychange',()=>{
       checkWeekRollover();
