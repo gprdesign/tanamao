@@ -21,6 +21,7 @@
     .wrap { width:min(1160px,100%); min-height:100vh; min-height:100dvh; margin:auto; padding:14px 18px calc(96px + env(safe-area-inset-bottom,0px)); }
     .app-header { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:0 0 22px; }
     .brand { display:flex; align-items:center; gap:12px; min-width:0; }
+    .brand-mobile-title { display:none; }
     .brand-mark { display:grid; place-items:center; flex:none; width:42px; height:42px; border:1px solid #34415b; border-radius:13px; color:var(--accent); font-size:.76rem; font-weight:850; letter-spacing:.04em; }
     h1 { margin:0; font-size:1.25rem; line-height:1.1; letter-spacing:-.02em; }
     .brand p,.muted { color:var(--muted); }
@@ -1177,7 +1178,8 @@
     body.view-mobile[data-page="notes"] #notesPage,body.view-mobile[data-page="notes"] #notesDock,body.view-mobile #noteDialog { zoom:.85; }
     body.view-mobile .header-actions { gap:4px; }
     body.view-mobile .header-actions .btn { min-height:30px; padding:4px 5px; font-size:.66rem; }
-    body.view-mobile .brand h1 { font-size:calc(1rem - 2pt); }
+    body.view-mobile .brand-title-copy { display:none; }
+    body.view-mobile .brand-mobile-title { display:block; margin:0; font-size:1.05rem; }
     body.view-mobile .brand p { font-size:calc(.62rem - 2pt); }
     #calendarStatus.is-error { color:#ffb0b8; }
     /* PC now opens directly on Planner; Finance cards use a consistent responsive order. */
@@ -1211,7 +1213,7 @@
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
   <main class="wrap">
     <header class="app-header">
-      <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div><h1>Tá na mão!</h1><p>Seu planner semanal</p></div></div>
+      <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div class="brand-title-copy"><h1>Tá na mão!</h1><p>Seu planner semanal</p></div><h1 class="brand-mobile-title">TNM!</h1></div>
       <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
     </header>
 
@@ -1322,7 +1324,7 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
-  <script src="./app.js?v=128" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=133',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=129" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=134',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

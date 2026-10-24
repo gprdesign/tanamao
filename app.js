@@ -628,7 +628,7 @@
   }
   function jumpToCurrentWeek() {
     setWeek(todayKey());
-    setTimeout(()=>{const day=$('weekGrid').querySelector('.day-column.is-today');if(!day)return;day.classList.remove('today-flash');void day.offsetWidth;day.classList.add('today-flash');},300);
+    setTimeout(()=>{const day=$('weekGrid').querySelector('.day-column.is-today');if(!day)return;day.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});day.classList.remove('today-flash');void day.offsetWidth;day.classList.add('today-flash');},100);
   }
   function checkWeekRollover() {
     const today=todayKey(), current=startOfWeek(today);
@@ -2365,7 +2365,7 @@
   $('tagManagerList').addEventListener('submit',saveManagedTag);
   document.querySelectorAll('[data-note-format]').forEach(button=>button.addEventListener('click',()=>applyNoteFormat(button.dataset.formatTarget,button.dataset.noteFormat)));
   document.querySelector('.main-nav').addEventListener('click',event=>{
-    const button=event.target.closest('button[data-page]'); if (button) setPage(button.dataset.page);
+    const button=event.target.closest('button[data-page]');if(!button)return;setPage(button.dataset.page);if(button.dataset.page==='tasks')jumpToCurrentWeek();
   });
   document.addEventListener('click',event=>{const action=event.target.closest('[data-home-action]');if(action){openHomeAction(action.dataset.homeAction);return;}if(event.target.closest('[data-open-tasks]'))setPage('tasks');});
   $('taskForm').addEventListener('submit',saveTaskFromForm);
