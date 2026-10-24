@@ -14,7 +14,8 @@
   <style>
     :root { color-scheme:dark; --bg:#0b1020; --panel:#141b2d; --panel2:#1b2439; --line:#2b3650; --text:#f4f6fb; --muted:#aab4c8; --accent:#8bafff; --green:#73d6a2; --red:#ff8b8b; }
     * { box-sizing:border-box; }
-    body { margin:0; min-height:100vh; min-height:100dvh; background:linear-gradient(145deg,#0b1020,#111a2c 60%,#0b1020); color:var(--text); font:16px/1.4 system-ui,-apple-system,Segoe UI,sans-serif; }
+    body { margin:0; min-height:100vh; min-height:100dvh; background:linear-gradient(145deg,#0b1020,#111a2c 60%,#0b1020); color:var(--text); font:16px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif; }
+    body * { font-family:inherit; }
     button,input,textarea,select { font:inherit; }
     button { color:inherit; cursor:pointer; }
     .hidden { display:none !important; }
@@ -274,6 +275,7 @@
     .menu-move { color:#cbd5ea; }
     .menu-action:hover { background:#26334c; }
     .task-card .task-title { font-size:.75rem; line-height:1.2; }
+    body[data-view-mode="pc"] #weekGrid .task-card .task-title,body[data-view-mode="pc"] #planningList .task-card .task-title,body[data-view-mode="pc"] #completedList .task-card .task-title,body[data-view-mode="pc"] #dayDialogList .task-card .task-title { font-size:.68rem !important; line-height:1.2; }
     .task-card.completed .task-open { opacity:.72; text-decoration:line-through; }
     .task-card .task-title-row { gap:6px; }
     .task-card .task-open { font-size:.75rem; line-height:1.2; }
@@ -590,7 +592,12 @@
     .planner-income-row strong { color:#8fe0b5; font-size:.75rem; white-space:nowrap; }
     .planner-income-empty { margin:0; padding:5px 4px; color:var(--muted); font-size:.68rem; }
     .planner-income-row:focus-visible,.finance-upcoming-row:focus-visible,.finance-entry-open:focus-visible { outline:2px solid #8bafff; outline-offset:2px; }
-    .planner-section-buttons { display:grid; flex:none; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0 0 6px; }
+    .planner-section-buttons { display:grid; flex:none; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:0 0 6px; }
+    .planner-add-task { min-width:0; min-height:40px; padding:7px 8px; font-size:.78rem; white-space:nowrap; }
+    body.view-mobile[data-page="tasks"] .planner-section-buttons { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    body.view-mobile[data-page="tasks"] .planner-add-task { display:none !important; }
+    body[data-view-mode="pc"] #tasksPage .planner-income-panel { display:none !important; }
+    body[data-view-mode="pc"] #weekGrid .task-title,body[data-view-mode="pc"] #planningList .task-title,body[data-view-mode="pc"] #completedList .task-title,body[data-view-mode="pc"] #dayDialogList .task-title { font-size:.68rem !important; line-height:1.2; }
     .planner-section-buttons .planner-section-btn { min-width:0; margin:0; }
     .planner-panel { width:100%; }
     .task-card--tile .task-touch-handle { width:16px; height:24px; }
@@ -725,6 +732,8 @@
     .btn.danger { border-color:#a94958; color:#ffc5cb; }
     .btn.danger { background:#b42336; color:#fff; }
     .btn.danger:hover { background:#951b2b; border-color:#e36a7a; }
+    #financeStopSeriesBtn { border-color:#a56c1e; background:#604214; color:#ffe0a0; }
+    #financeStopSeriesBtn:hover { border-color:#e8ad47; background:#76521a; }
     .sub-dock { z-index:25; bottom:calc(100px + env(safe-area-inset-bottom,0px)); width:min(640px,calc(100% - 20px)); min-height:48px; padding:5px 7px; gap:4px; justify-content:space-between; }
     body:not([data-page="tasks"]) #weekDock { display:none !important; }
     body:not([data-page="notes"]) #notesDock { display:none !important; }
@@ -929,6 +938,7 @@
     .finance-month-title>span { font-size:1.35rem; }
     .finance-month-title strong { text-transform:capitalize; }
     .finance-month-toolbar { display:flex; align-items:center; justify-content:center; gap:6px; margin:0; padding:3px 8px; border:1px solid #2b3650; border-radius:12px; background:rgba(17,24,39,.75); }
+    body[data-view-mode="pc"] .finance-month-toolbar { padding:0; border:0; background:transparent; box-shadow:none; }
     .finance-topbar .finance-new-entry { min-width:250px; min-height:44px; }
     .finance-main-grid { display:grid; grid-template-columns:minmax(260px,.72fr) minmax(0,1.5fr); align-items:start; gap:16px; }
     .finance-main-grid .finance-summary { grid-template-columns:1fr; align-content:start; }
@@ -940,6 +950,11 @@
     .finance-detail-section h3 { margin:0 0 8px; font-size:.84rem; letter-spacing:.04em; }
     .finance-detail-dialog[data-kind="planned"] .finance-detail-section:not([data-kind="planned"]),.finance-detail-dialog[data-kind="income"] .finance-detail-section:not([data-kind="income"]),.finance-detail-dialog[data-kind="expense"] .finance-detail-section:not([data-kind="expense"]) { display:none; }
     .household-buckets-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; min-width:0; }
+    body.view-mobile .household-bucket-head { display:grid; grid-template-columns:minmax(0,1fr); gap:4px; }
+    body.view-mobile .household-bucket-head > strong { display:none; }
+    .household-bucket-mobile-amount { display:none; }
+    body.view-mobile .household-bucket-mobile-amount { display:block; margin:6px 0 0; color:#ff8b8b; font-size:.78rem; line-height:1.2; }
+    body.view-mobile .household-bucket-head > div { grid-column:1; grid-row:1; min-width:0; }
     .household-buckets-summary-card { display:flex; flex-direction:column; justify-content:center; min-width:0; min-height:82px; padding:9px; border:1px solid #52627e; border-radius:13px; background:#1d293f; text-align:center; }
     .household-buckets-summary-card span { color:var(--muted); font-size:.68rem; }
     .household-buckets-summary-card strong { margin-top:5px; font-size:.95rem; overflow-wrap:anywhere; }
@@ -1039,6 +1054,7 @@
     .finance-icon-button.danger { color:#ffb0b8; }
     .finance-empty { padding:18px 10px; text-align:center; }
     .finance-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 12px; }
+    #financeApplyFutureWrap { grid-column:1/-1; }
     .finance-form-grid .field { min-width:0; }
     .finance-form-grid [hidden],#financeInstallmentWrap[hidden],#financeApplyFutureWrap[hidden],#financeDeleteBtn[hidden],#financeStopSeriesBtn[hidden] { display:none !important; }
     .finance-future-option { display:flex; align-items:center; gap:8px; margin:0 0 10px; color:var(--text); font-size:.78rem; }
@@ -1081,7 +1097,10 @@
       .finance-list-heading { align-items:center; }
       .finance-list-heading p { font-size:.67rem; line-height:1.3; }
       #financeAddBtn { min-height:42px; padding:7px 10px; font-size:.78rem; }
-      .finance-form-grid { grid-template-columns:1fr; }
+      .finance-form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 8px; }
+      .finance-form-grid .field input,.finance-form-grid .field select { min-width:0; padding-right:7px; padding-left:7px; font-size:.8rem; }
+      #financeTitle { grid-column:1/-1; }
+      #financeInstallmentWrap { grid-column:1/-1; }
       .household-buckets-panel { padding:11px; }
       .household-buckets-heading { grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:start; gap:8px; }
       .household-buckets-title { grid-column:1; grid-row:1; }
@@ -1160,6 +1179,8 @@
     body.view-mobile[data-page="tasks"] .wrap { display:block !important; height:auto !important; min-height:100dvh; overflow:visible !important; padding-bottom:calc(188px + env(safe-area-inset-bottom,0px)) !important; }
     body.view-mobile[data-page="tasks"] #tasksPage.active { display:block !important; flex:none !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
     body.view-mobile[data-page="tasks"] .planner-section-buttons { position:sticky; top:calc(env(safe-area-inset-top,0px) + 4px); z-index:24; gap:6px; margin:0 0 8px; padding:4px; border:1px solid #394663; border-radius:12px; background:rgba(11,16,32,.94); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 6px 18px #0006; }
+    body.view-mobile #dayDialog .day-dialog-actions { display:none !important; }
+    body.view-mobile #dayDialog .day-dialog-mobile-add { display:block; width:100%; min-height:42px; margin:2px 0 4px; padding:8px 12px; border-radius:10px; font-size:.84rem; }
     body.view-mobile[data-page="tasks"] #planningList,body.view-mobile[data-page="tasks"] #completedList { grid-template-columns:minmax(0,1fr) !important; }
     body.view-mobile[data-page="tasks"] .planner-panel { max-height:none !important; overflow:visible !important; }
     body.view-mobile[data-page="tasks"] .week-board { flex:none !important; min-height:0 !important; overflow:visible !important; }
@@ -1242,6 +1263,7 @@
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
       <div class="page-heading"><div><h2>PLANNER</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <div class="planner-section-buttons">
+        <button class="btn primary planner-add-task" id="plannerAddTaskBtn" type="button">＋ TAREFA</button>
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
         <button class="planner-section-btn completed-box" id="completedBtn" type="button" aria-expanded="false" aria-controls="completedPanel">Concluídas <span id="completedCount">0</span></button>
       </div>
@@ -1320,7 +1342,7 @@
 
   <dialog id="householdPaymentDialog" class="app-dialog"><div class="dialog-head"><h2>Marcar conta como paga</h2><button class="btn ghost small" id="closeHouseholdPaymentDialog" type="button" aria-label="Cancelar">✕</button></div><p class="dialog-hint" id="householdPaymentPrompt"></p><div class="form-actions dialog-save-actions"><button class="btn primary" id="householdPaymentDeductBtn" type="button">Descontar da Caixinha</button><button class="btn" id="householdPaymentKeepBtn" type="button">Paga sem descontar</button></div></dialog>
 
-  <dialog id="dayDialog" class="app-dialog"><div class="dialog-head day-dialog-head"><button class="btn ghost small day-dialog-nav" id="dayDialogPrevBtn" type="button" aria-label="Dia anterior" title="Dia anterior">←</button><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small day-dialog-nav" id="dayDialogNextBtn" type="button" aria-label="Próximo dia" title="Próximo dia">→</button><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint" id="dayDialogHint" hidden></p><div class="form-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
+  <dialog id="dayDialog" class="app-dialog"><div class="dialog-head day-dialog-head"><button class="btn ghost small day-dialog-nav" id="dayDialogPrevBtn" type="button" aria-label="Dia anterior" title="Dia anterior">←</button><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small day-dialog-nav" id="dayDialogNextBtn" type="button" aria-label="Próximo dia" title="Próximo dia">→</button><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint" id="dayDialogHint" hidden></p><div class="form-actions day-dialog-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
   <div id="dayCompletionConfirm" class="day-completion-confirm" role="alertdialog" aria-modal="true" aria-labelledby="dayCompletionConfirmText" hidden><span id="dayCompletionConfirmText" class="day-completion-confirm-text">Concluir esta tarefa?</span><div id="dayCompletionChecklistWarning" class="day-completion-checklist-warning" hidden><strong>Checklist ainda em aberto:</strong><ul id="dayCompletionChecklistItems"></ul></div><div class="day-completion-confirm-actions"><button class="btn ghost small" id="dayCompletionCancelBtn" type="button">CANCELAR</button><button class="btn small confirm-yes" id="dayCompletionConfirmBtn" type="button">CONCLUIR</button></div></div>
 
 
@@ -1330,7 +1352,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=134" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=139',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=136" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=141',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

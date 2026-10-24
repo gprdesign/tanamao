@@ -1033,7 +1033,7 @@
       if(!paid)available=Math.max(0,available-funded);
       const missing=Math.max(0,bill.amount-funded),percent=paid?100:bill.amount?Math.min(100,funded/bill.amount*100):0,complete=paid||missing===0;
       const dueLabel=`Vence dia ${String(bill.day).padStart(2,'0')}`,untilLabel=bill.until?`Última parcela: ${dateAtNoon(bill.until)?.toLocaleDateString('pt-BR')||bill.until}`:'',detailLeft=paid?'Paga':`${financeMoney(funded)} reservados`,detailRight=paid?(deducted?`${financeMoney(deducted)} descontados`:'Saldo preservado'):missing?`Faltam ${financeMoney(missing)}`:'Completo';
-      return `<article class="household-bucket${complete?' complete':''}${paid?' is-paid':''}"><div class="household-bucket-head"><div><h4>${escapeHTML(bill.title)}</h4><span>${dueLabel}</span></div><strong>${escapeHTML(financeMoney(bill.amount))}</strong></div>${untilLabel?`<small class="household-bucket-until">${escapeHTML(untilLabel)}</small>`:''}<div class="household-bucket-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}" aria-label="${escapeHTML(bill.title)}: ${Math.round(percent)}% ${paid?'pago':'reservado'}"><span style="width:${percent.toFixed(2)}%"></span></div><div class="household-bucket-details"><span>${escapeHTML(detailLeft)}</span><b>${escapeHTML(detailRight)}</b></div><button class="household-bucket-toggle${paid?' is-paid':''}" type="button" data-household-bill-toggle="${escapeHTML(bill.id)}" aria-pressed="${paid}">${paid?'Marcar não paga':'Marcar paga'}</button></article>`;
+      return `<article class="household-bucket${complete?' complete':''}${paid?' is-paid':''}"><div class="household-bucket-head"><div><h4>${escapeHTML(bill.title)}</h4><span>${dueLabel}</span></div><strong>${escapeHTML(financeMoney(bill.amount))}</strong></div>${untilLabel?`<small class="household-bucket-until">${escapeHTML(untilLabel)}</small>`:''}<div class="household-bucket-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}" aria-label="${escapeHTML(bill.title)}: ${Math.round(percent)}% ${paid?'pago':'reservado'}"><span style="width:${percent.toFixed(2)}%"></span></div><div class="household-bucket-details"><span>${escapeHTML(detailLeft)}</span><b>${escapeHTML(detailRight)}</b></div><strong class="household-bucket-mobile-amount">${escapeHTML(financeMoney(bill.amount))}</strong><button class="household-bucket-toggle${paid?' is-paid':''}" type="button" data-household-bill-toggle="${escapeHTML(bill.id)}" aria-pressed="${paid}">${paid?'Marcar não paga':'Marcar paga'}</button></article>`;
     }).join('');
   }
   function openHouseholdPaymentDialog(billId) {
@@ -1441,6 +1441,8 @@
     const eventLines=events.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event${calendarEventClass(event,activeDayDate)}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
     const groups=[];
     if(eventLines)groups.push(`<section class="day-dialog-events" aria-label="Eventos do Google Calendar"><div class="planner-calendar-events">${eventLines}</div>${open.length?'<div class="planner-calendar-task-divider" role="separator" aria-label="Tarefas"></div>':''}</section>`);
+    const mobileAdd=activeDayKind==='day'&&viewMode==='mobile'?`<button class="btn primary small day-dialog-mobile-add" id="dayDialogMobileAddBtn" type="button">＋ Tarefa</button>`:'';
+    if(mobileAdd)groups.push(mobileAdd);
     groups.push(open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode,dayActions:activeDayKind==='day'})).join(''):'<div class="empty">Sem tarefas em aberto.</div>');
     if(completed.length)groups.push(`<details class="task-checklist-completed day-dialog-completed"><summary class="task-checklist-section-title">CONCLUÍDAS (${completed.length})</summary><div class="day-dialog-completed-list">${completed.map(task=>taskCard(task,{canMove:false})).join('')}</div></details>`);
     $('dayDialogList').innerHTML=groups.join('');
@@ -2447,6 +2449,8 @@
   $('nextWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,7)));
   $('planningBtn').addEventListener('click',()=>togglePlannerSection('planning'));
   $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
+  $('plannerAddTaskBtn').addEventListener('click',()=>openTaskDialog());
+  $('dayDialogList').addEventListener('click',event=>{if(!event.target.closest('#dayDialogMobileAddBtn'))return;const date=activeDayKind==='day'?activeDayDate:'',dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog('',date,token);});
   $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=6;renderTasks();});
   $('completedMoreBtn').addEventListener('click',()=>{completedVisibleLimit+=6;renderTasks();});
   $('dayDialogAddBtn').addEventListener('click',()=>{const date=activeDayKind==='day'?activeDayDate:'',dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog('',date,token);});
