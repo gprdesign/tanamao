@@ -1372,7 +1372,8 @@
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-horizontal { display:inline !important; }
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
     @media(max-width:600px) {
-      body.view-mobile[data-page="tasks"] #weekGrid { padding-bottom:180px !important; scroll-padding-bottom:180px !important; }
+      body.view-mobile[data-page="tasks"] #weekGrid { padding-bottom:180px !important; scroll-padding-bottom:180px !important; overflow-y:auto !important; overscroll-behavior:contain !important; }
+      body.view-mobile[data-page="tasks"] #tasksPage.active,body.view-mobile[data-page="tasks"] .planner-week-view:not([hidden]),body.view-mobile[data-page="tasks"] .week-board { min-height:0 !important; overflow:visible !important; }
       body.view-mobile[data-page="tasks"] .wrap { padding-bottom:240px !important; }
     }
 </style>
