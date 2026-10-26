@@ -1233,7 +1233,9 @@
     body.view-mobile[data-page="tasks"] #weekDock #weekLabel { font-size:.64rem !important; }
     body.view-mobile[data-page="notes"] #notesDock { justify-content:stretch !important; }
     body.view-mobile[data-page="notes"] #notesDock .subdock-add-note { display:flex !important; align-items:center !important; justify-content:center !important; flex:1 1 0 !important; width:100% !important; height:40px !important; min-height:40px !important; border:0 !important; border-radius:11px !important; background:transparent !important; color:var(--text) !important; font-size:.72rem !important; }
-    .planner-subdock { display:flex; flex:none; gap:4px; width:max-content; max-width:100%; margin:0 0 10px; padding:4px; border:1px solid var(--line); border-radius:13px; background:#111827; }
+    .planner-subdock { display:flex !important; flex:none; visibility:visible !important; opacity:1 !important; position:relative; z-index:30; gap:4px; width:max-content; max-width:100%; margin:0 0 10px; padding:4px; border:1px solid var(--line); border-radius:13px; background:#111827; }
+    body[data-page="tasks"] #plannerSubdock:not([hidden]) { display:flex !important; visibility:visible !important; }
+    body[data-page="tasks"] #plannerWeekTab,body[data-page="tasks"] #plannerHabitsTab { display:flex !important; flex:1 1 0; align-items:center; justify-content:center; visibility:visible !important; opacity:1 !important; }
     .planner-week-view:not([hidden]) { display:flex; flex:1 1 auto; flex-direction:column; min-height:0; overflow:hidden; }
     .planner-week-view[hidden],.habits-view[hidden] { display:none !important; }
     body[data-view-mode="pc"][data-page="tasks"] .habits-view:not([hidden]) { flex:1 1 auto; min-height:0; overflow-y:auto; }
@@ -1363,7 +1365,7 @@
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
       <div class="page-heading"><div><h2>PLANNER</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
-      <nav class="planner-subdock" aria-label="Seções do planner"><button type="button" class="planner-subdock-tab" id="plannerWeekTab" aria-pressed="true">SEMANA</button><button type="button" class="planner-subdock-tab" id="plannerHabitsTab" aria-pressed="false">HÁBITOS</button></nav>
+      <nav class="planner-subdock" id="plannerSubdock" aria-label="Seções do planner"><button type="button" class="planner-subdock-tab" id="plannerWeekTab" aria-pressed="true">SEMANA</button><button type="button" class="planner-subdock-tab" id="plannerHabitsTab" aria-pressed="false">HÁBITOS</button></nav>
       <div id="plannerWeekView" class="planner-week-view">
       <div class="planner-section-buttons">
         <button class="btn primary planner-add-task" id="plannerAddTaskBtn" type="button">＋ TAREFA</button>
@@ -1457,7 +1459,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=150" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=156',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=151" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=157',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
