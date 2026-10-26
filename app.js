@@ -1747,10 +1747,10 @@
     warning.hidden=!openSubtasks.length;
     $('dayCompletionConfirm').classList.toggle('has-open-subtasks',openSubtasks.length>0);
     list.replaceChildren(...openSubtasks.map(item=>{const li=document.createElement('li');li.textContent=item.text;return li;}));
-    $('dayCompletionConfirm').hidden=false;$('dayCompletionConfirmBtn').focus();
+    const confirmDialog=$('dayCompletionConfirm');confirmDialog.hidden=false;confirmDialog.removeAttribute('hidden');if(!confirmDialog.open)confirmDialog.showModal();$('dayCompletionConfirmBtn').focus();
   }
   function closeDayTaskCompletionConfirm() {
-    $('dayCompletionConfirm').hidden=true;pendingDayTaskCompletionId='';
+    const confirmDialog=$('dayCompletionConfirm');if(confirmDialog.open)confirmDialog.close();confirmDialog.hidden=true;pendingDayTaskCompletionId='';
   }
   function confirmDayTaskCompletion() {
     const task=tasks.find(item=>item.id===pendingDayTaskCompletionId&&!item.deletedAt&&!item.completedAt);if(!task){closeDayTaskCompletionConfirm();return;}
