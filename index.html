@@ -1370,7 +1370,10 @@
     body.view-mobile[data-page="tasks"] #weekDock #weekDockAddTaskBtn { grid-column:4 !important; grid-row:1 !important; min-width:82px !important; height:36px !important; min-height:36px !important; padding:0 8px !important; font-size:.61rem !important; }
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-horizontal { display:inline !important; }
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
-
+    @media(max-width:600px) {
+      body.view-mobile[data-page="tasks"] #weekGrid { padding-bottom:180px !important; scroll-padding-bottom:180px !important; }
+      body.view-mobile[data-page="tasks"] .wrap { padding-bottom:240px !important; }
+    }
 </style>
 </head>
 <body>
