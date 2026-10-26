@@ -1444,7 +1444,10 @@
     const mobileAdd=activeDayKind==='day'&&viewMode==='mobile'?`<button class="btn primary small day-dialog-mobile-add" id="dayDialogMobileAddBtn" type="button">＋ Tarefa</button>`:'';
     if(mobileAdd)groups.push(mobileAdd);
     groups.push(open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode,dayActions:activeDayKind==='day'})).join(''):'<div class="empty">Sem tarefas em aberto.</div>');
-    if(completed.length)groups.push(`<details class="task-checklist-completed day-dialog-completed"><summary class="task-checklist-section-title">CONCLUÍDAS (${completed.length})</summary><div class="day-dialog-completed-list">${completed.map(task=>taskCard(task,{canMove:false})).join('')}</div></details>`);
+    const completedBlock=completed.length?`<details class="task-checklist-completed day-dialog-completed"><summary class="task-checklist-section-title">CONCLUÍDAS (${completed.length})</summary><div class="day-dialog-completed-list">${completed.map(task=>taskCard(task,{canMove:false})).join('')}</div></details>`:'';
+    if(lateMode)groups.push(`<div class="day-dialog-overdue-footer">${completedBlock}<button class="btn ghost small day-dialog-overdue-close" id="closeDayDialogOverdue" type="button" aria-label="Fechar">✕</button></div>`);
+    else if(completedBlock)groups.push(completedBlock);
+    $('dayDialog').classList.toggle('is-overdue',lateMode);$('dayDialogOverdueTitle').hidden=!lateMode;
     $('dayDialogList').innerHTML=groups.join('');
   }
   function renderDialogLists() { if ($('dayDialog')?.open) renderDayDialog(); }
@@ -2463,6 +2466,7 @@
   $('dayDialog').addEventListener('touchend',handleDayDialogTouchEnd,{passive:true});
   $('dayDialog').addEventListener('touchcancel',()=>{dayDialogTouchStart=null;},{passive:true});
   $('closeDayDialog').addEventListener('click',()=>$('dayDialog').close());
+  $('dayDialogList').addEventListener('click',event=>{if(event.target.closest('#closeDayDialogOverdue'))$('dayDialog').close();});
   $('notesList').addEventListener('click',handleNotesClick);
   $('notesList').addEventListener('keydown',handleNoteKey);
   $('notesList').addEventListener('dragstart',handleNoteDragStart);

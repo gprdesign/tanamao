@@ -255,6 +255,12 @@
     #weekLabel { flex:1; min-width:0; font-size:.72rem; }
     .day-dialog-list,.modal-task-list { display:grid; gap:7px; max-height:60dvh; overflow-y:auto; overscroll-behavior:contain; }
     .day-dialog-events { display:grid; gap:4px; padding:2px 0; }
+    .day-dialog-overdue-title { display:none; margin:0 0 7px; font-size:1.05rem; line-height:1.2; }
+    #dayDialog.is-overdue .day-dialog-head { display:none; }
+    #dayDialog.is-overdue .day-dialog-overdue-title { display:block; }
+    .day-dialog-overdue-footer { display:flex; align-items:stretch; gap:8px; width:100%; margin-top:5px; }
+    .day-dialog-overdue-footer .day-dialog-completed { flex:1 1 0; min-width:0; margin:0; }
+    .day-dialog-overdue-close { flex:none; align-self:stretch; min-width:42px; min-height:46px; padding:0 12px; }
     .day-dialog-completed { margin-top:5px; padding:7px 9px; border:1px solid var(--line); border-radius:10px; background:rgba(20,27,45,.45); }
     .day-dialog-completed>summary { min-height:30px; margin:0; cursor:pointer; color:var(--muted); font-size:.74rem; font-weight:850; }
     .day-dialog-completed-list { display:grid; gap:7px; margin-top:7px; }
@@ -1343,7 +1349,7 @@
 
   <dialog id="householdPaymentDialog" class="app-dialog"><div class="dialog-head"><h2>Marcar conta como paga</h2><button class="btn ghost small" id="closeHouseholdPaymentDialog" type="button" aria-label="Cancelar">✕</button></div><p class="dialog-hint" id="householdPaymentPrompt"></p><div class="form-actions dialog-save-actions"><button class="btn primary" id="householdPaymentDeductBtn" type="button">Descontar da Caixinha</button><button class="btn" id="householdPaymentKeepBtn" type="button">Paga sem descontar</button></div></dialog>
 
-  <dialog id="dayDialog" class="app-dialog"><div class="dialog-head day-dialog-head"><button class="btn ghost small day-dialog-nav" id="dayDialogPrevBtn" type="button" aria-label="Dia anterior" title="Dia anterior">←</button><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small day-dialog-nav" id="dayDialogNextBtn" type="button" aria-label="Próximo dia" title="Próximo dia">→</button><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint" id="dayDialogHint" hidden></p><div class="form-actions day-dialog-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
+  <dialog id="dayDialog" class="app-dialog"><h2 class="day-dialog-overdue-title" id="dayDialogOverdueTitle" hidden>ATRASADO</h2><div class="dialog-head day-dialog-head"><button class="btn ghost small day-dialog-nav" id="dayDialogPrevBtn" type="button" aria-label="Dia anterior" title="Dia anterior">←</button><h2 id="dayDialogTitle">Tarefas do dia</h2><button class="btn ghost small day-dialog-nav" id="dayDialogNextBtn" type="button" aria-label="Próximo dia" title="Próximo dia">→</button><button class="btn ghost small" id="closeDayDialog" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint" id="dayDialogHint" hidden></p><div class="form-actions day-dialog-actions" style="margin:0 0 10px"><button class="btn primary small" id="dayDialogAddBtn" type="button">＋ Tarefa</button></div><div class="day-dialog-list" id="dayDialogList"></div></dialog>
   <div id="dayCompletionConfirm" class="day-completion-confirm" role="alertdialog" aria-modal="true" aria-labelledby="dayCompletionConfirmText" hidden><span id="dayCompletionConfirmText" class="day-completion-confirm-text">Concluir esta tarefa?</span><div id="dayCompletionChecklistWarning" class="day-completion-checklist-warning" hidden><strong>Checklist ainda em aberto:</strong><ul id="dayCompletionChecklistItems"></ul></div><div class="day-completion-confirm-actions"><button class="btn ghost small" id="dayCompletionCancelBtn" type="button">CANCELAR</button><button class="btn small confirm-yes" id="dayCompletionConfirmBtn" type="button">CONCLUIR</button></div></div>
 
 
@@ -1353,7 +1359,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=140" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=146',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=141" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=147',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
