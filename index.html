@@ -1379,6 +1379,13 @@
       body.view-mobile[data-page="tasks"] .day-column { min-height:0 !important; overflow:visible !important; }
       body.view-mobile[data-page="tasks"] .day-task-list { min-height:0 !important; max-height:none !important; overflow:visible !important; }
       body.view-mobile[data-page="tasks"] .wrap { padding-bottom:240px !important; }
+    body.view-mobile[data-page="tasks"] { height:auto !important; min-height:100dvh !important; overflow-x:hidden !important; overflow-y:auto !important; }
+    body.view-mobile[data-page="tasks"] .wrap { display:block !important; height:auto !important; min-height:100dvh !important; overflow:visible !important; }
+    body.view-mobile[data-page="tasks"] #tasksPage.active { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+    body.view-mobile[data-page="tasks"] .planner-week-view:not([hidden]),body.view-mobile[data-page="tasks"] .week-board { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+    body.view-mobile[data-page="tasks"] #weekGrid { display:grid !important; flex:none !important; height:auto !important; max-height:none !important; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content !important; overflow:visible !important; }
+    body.view-mobile[data-page="tasks"] .day-column { min-height:0 !important; overflow:visible !important; }
+    body.view-mobile[data-page="tasks"] .day-task-list { min-height:0 !important; max-height:none !important; overflow:visible !important; }
     }
 </style>
 </head>
