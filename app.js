@@ -897,7 +897,7 @@
       const shownTasks=viewMode==='mobile'?cell.tasks.slice(0,3):cell.tasks;
       const extraTaskCount=Math.max(0,cell.tasks.length-shownTasks.length);
       const cards=shownTasks.map(task=>taskCard(task,{compact:true,late:Boolean(task.executionDate&&task.executionDate<todayKey()),linked:cell.kind==='overdue',draggable:true})).join('');
-      const calendarEvents=cell.calendarEvents||[],eventLines=calendarEvents.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event${calendarEventClass(event,cell.date)}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
+      const calendarEvents=cell.calendarEvents||[],eventLines=calendarEvents.map(event=>{const time=calendarEventTimeLabel(event),className=`planner-calendar-event${calendarEventClass(event,cell.date)}`;return event.allDay?`<button class="${className} planner-calendar-event-button" type="button" data-open-day="${escapeHTML(cell.date)}" aria-label="Abrir detalhes de ${escapeHTML(event.title)} em ${escapeHTML(formatDate(cell.date,{weekday:'long',day:'2-digit',month:'2-digit'}))}">📅 ${escapeHTML(event.title)}</button>`:`<div class="${className}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
       const calendarBlock=eventLines?`<div class="planner-calendar-events" aria-label="Eventos do Google Calendar">${eventLines}</div><div class="planner-calendar-task-divider" role="separator" aria-label="Tarefas"></div>`:'';
       const empty=cell.kind==='overdue'?'Nada atrasado':'Sem tarefas';
       const extraParts=[];if(extraTaskCount>0)extraParts.push(`+${extraTaskCount} tarefas`);if(completed.length)extraParts.push(`${completed.length} concluídas`);const extra=extraParts.join(' • ');

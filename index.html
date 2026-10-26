@@ -1171,6 +1171,8 @@
     .wrap { padding-top:4px; }
     .planner-calendar-events { display:grid; gap:3px; min-width:0; padding:1px 0; }
     .planner-calendar-event { min-width:0; color:#d6e0f1; font-size:.68rem; font-weight:650; line-height:1.25; overflow-wrap:anywhere; }
+    .planner-calendar-event-button { display:block; width:100%; min-height:0; height:auto; padding:0; border:0; border-radius:0; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+    .planner-calendar-event-button:hover { transform:none; filter:none; color:#fff; text-decoration:underline; }
     .planner-calendar-event.is-past { color:#778196; opacity:.72; }
     .planner-calendar-task-divider { width:100%; height:1px; margin:2px 0; background:linear-gradient(90deg,#53627e99,#53627e33); }
     .view-mode-switch { display:inline-flex; flex:none; align-items:center; gap:2px; padding:3px; border:1px solid #394663; border-radius:10px; background:rgba(17,24,39,.9); }
@@ -1376,7 +1378,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=143" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=149',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=144" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=150',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
