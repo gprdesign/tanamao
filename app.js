@@ -409,7 +409,8 @@
       householdBillCycles[month]=normalized;
     }
     const calendarIds=Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[];
-    return {summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    const rawHabits=Array.isArray(source.plannerHabits)?source.plannerHabits:[],plannerHabits=rawHabits.map(item=>({id:String(item?.id||''),name:String(item?.name||'').trim().slice(0,80),doneDates:Array.isArray(item?.doneDates)?Array.from(new Set(item.doneDates.map(String).filter(isDateKey))):[]})).filter(item=>item.id&&item.name).slice(0,100);
+    return {summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,plannerHabits,plannerSubpage:source.plannerSubpage==='habits'?'habits':'week',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -685,7 +686,7 @@
     document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(button.dataset.page===page)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
     updateNavIndicator(page);renderFilterButton();
     if(page==='home')renderHome();
-    if(page==='tasks')renderTasks();
+    if(page==='tasks'){renderTasks();setPlannerSubpage(userSettings.plannerSubpage,false);}
     if(page==='finance'){renderFinancePage();void refreshFinanceCloudData();}
     if(page==='notes'){renderNotes();renderNotesMode();}
     if(page==='settings'){updateAuthUI();renderSettings();}
@@ -882,6 +883,30 @@
     const duplicate=tags.find(item=>item.id!==tag.id&&!item.deletedAt&&item.name.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR'));
     if(duplicate){$('tagManagerStatus').textContent='Já existe outra tag com esse nome.';return;}
     tag.name=name;if(validTagColor(color))tag.color=color;tag.updatedAt=nowISO();saveTags();renderTagManager();$('tagManagerStatus').textContent=`Tag ${tag.name} atualizada.`;
+  }
+  function setPlannerSubpage(page,save=true) {
+    const next=page==='habits'?'habits':'week';userSettings.plannerSubpage=next;
+    const week=next==='week';$('plannerWeekView').hidden=!week;$('plannerHabitsView').hidden=week;
+    $('plannerWeekTab').setAttribute('aria-pressed',String(week));$('plannerHabitsTab').setAttribute('aria-pressed',String(!week));
+    if(next==='habits')renderHabits();
+    if(save)saveUserSettings();
+  }
+  function renderHabits() {
+    const date=todayKey(),habits=normalizeUserSettings(userSettings).plannerHabits||[],done=habits.filter(item=>item.doneDates.includes(date)).length;
+    $('habitsDateLabel').textContent=formatDate(date,{weekday:'long',day:'numeric',month:'long'});$('habitsProgress').textContent=`${done}/${habits.length}`;
+    $('habitList').innerHTML=habits.length?habits.map(item=>{const checked=item.doneDates.includes(date);return `<article class="habit-row" data-habit-id="${escapeHTML(item.id)}"><button type="button" class="habit-toggle" data-habit-toggle="${escapeHTML(item.id)}" aria-pressed="${checked}" aria-label="${checked?'Desmarcar':'Marcar'} ${escapeHTML(item.name)}">${checked?'✓':''}</button><span class="habit-name">${escapeHTML(item.name)}</span><button type="button" class="habit-delete" data-habit-delete="${escapeHTML(item.id)}" aria-label="Excluir hábito ${escapeHTML(item.name)}" title="Excluir hábito">×</button></article>`;}).join(''):'<p class="habit-empty">Nenhum hábito cadastrado ainda. Adicione o primeiro acima.</p>';
+  }
+  function addHabit(event) {
+    event.preventDefault();const input=$('habitNameInput'),name=input.value.trim().replace(/\s+/g,' ').slice(0,80);if(!name)return;
+    const current=normalizeUserSettings(userSettings).plannerHabits;if(current.some(item=>item.name.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR'))){showToast('Esse hábito já está cadastrado.');return;}
+    userSettings.plannerHabits=[...current,{id:makeId(),name,doneDates:[]}];input.value='';saveUserSettings();renderHabits();showToast('Hábito adicionado.');
+  }
+  function handleHabitAction(event) {
+    const toggle=event.target.closest('[data-habit-toggle]'),remove=event.target.closest('[data-habit-delete]');if(!toggle&&!remove)return;
+    const id=(toggle||remove).dataset.habitToggle||(toggle||remove).dataset.habitDelete;let habits=normalizeUserSettings(userSettings).plannerHabits;
+    if(remove)habits=habits.filter(item=>item.id!==id);
+    else habits=habits.map(item=>{if(item.id!==id)return item;const dates=new Set(item.doneDates),today=todayKey();dates.has(today)?dates.delete(today):dates.add(today);return {...item,doneDates:Array.from(dates).sort()};});
+    userSettings.plannerHabits=habits;saveUserSettings();renderHabits();
   }
   function renderTasks() {
     const all=visibleTasks('tasks'), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
@@ -2462,6 +2487,10 @@
   $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
   $('plannerAddTaskBtn').addEventListener('click',()=>openTaskDialog());
   $('weekDockAddTaskBtn').addEventListener('click',()=>openTaskDialog());
+  $('plannerWeekTab').addEventListener('click',()=>setPlannerSubpage('week'));
+  $('plannerHabitsTab').addEventListener('click',()=>setPlannerSubpage('habits'));
+  $('habitAddForm').addEventListener('submit',addHabit);
+  $('habitList').addEventListener('click',handleHabitAction);
   $('dayDialogList').addEventListener('click',event=>{if(!event.target.closest('#dayDialogMobileAddBtn'))return;const date=activeDayKind==='day'?activeDayDate:'',dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog('',date,token);});
   $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=6;renderTasks();});
   $('completedMoreBtn').addEventListener('click',()=>{completedVisibleLimit+=6;renderTasks();});

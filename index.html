@@ -1233,6 +1233,28 @@
     body.view-mobile[data-page="tasks"] #weekDock #weekLabel { font-size:.64rem !important; }
     body.view-mobile[data-page="notes"] #notesDock { justify-content:stretch !important; }
     body.view-mobile[data-page="notes"] #notesDock .subdock-add-note { display:flex !important; align-items:center !important; justify-content:center !important; flex:1 1 0 !important; width:100% !important; height:40px !important; min-height:40px !important; border:0 !important; border-radius:11px !important; background:transparent !important; color:var(--text) !important; font-size:.72rem !important; }
+    .planner-subdock { display:flex; gap:4px; width:max-content; max-width:100%; margin:0 0 10px; padding:4px; border:1px solid var(--line); border-radius:13px; background:#111827; }
+    .planner-subdock-tab { min-width:112px; min-height:38px; padding:7px 16px; border:0; border-radius:9px; background:transparent; color:var(--muted); font-size:.76rem; font-weight:850; letter-spacing:.04em; }
+    .planner-subdock-tab[aria-pressed="true"] { background:#27334a; color:var(--text); box-shadow:inset 0 0 0 1px #607397; }
+    .habits-view { max-width:820px; margin:0 auto 28px; padding:16px; border:1px solid var(--line); border-radius:16px; background:var(--panel); }
+    .habits-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    .habits-heading h3 { margin:0; font-size:1.1rem; }
+    .habits-heading p { margin:4px 0 0; color:var(--muted); font-size:.82rem; }
+    #habitsProgress { min-width:42px; padding:8px 10px; border:1px solid var(--line); border-radius:12px; text-align:center; }
+    .habit-add-form { display:flex; gap:8px; margin-bottom:12px; }
+    .habit-add-form input { flex:1; min-width:0; }
+    .habit-list { display:grid; gap:8px; }
+    .habit-row { display:flex; align-items:center; gap:10px; min-height:54px; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:#151d2c; }
+    .habit-toggle { display:grid; place-items:center; flex:none; width:34px; height:34px; border:1px solid #53627d; border-radius:10px; background:#111827; color:#8fe0b5; font-size:1.05rem; font-weight:900; }
+    .habit-toggle[aria-pressed="true"] { border-color:#397653; background:#183b2d; }
+    .habit-name { flex:1; min-width:0; overflow-wrap:anywhere; font-weight:700; }
+    .habit-delete { flex:none; width:34px; height:34px; border:0; border-radius:9px; background:transparent; color:var(--muted); font-size:1.1rem; }
+    .habit-empty { padding:18px 8px; color:var(--muted); text-align:center; }
+    body.view-mobile[data-page="tasks"] .planner-subdock { position:sticky; top:calc(env(safe-area-inset-top,0px) + 4px); z-index:25; width:100%; display:grid; grid-template-columns:1fr 1fr; margin-bottom:10px; }
+    body.view-mobile[data-page="tasks"] .planner-subdock-tab { width:100%; }
+    body.view-mobile[data-page="tasks"] .habits-view { padding:12px; }
+    body.view-mobile[data-page="tasks"] .habit-add-form { flex-wrap:wrap; }
+    body.view-mobile[data-page="tasks"] .habit-add-form input { flex-basis:100%; }
     /* Mid-range phones: avoid GPU-heavy blur and large shadows on persistent UI. */
     body.view-mobile .main-nav,body.view-mobile .week-dock,body.view-mobile .planner-section-buttons,body.view-mobile #notesDock,body.view-mobile .floating-action-menu,body.view-mobile dialog::backdrop { -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
     body.view-mobile .main-nav { background:#111827 !important; box-shadow:0 4px 12px #0006 !important; }
@@ -1299,6 +1321,8 @@
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
       <div class="page-heading"><div><h2>PLANNER</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <nav class="planner-subdock" aria-label="Seções do planner"><button type="button" class="planner-subdock-tab" id="plannerWeekTab" aria-pressed="true">SEMANA</button><button type="button" class="planner-subdock-tab" id="plannerHabitsTab" aria-pressed="false">HÁBITOS</button></nav>
+      <div id="plannerWeekView">
       <div class="planner-section-buttons">
         <button class="btn primary planner-add-task" id="plannerAddTaskBtn" type="button">＋ TAREFA</button>
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
@@ -1307,7 +1331,9 @@
       <div class="planner-panel" id="planningPanel" hidden><div class="task-tile-grid" id="planningList"></div><button class="btn more-btn" id="planningMoreBtn" type="button">MAIS</button></div>
       <div class="planner-panel completed-panel" id="completedPanel" hidden><div class="task-tile-grid" id="completedList"></div><button class="btn more-btn" id="completedMoreBtn" type="button">MAIS</button></div>
       <section class="planner-income-panel" aria-label="Próximos recebimentos"><div class="planner-income-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span>30 DIAS · TOQUE PARA VER</span></div><div class="planner-income-lines" id="plannerUpcomingIncomeList" aria-live="polite"></div></section>
-      <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações do planner"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-add-task" id="weekDockAddTaskBtn" type="button">＋ TAREFA</button></nav></div>
+      <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações da semana"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-add-task" id="weekDockAddTaskBtn" type="button">＋ TAREFA</button></nav></div>
+      </div>
+      <section class="habits-view" id="plannerHabitsView" hidden aria-label="Hábitos"><div class="habits-heading"><div><h3>HÁBITOS</h3><p id="habitsDateLabel"></p></div><strong id="habitsProgress" aria-live="polite">0/0</strong></div><form id="habitAddForm" class="habit-add-form"><label class="sr-only" for="habitNameInput">Nome do hábito</label><input id="habitNameInput" type="text" maxlength="80" placeholder="Novo hábito…" required><button class="btn primary" type="submit">＋ ADICIONAR</button></form><div id="habitList" class="habit-list" aria-live="polite"></div></section>
     </section>
 
     <section id="financePage" class="page" aria-label="Finanças">
@@ -1389,7 +1415,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=148" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=154',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=149" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=155',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
