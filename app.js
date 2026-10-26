@@ -756,13 +756,14 @@
   }
   function taskCard(task,options={}) {
     const complete=Boolean(task.completedAt), late=!complete&&(options.late ?? Boolean(task.executionDate&&task.executionDate<todayKey())), draggable=!complete&&options.draggable!==false;
-    const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':'',options.dayActions?'has-day-actions':''].filter(Boolean).join(' ');
+    const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':'',options.dayActions?'has-day-actions':'',options.reprogram?'has-reprogram':''].filter(Boolean).join(' ');
     const linked=options.linked?'task-link':'';
     const tag=getTag(task.tagId),taskTag=tagDot(task.tagId),taskHandle=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:'';
+    const reprogram=options.reprogram&&!complete?`<button class="task-reprogram-btn" type="button" data-reprogram-task="${escapeHTML(task.id)}">REPROGRAMAR</button>`:'';
     const dayActions=options.dayActions&&!complete?`<div class="task-day-actions"><button class="task-day-action task-day-action--planning" type="button" data-day-task-action="planning" data-day-task-id="${escapeHTML(task.id)}">PLANEJAR</button><button class="task-day-action task-day-action--tomorrow" type="button" data-day-task-action="tomorrow" data-day-task-id="${escapeHTML(task.id)}">AMANHÃ</button><button class="task-day-action task-day-action--next-week" type="button" data-day-task-action="next-monday" data-day-task-id="${escapeHTML(task.id)}">SEG</button><button class="task-day-action task-day-action--complete" type="button" data-day-task-action="complete" data-day-task-id="${escapeHTML(task.id)}" aria-label="Concluir tarefa: ${escapeHTML(task.title)}" title="Concluir">✅</button></div>`:'';
     return `<article class="${classes}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}${task.recurrence?' · Tarefa recorrente':''}">
       <div class="task-main"><div class="task-title-row">${taskTag}${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span>':''}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
-      <div class="task-actions">${taskMenu(task,options.canMove!==false)}${taskHandle}</div>${dayActions}
+      <div class="task-actions">${reprogram}${taskMenu(task,options.canMove!==false)}${taskHandle}</div>${dayActions}
     </article>`;
   }
   function renderFilterButton() {
@@ -1443,7 +1444,7 @@
     if(eventLines)groups.push(`<section class="day-dialog-events" aria-label="Eventos do Google Calendar"><div class="planner-calendar-events">${eventLines}</div>${open.length?'<div class="planner-calendar-task-divider" role="separator" aria-label="Tarefas"></div>':''}</section>`);
     const mobileAdd=activeDayKind==='day'&&viewMode==='mobile'?`<button class="btn primary small day-dialog-mobile-add" id="dayDialogMobileAddBtn" type="button">＋ Tarefa</button>`:'';
     if(mobileAdd)groups.push(mobileAdd);
-    groups.push(open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode,dayActions:activeDayKind==='day'})).join(''):'<div class="empty">Sem tarefas em aberto.</div>');
+    groups.push(open.length?open.map(task=>taskCard(task,{canMove:true,late:lateMode||Boolean(task.executionDate&&task.executionDate<today),linked:lateMode,draggable:activeDayKind==='all-overdue'||!lateMode,dayActions:activeDayKind==='day',reprogram:lateMode})).join(''):'<div class="empty">Sem tarefas em aberto.</div>');
     const completedBlock=completed.length?`<details class="task-checklist-completed day-dialog-completed"><summary class="task-checklist-section-title">CONCLUÍDAS (${completed.length})</summary><div class="day-dialog-completed-list">${completed.map(task=>taskCard(task,{canMove:false})).join('')}</div></details>`:'';
     if(lateMode)groups.push(`<div class="day-dialog-overdue-footer">${completedBlock}<button class="btn ghost small day-dialog-overdue-close" id="closeDayDialogOverdue" type="button" aria-label="Fechar">✕</button></div>`);
     else if(completedBlock)groups.push(completedBlock);
@@ -1771,6 +1772,8 @@
   }
   function handleTaskClick(event) {
     if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();return;}
+    const reprogram=event.target.closest('[data-reprogram-task]');
+    if(reprogram){event.preventDefault();event.stopPropagation();const id=reprogram.dataset.reprogramTask,dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog(id,'',token);requestAnimationFrame(()=>$('executionDate').focus());return;}
     const dayAction=event.target.closest('[data-day-task-action]');
     if(dayAction){event.preventDefault();event.stopPropagation();if(dayAction.dataset.dayTaskAction==='complete')openDayTaskCompletionConfirm(dayAction.dataset.dayTaskId);else moveDayDialogTask(dayAction.dataset.dayTaskId,dayAction.dataset.dayTaskAction);return;}
     const completion=event.target.closest('[data-toggle-complete-task]');
