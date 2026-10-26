@@ -96,6 +96,10 @@
     .day-empty { display:grid; flex:1; min-height:52px; place-items:center; color:#8490a6; font-size:.72rem; text-align:center; }
     .task-card { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:6px; min-width:0; padding:8px; border:1px solid #34415b; border-radius:10px; background:#101729; cursor:grab; }
     .task-card:hover { border-color:#657ba7; background:#172239; }
+    .task-card.has-tag-expense { background:#7f1726; border-color:#f05260; box-shadow:inset 0 0 0 1px #ff647333; }
+    .task-card.has-tag-expense:hover { background:#961b2d; border-color:#ff7580; }
+    .task-card.has-tag-income { background:#145c3b; border-color:#35c879; box-shadow:inset 0 0 0 1px #52e29433; }
+    .task-card.has-tag-income:hover { background:#176e45; border-color:#64e89d; }
     .task-card .task-main,.task-card .task-title-row,.task-card .task-open { min-width:0; }
     .task-card .task-title-row { width:100%; }
     .task-card .task-open { flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; }
@@ -1379,7 +1383,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=146" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=152',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=147" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=153',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
