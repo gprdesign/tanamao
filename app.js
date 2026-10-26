@@ -886,7 +886,7 @@
   }
   function setPlannerSubpage(page,save=true) {
     const next=page==='habits'?'habits':'week';userSettings.plannerSubpage=next;
-    const week=next==='week';$('plannerWeekView').hidden=!week;$('plannerHabitsView').hidden=week;
+    const week=next==='week';$('plannerWeekView').hidden=!week;$('plannerHabitsView').hidden=week;document.body.classList.toggle('planner-habits-active',!week);
     $('plannerWeekTab').setAttribute('aria-pressed',String(week));$('plannerHabitsTab').setAttribute('aria-pressed',String(!week));
     if(next==='habits')renderHabits();
     if(save)saveUserSettings();
