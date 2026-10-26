@@ -478,7 +478,8 @@
   }
   function saveTasks(schedule=true) {
     localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
-    renderAll();
+    renderTasks();
+    renderHome();
     if (schedule) scheduleSync();
   }
   function saveNotes(schedule=true) {
@@ -2325,7 +2326,7 @@
     taskPullInFlight=true;
     try{
       const remoteRows=await fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),remoteTasks=remoteRows.map(rowToTask).filter(Boolean),merged=mergeById(tasks,remoteTasks).map(normalizeTask).filter(Boolean);
-      if(JSON.stringify(merged)!==JSON.stringify(tasks)){tasks=merged;localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));renderAll();}
+      if(JSON.stringify(merged)!==JSON.stringify(tasks)){tasks=merged;localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));renderTasks();renderHome();}
       return true;
     }catch{return false;}
     finally{taskPullInFlight=false;}

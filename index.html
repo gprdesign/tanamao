@@ -1233,6 +1233,12 @@
     body.view-mobile[data-page="tasks"] #weekDock #weekLabel { font-size:.64rem !important; }
     body.view-mobile[data-page="notes"] #notesDock { justify-content:stretch !important; }
     body.view-mobile[data-page="notes"] #notesDock .subdock-add-note { display:flex !important; align-items:center !important; justify-content:center !important; flex:1 1 0 !important; width:100% !important; height:40px !important; min-height:40px !important; border:0 !important; border-radius:11px !important; background:transparent !important; color:var(--text) !important; font-size:.72rem !important; }
+    /* Mid-range phones: avoid GPU-heavy blur and large shadows on persistent UI. */
+    body.view-mobile .main-nav,body.view-mobile .week-dock,body.view-mobile .planner-section-buttons,body.view-mobile #notesDock,body.view-mobile .floating-action-menu,body.view-mobile dialog::backdrop { -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+    body.view-mobile .main-nav { background:#111827 !important; box-shadow:0 4px 12px #0006 !important; }
+    body.view-mobile .week-dock,body.view-mobile #notesDock { background:#111827 !important; box-shadow:0 4px 12px #0006 !important; }
+    body.view-mobile .planner-section-buttons { background:#0b1020 !important; box-shadow:0 3px 10px #0005 !important; }
+    body.view-mobile .floating-action-menu { background:#101729 !important; box-shadow:0 6px 16px #0008 !important; animation:none !important; }
     body.view-mobile .header-actions { gap:4px; }
     body.view-mobile .header-actions .btn { min-height:30px; padding:4px 5px; font-size:.66rem; }
     body.view-mobile .brand-title-copy { display:none; }
@@ -1383,7 +1389,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=147" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=153',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=148" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=154',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
