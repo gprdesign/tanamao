@@ -1372,8 +1372,12 @@
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-horizontal { display:inline !important; }
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
     @media(max-width:600px) {
-      body.view-mobile[data-page="tasks"] #weekGrid { padding-bottom:180px !important; scroll-padding-bottom:180px !important; overflow-y:auto !important; overscroll-behavior:contain !important; }
-      body.view-mobile[data-page="tasks"] #tasksPage.active,body.view-mobile[data-page="tasks"] .planner-week-view:not([hidden]),body.view-mobile[data-page="tasks"] .week-board { min-height:0 !important; overflow:visible !important; }
+      body.view-mobile[data-page="tasks"] #tasksPage.active { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+      body.view-mobile[data-page="tasks"] .planner-week-view:not([hidden]) { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+      body.view-mobile[data-page="tasks"] .week-board { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+      body.view-mobile[data-page="tasks"] #weekGrid { display:grid !important; height:auto !important; max-height:none !important; min-height:0 !important; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content !important; overflow:visible !important; padding-bottom:180px !important; scroll-padding-bottom:180px !important; }
+      body.view-mobile[data-page="tasks"] .day-column { min-height:0 !important; overflow:visible !important; }
+      body.view-mobile[data-page="tasks"] .day-task-list { min-height:0 !important; max-height:none !important; overflow:visible !important; }
       body.view-mobile[data-page="tasks"] .wrap { padding-bottom:240px !important; }
     }
 </style>
@@ -1499,7 +1503,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=155" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=161',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=156" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=162',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
