@@ -1354,7 +1354,24 @@
       .household-bucket { min-height:188px; }
     }
   </style>
-  </style>
+  
+    /* Final dock order override: week controls > Planner tabs > main dock. */
+    body[data-page="tasks"] .wrap { padding-bottom:190px !important; }
+    body[data-page="tasks"] #plannerSubdock:not([hidden]) { position:fixed !important; top:auto !important; left:50% !important; right:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px) + 62px + 8px) !important; transform:translateX(-50%) !important; z-index:35 !important; display:grid !important; grid-template-columns:1fr 1fr !important; width:min(360px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:42px !important; height:42px !important; margin:0 !important; }
+    body[data-page="tasks"] #plannerSubdock .planner-subdock-tab { display:flex !important; width:100% !important; min-width:0 !important; min-height:32px !important; align-items:center !important; justify-content:center !important; }
+    body[data-page="tasks"]:not(.planner-habits-active) #weekDock { position:fixed !important; top:auto !important; left:50% !important; right:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px) + 62px + 8px + 42px + 6px) !important; transform:translateX(-50%) !important; z-index:36 !important; display:flex !important; flex-direction:row !important; align-items:center !important; justify-content:center !important; gap:6px !important; width:min(520px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:42px !important; height:42px !important; margin:0 !important; padding:3px 6px !important; }
+    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #prevWeekBtn,body[data-page="tasks"]:not(.planner-habits-active) #weekDock #nextWeekBtn { flex:none !important; width:38px !important; min-width:38px !important; height:34px !important; min-height:34px !important; padding:0 !important; font-size:1.15rem !important; }
+    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #weekLabel { flex:1 1 auto !important; width:auto !important; min-width:0 !important; font-size:.68rem !important; text-align:center !important; white-space:nowrap !important; }
+    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #weekDockAddTaskBtn { display:flex !important; flex:none !important; width:auto !important; min-width:92px !important; height:34px !important; min-height:34px !important; padding:0 10px !important; font-size:.68rem !important; }
+    body[data-page="tasks"].planner-habits-active #weekDock { display:none !important; }
+    body.view-mobile[data-page="tasks"] .wrap { padding-bottom:232px !important; }
+    body.view-mobile[data-page="tasks"] #plannerSubdock:not([hidden]) { bottom:calc(10px + env(safe-area-inset-bottom,0px) + 62px + 8px) !important; width:min(680px,calc(100% - 24px)) !important; min-height:48px !important; height:48px !important; }
+    body.view-mobile[data-page="tasks"] #plannerSubdock .planner-subdock-tab { height:38px !important; min-height:38px !important; font-size:.72rem !important; }
+    body.view-mobile[data-page="tasks"]:not(.planner-habits-active) #weekDock { position:fixed !important; top:auto !important; left:50% !important; right:auto !important; bottom:calc(10px + env(safe-area-inset-bottom,0px) + 62px + 8px + 48px + 6px) !important; transform:translateX(-50%) !important; z-index:36 !important; display:grid !important; grid-template-columns:38px minmax(0,1fr) 38px auto !important; grid-template-rows:40px !important; width:min(680px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:48px !important; height:48px !important; padding:3px 6px !important; }
+    body.view-mobile[data-page="tasks"] #weekDock #weekDockAddTaskBtn { grid-column:4 !important; grid-row:1 !important; min-width:82px !important; height:36px !important; min-height:36px !important; padding:0 8px !important; font-size:.61rem !important; }
+    body.view-mobile[data-page="tasks"] #weekDock .week-arrow-horizontal { display:inline !important; }
+    body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
+</style>
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -1477,7 +1494,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=152" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=158',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=153" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=159',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
