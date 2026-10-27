@@ -2453,10 +2453,13 @@
   $('tagManagerList').addEventListener('submit',saveManagedTag);
   document.querySelectorAll('[data-note-format]').forEach(button=>button.addEventListener('click',()=>applyNoteFormat(button.dataset.formatTarget,button.dataset.noteFormat)));
   window.TNMBasecampToggle=()=>{
-    const next=document.body.dataset.page==='home'?'tasks':'home';
+    const next=currentPage==='home'?'tasks':'home';
     setPage(next);
     if(next==='tasks')jumpToCurrentWeek();
   };
+  $('plannerNavLabel').closest('button').addEventListener('click',event=>{
+    event.preventDefault();event.stopPropagation();window.TNMBasecampToggle();
+  },true);
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
     if(button.dataset.page==='tasks')return;
