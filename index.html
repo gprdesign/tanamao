@@ -1436,9 +1436,18 @@
     .basecamp-message-edit { padding:2px; border:0; background:transparent; color:var(--muted); font-size:.67rem; }
     .basecamp-empty { padding:7px 0; color:var(--muted); font-size:.62rem; }
     .basecamp-calendar-more { width:100%; margin-top:4px; padding:4px; border:1px dashed #53627e; border-radius:7px; background:transparent; color:var(--accent); font-size:.6rem; font-weight:750; }
-    body[data-page="home"] #plannerNavLabel { font-size:0 !important; }
-    body[data-page="home"] #plannerNavLabel::after { content:"BASECAMP"; font-size:.69rem; }
-    body[data-page="tasks"] #plannerNavLabel { font-size:.69rem !important; }
+    body[data-page="home"] #plannerNavLabel,body[data-page="tasks"] #plannerNavLabel { font-size:.69rem !important; }
+    .basecamp-share { display:grid; gap:2px; padding-top:3px; color:var(--muted); font-size:.56rem; line-height:1.25; }
+    .basecamp-share strong { color:var(--text); }
+    .basecamp-calendar-empty { color:var(--muted); font-size:.6rem; }
+    .basecamp-calendar-connect { width:100%; margin-top:auto; padding:4px; border:1px dashed #53627e; border-radius:7px; background:transparent; color:var(--accent); font-size:.6rem; font-weight:750; }
+        .basecamp-client-name { width:100%; padding:0; border:0; background:transparent; text-align:left; }
+        .basecamp-client-name:hover { color:var(--accent); }
+        .basecamp-message-edit { border-radius:5px; }
+        .basecamp-message-edit:hover { color:#fff; background:#394663; }
+        .basecamp-message-actions { display:flex; gap:3px; }
+        .basecamp-card-arrow { font-size:.64rem; }
+        .basecamp-file-shortcuts { margin-top:auto; }
     body.view-mobile .main-nav,body:not(.view-mobile) .main-nav { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
     body.view-mobile .nav-indicator,body:not(.view-mobile) .nav-indicator { width:calc((100% - 24px)/3) !important; }
     @media(max-width:640px) {
@@ -1465,7 +1474,7 @@
     <section id="homePage" class="page" aria-label="BASECAMP">
       <div class="basecamp-header"><div><p class="eyebrow">BASECAMP</p><h2 id="basecampOrgTitle">GPR DESIGN</h2><p id="galleryDateLabel" class="gallery-date"></p><p id="basecampActivityLine" class="basecamp-activity-line"></p></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <section class="basecamp-grid" aria-label="Quadros do Basecamp">
-        <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-open-basecamp-calendar><span class="basecamp-card-icon">▣</span><span>Calendário</span><span class="basecamp-card-arrow">↗</span></button><div class="basecamp-card-body"><section><h4>HOJE</h4><div id="basecampCalendarToday"></div></section><section><h4>AMANHÃ</h4><div id="basecampCalendarTomorrow"></div></section></div></article>
+        <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-open-basecamp-calendar><span class="basecamp-card-icon">▣</span><span>Calendário</span><span class="basecamp-card-arrow">↗</span></button><div class="basecamp-card-body"><section><h4>HOJE</h4><div id="basecampCalendarToday"></div></section><section><h4>AMANHÃ</h4><div id="basecampCalendarTomorrow"></div></section></div><button type="button" class="basecamp-calendar-connect" data-basecamp-connect-calendar>Conectar/sincronizar Google Calendar</button></article>
         <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-basecamp-clients><span class="basecamp-card-icon">♙</span><span>Clientes</span><span class="basecamp-card-arrow">↗</span></button><div id="basecampClients" class="basecamp-card-body"></div></article>
         <article class="basecamp-card"><div class="basecamp-card-title static"><span class="basecamp-card-icon">▧</span><span>Docs &amp; arqs</span></div><div id="basecampDocs" class="basecamp-card-body"></div><div class="basecamp-file-shortcuts"><a href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">Abrir Google Drive ↗</a><div class="basecamp-share"><strong>Servidor (Tailscale)</strong><span>100.79.254.18 · dados</span><span>100.79.254.18 · home-kr</span></div></div><small class="basecamp-hint">No app de arquivos, adicione um servidor SMB enquanto estiver conectado ao Tailscale.</small></article>
         <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-focus-message-board><span class="basecamp-card-icon">▤</span><span>Message Board</span><span class="basecamp-card-arrow">＋</span></button><div id="basecampMessagePreview" class="basecamp-card-body"></div></article>
@@ -1574,7 +1583,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=159" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=165',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=160" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=166',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
