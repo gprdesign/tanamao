@@ -665,10 +665,11 @@
     clearTimeout(toastTimer);
     toastTimer=setTimeout(()=>node.classList.add('hidden'),duration);
   }
+  function plannerDockButton(){return $('plannerNavLabel')?.closest('button[data-page]')||null;}
   function updateNavIndicator(page=currentPage) {
-    const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]'));
+    const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]')),planner=plannerDockButton();
     if(!indicator)return;
-    const target=buttons.find(button=>button.dataset.page===(page==='home'?'tasks':page));
+    const target=buttons.find(button=>button===planner?['home','tasks'].includes(page):button.dataset.page===page);
     if(!target){indicator.hidden=true;return;}
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
@@ -685,7 +686,8 @@
       const active=node.id===`${page}Page`;node.classList.toggle('active',active);
       if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
     });
-    document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(button.dataset.page===(page==='home'?'tasks':page))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
+    const plannerButton=plannerDockButton();if(plannerButton)plannerButton.dataset.page=page==='home'?'tasks':'home';
+    document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(button===plannerButton?['home','tasks'].includes(page):button.dataset.page===page)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
     const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent=page==='home'?'BASECAMP':'PLANNER';
     updateNavIndicator(page);renderFilterButton();
     if(page==='home'){renderHome();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
@@ -2457,16 +2459,10 @@
     setPage(next);
     if(next==='tasks')jumpToCurrentWeek();
   };
-  const plannerDockButton=$('plannerNavLabel').closest('button');
-  plannerDockButton.onclick=event=>{
-    event.preventDefault();event.stopImmediatePropagation();
-    window.TNMBasecampToggle();
-    return false;
-  };
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
-    if(button.dataset.page==='tasks')return;
     setPage(button.dataset.page);
+    if(button===$('plannerNavLabel')?.closest('button')&&document.body.dataset.page==='tasks')jumpToCurrentWeek();
   });
   document.addEventListener('click',event=>{
     if(event.target.closest('[data-open-basecamp-calendar]')){renderBasecampCalendarWeek();return;}const calendarTask=event.target.closest('[data-basecamp-task]');if(calendarTask){openTaskDialog(calendarTask.dataset.basecampTask);return;}const calendarDay=event.target.closest('[data-basecamp-open-day]');if(calendarDay){setPage('tasks');setPlannerSubpage('week',false);setWeek(calendarDay.dataset.basecampOpenDay);openDayDialog(calendarDay.dataset.basecampOpenDay);return;}
