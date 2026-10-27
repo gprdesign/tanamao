@@ -96,8 +96,9 @@
   const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
   let viewMode=storedViewMode==='pc'||storedViewMode==='mobile'?storedViewMode:(isAndroidDevice||(window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc');
   const storedPage = localStorage.getItem(PAGE_KEY);
-  let currentPage = storedPage==='log'?'finance':['home','tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
-  if(localStorage.getItem(HOME_GALLERY_KEY)!=='v1'){if(!storedPage||storedPage==='tasks'){currentPage='home';localStorage.setItem(PAGE_KEY,'home');}localStorage.setItem(HOME_GALLERY_KEY,'v1');}
+  const routeView=new URLSearchParams(location.search).get('view');
+  let currentPage = routeView==='basecamp'?'home':routeView==='planner'?'tasks':storedPage==='log'?'finance':['home','tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
+  if(localStorage.getItem(HOME_GALLERY_KEY)!=='v2'){if(!routeView&&(!storedPage||storedPage==='tasks')){currentPage='home';localStorage.setItem(PAGE_KEY,'home');}localStorage.setItem(HOME_GALLERY_KEY,'v2');}
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
@@ -665,7 +666,7 @@
     clearTimeout(toastTimer);
     toastTimer=setTimeout(()=>node.classList.add('hidden'),duration);
   }
-  function plannerDockButton(){return $('plannerNavLabel')?.closest('button[data-page]')||null;}
+  function plannerDockButton(){return $('plannerBasecampSwitch');}
   function updateNavIndicator(page=currentPage) {
     const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]')),planner=plannerDockButton();
     if(!indicator)return;
@@ -686,7 +687,7 @@
       const active=node.id===`${page}Page`;node.classList.toggle('active',active);
       if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
     });
-    const plannerButton=plannerDockButton();if(plannerButton)plannerButton.dataset.page=page==='home'?'tasks':'home';
+    const plannerButton=plannerDockButton();if(plannerButton)plannerButton.href=`?view=${page==='home'?'planner':'basecamp'}`;
     document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(button===plannerButton?['home','tasks'].includes(page):button.dataset.page===page)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
     const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent=page==='home'?'BASECAMP':'PLANNER';
     updateNavIndicator(page);renderFilterButton();
@@ -2462,7 +2463,7 @@
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
     setPage(button.dataset.page);
-    if(button===$('plannerNavLabel')?.closest('button')&&document.body.dataset.page==='tasks')jumpToCurrentWeek();
+    if(button===$('plannerBasecampSwitch')&&document.body.dataset.page==='tasks')jumpToCurrentWeek();
   });
   document.addEventListener('click',event=>{
     if(event.target.closest('[data-open-basecamp-calendar]')){renderBasecampCalendarWeek();return;}const calendarTask=event.target.closest('[data-basecamp-task]');if(calendarTask){openTaskDialog(calendarTask.dataset.basecampTask);return;}const calendarDay=event.target.closest('[data-basecamp-open-day]');if(calendarDay){setPage('tasks');setPlannerSubpage('week',false);setWeek(calendarDay.dataset.basecampOpenDay);openDayDialog(calendarDay.dataset.basecampOpenDay);return;}
