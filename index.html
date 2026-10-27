@@ -1205,8 +1205,6 @@
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
     body.view-mobile .main-nav { grid-template-columns:repeat(3,minmax(0,1fr)); }
     body.view-mobile .nav-indicator { width:calc((100% - 24px)/3); }
-    body.view-mobile .nav-btn[data-page="home"] { display:none !important; }
-    body.view-mobile #homePage.active { display:none !important; }
     body.view-mobile .planner-income-panel { display:none !important; }
     body.view-mobile[data-page="tasks"] .week-grid { grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-auto-rows:max-content; align-content:start; gap:8px; overflow-y:auto; overscroll-behavior:contain; }
     body.view-mobile[data-page="tasks"] .day-column { min-height:0; padding:9px 10px; overflow:visible; }
@@ -1332,7 +1330,6 @@
     body.view-mobile .brand p { font-size:calc(.62rem - 2pt); }
     #calendarStatus.is-error { color:#ffb0b8; }
     /* PC now opens directly on Planner; Finance cards use a consistent responsive order. */
-    #homePage { display:none !important; }
     .main-nav { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
     .nav-indicator { width:calc((100% - 24px)/3); }
     .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -1388,6 +1385,69 @@
     body.view-mobile[data-page="tasks"] .day-column { min-height:0 !important; overflow:visible !important; }
     body.view-mobile[data-page="tasks"] .day-task-list { min-height:0 !important; max-height:none !important; overflow:visible !important; }
     }
+
+    /* Basecamp-inspired home gallery, built from existing TNM data. */
+    body[data-page="home"] .wrap { height:var(--app-zoom-height,100dvh); min-height:0; overflow:hidden; padding-bottom:calc(76px + env(safe-area-inset-bottom,0px)); }
+    #homePage.active { display:block !important; flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:4px 2px 18px; }
+    .gallery-heading,.gallery-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .gallery-heading { margin:4px 0 14px; }
+    .gallery-heading h2,.gallery-panel-heading h3 { margin:0; }
+    .gallery-heading h2 { font-size:1.45rem; }
+    .gallery-date { margin:3px 0 0; color:var(--muted); font-size:.8rem; }
+    .gallery-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin:0 0 12px; }
+    .gallery-stat { display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; min-height:62px; padding:10px 12px; border:1px solid var(--line); border-radius:13px; background:#111827; text-align:left; }
+    .gallery-stat span { color:var(--muted); font-size:.72rem; font-weight:800; text-transform:uppercase; }
+    .gallery-stat strong { font-size:1.32rem; }
+    .gallery-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .gallery-card,.gallery-panel { min-width:0; border:1px solid var(--line); border-radius:15px; background:rgba(20,27,45,.92); }
+    .gallery-card { padding:12px; }
+    .gallery-card-open { display:grid; grid-template-columns:38px minmax(0,1fr) auto; align-items:center; gap:10px; width:100%; padding:0; border:0; background:transparent; text-align:left; }
+    .gallery-card-icon { display:grid; place-items:center; width:38px; height:38px; border:1px solid #ffffff18; border-radius:12px; background:#111827; color:var(--accent); font-size:1.1rem; font-weight:900; }
+    .gallery-card-open strong,.gallery-card-open small { display:block; }
+    .gallery-card-open strong { font-size:.94rem; }
+    .gallery-card-open small { margin-top:2px; color:var(--muted); font-size:.68rem; }
+    .gallery-card-arrow { color:var(--muted); }
+    .gallery-card-content { min-height:40px; margin-top:10px; padding-top:9px; border-top:1px solid #ffffff12; color:var(--muted); font-size:.75rem; }
+    .gallery-card-content strong { color:var(--text); }
+    .gallery-card-preview { display:grid; gap:5px; }
+    .gallery-preview-row { display:flex; align-items:center; gap:7px; min-width:0; }
+    .gallery-preview-row a,.gallery-preview-row button { min-width:0; overflow:hidden; color:var(--text); text-decoration:none; text-overflow:ellipsis; white-space:nowrap; }
+    .gallery-preview-row button { padding:0; border:0; background:transparent; text-align:left; }
+    .gallery-preview-row a:hover,.gallery-preview-row button:hover { color:var(--accent); }
+    .gallery-bullet { flex:none; width:7px; height:7px; border-radius:50%; background:var(--tag-color,var(--accent)); }
+    .gallery-panel { margin-top:10px; padding:13px; }
+    .gallery-panel-heading { margin-bottom:10px; }
+    .gallery-panel-heading h3 { font-size:.98rem; }
+    .gallery-text-link { flex:none; padding:5px 7px; border:0; background:transparent; color:var(--accent); font-size:.72rem; font-weight:800; }
+    .gallery-links-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+    .gallery-link-card { display:grid; grid-template-columns:32px minmax(0,1fr); align-items:center; gap:8px; min-width:0; padding:8px; border:1px solid #34415b; border-radius:11px; background:#101729; color:var(--text); text-decoration:none; }
+    .gallery-link-card:hover { border-color:#789cf0; }
+    .gallery-link-icon { display:grid; place-items:center; width:32px; height:32px; border-radius:9px; background:#202b42; color:var(--accent); font-size:.92rem; }
+    .gallery-link-card strong,.gallery-link-card small { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .gallery-link-card strong { font-size:.72rem; }
+    .gallery-link-card small { margin-top:2px; color:var(--muted); font-size:.6rem; }
+    .gallery-activity-list { display:grid; gap:0; }
+    .gallery-activity-item { display:grid; grid-template-columns:13px minmax(0,1fr) auto; align-items:start; gap:9px; padding:8px 0; border-bottom:1px solid #ffffff10; }
+    .gallery-activity-item:last-child { border-bottom:0; }
+    .gallery-activity-dot { width:9px; height:9px; margin-top:5px; border-radius:50%; background:var(--tag-color,var(--accent)); box-shadow:0 0 0 3px #ffffff0a; }
+    .gallery-activity-copy { min-width:0; color:var(--text); font-size:.74rem; line-height:1.35; overflow-wrap:anywhere; }
+    .gallery-activity-copy small { display:block; margin-top:2px; color:var(--muted); font-size:.64rem; }
+    .gallery-activity-time { color:var(--muted); font-size:.62rem; white-space:nowrap; }
+    .gallery-activity-note { margin:8px 0 0; color:var(--muted); font-size:.62rem; }
+    .gallery-empty { padding:8px 0; color:var(--muted); font-size:.73rem; }
+    @media(max-width:640px) {
+      .gallery-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+      .gallery-stat { min-height:50px; padding:8px 9px; }
+      .gallery-grid { grid-template-columns:minmax(0,1fr); gap:8px; }
+      .gallery-card { padding:10px; }
+      .gallery-panel { padding:11px; }
+      .gallery-links-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+      .gallery-link-card { padding:7px; }
+      .gallery-activity-item { grid-template-columns:12px minmax(0,1fr) auto; gap:7px; }
+    }
+    .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+    body.view-mobile .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+    body.view-mobile .nav-indicator { width:calc((100% - 24px)/4) !important; }
 </style>
 </head>
 <body>
@@ -1398,21 +1458,22 @@
       <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
     </header>
 
-    <section id="homePage" class="page" aria-label="Início">
-      <div class="home-heading"><h2 class="home-week-title">MINHA SEMANA</h2><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
-      <section class="home-task-section home-events-section" aria-label="Próximos eventos"><h3>Próximos eventos</h3><div id="homeUpcomingEventsList" class="home-section-list"></div></section>
-      <div class="home-stats" aria-label="Atalhos da semana">
-        <button class="home-stat home-stat-overdue" type="button" data-home-action="overdue"><span>Atrasado</span><strong id="homeOverdueCount">0</strong></button>
-        <button class="home-stat home-stat-today" type="button" data-home-action="today"><span>Hoje</span><strong id="homeTodayCount">0</strong></button>
-        <button class="home-stat home-stat-unplanned" type="button" data-home-action="planning"><span>Sem data</span><strong id="homeUnplannedCount">0</strong></button>
-      </div>
-      <div class="home-week-lists">
-        <section class="home-task-section" aria-label="Atrasado"><h3>Atrasado</h3><div id="homeOverdueList" class="home-section-list"></div></section>
-        <div class="home-day-columns">
-          <section class="home-task-section" aria-label="Hoje"><h3>Hoje</h3><div id="homeTodayList" class="home-section-list"></div></section>
-          <section class="home-task-section" aria-label="Amanhã"><h3>Amanhã</h3><div id="homeTomorrowList" class="home-section-list"></div></section>
-        </div>
-      </div>
+    <section id="homePage" class="page" aria-label="Visão geral">
+      <div class="gallery-heading"><div><p class="eyebrow">SEU ESPAÇO</p><h2>Visão geral</h2><p class="gallery-date" id="galleryDateLabel"></p></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <section class="gallery-stats" aria-label="Resumo do dia">
+        <button class="gallery-stat" type="button" data-home-action="overdue"><span>Atrasadas</span><strong id="homeOverdueCount">0</strong></button>
+        <button class="gallery-stat" type="button" data-home-action="today"><span>Hoje</span><strong id="homeTodayCount">0</strong></button>
+        <button class="gallery-stat" type="button" data-home-action="planning"><span>Sem data</span><strong id="homeUnplannedCount">0</strong></button>
+        <button class="gallery-stat" type="button" data-home-go="tasks"><span>Concluídas</span><strong id="galleryCompletedCount">0</strong></button>
+      </section>
+      <section class="gallery-grid" aria-label="Seus quadros">
+        <article class="gallery-card gallery-planner"><button class="gallery-card-open" type="button" data-home-go="tasks"><span class="gallery-card-icon">▦</span><span><strong>Planner</strong><small>Semana, tarefas e compromissos</small></span><span class="gallery-card-arrow">↗</span></button><div class="gallery-card-content" id="galleryPlannerSummary"></div></article>
+        <article class="gallery-card gallery-habits"><button class="gallery-card-open" type="button" data-home-open-habits><span class="gallery-card-icon">✓</span><span><strong>Hábitos</strong><small>Seu progresso de hoje</small></span><span class="gallery-card-arrow">↗</span></button><div class="gallery-card-content" id="galleryHabitsSummary"></div></article>
+        <article class="gallery-card gallery-notes"><button class="gallery-card-open" type="button" data-home-go="notes"><span class="gallery-card-icon">▤</span><span><strong>Notas</strong><small>Ideias e informações guardadas</small></span><span class="gallery-card-arrow">↗</span></button><div class="gallery-card-content" id="galleryNotesSummary"></div></article>
+        <article class="gallery-card gallery-finance"><button class="gallery-card-open" type="button" data-home-go="finance"><span class="gallery-card-icon">＄</span><span><strong>Finanças</strong><small>Entradas, saídas e saldo</small></span><span class="gallery-card-arrow">↗</span></button><div class="gallery-card-content" id="galleryFinanceSummary"></div></article>
+      </section>
+      <section class="gallery-panel" aria-label="Links anexados"><div class="gallery-panel-heading"><div><p class="eyebrow">ATALHOS SALVOS</p><h3>Links anexados</h3></div><button class="gallery-text-link" type="button" data-home-go="notes">Ver notas</button></div><div id="galleryLinksList" class="gallery-links-grid"></div></section>
+      <section class="gallery-panel gallery-activity-panel" aria-label="Atividade recente"><div class="gallery-panel-heading"><div><p class="eyebrow">O QUE MUDOU</p><h3>Atividade recente</h3></div><button class="gallery-text-link" type="button" data-home-go="finance">Ver registros</button></div><div id="galleryActivityList" class="gallery-activity-list"></div><p class="gallery-activity-note">Atividade montada com as datas de criação e atualização que o TNM já registra.</p></section>
     </section>
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
@@ -1486,6 +1547,7 @@
 
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
+    <button class="nav-btn" type="button" data-page="home" aria-label="Início"><span class="nav-icon" aria-hidden="true">⌂</span><span>INÍCIO</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
     <button class="nav-btn" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span>PLANNER</span></button>
     <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
@@ -1511,7 +1573,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=156" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=162',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=157" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=163',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

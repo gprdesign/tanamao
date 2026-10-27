@@ -32,6 +32,7 @@
   const AUTO_BACKUP_EVERY = 5*60*1000;
   const WEEK_KEY = 'tnm.weekly.week.v1';
   const PAGE_KEY = 'tnm.weekly.page.v1';
+  const HOME_GALLERY_KEY = 'tnm.weekly.homeGallery.v1';
   const RESET_CUTOFF = '2026-10-18T14:27:00.000Z';
   const DEFAULT_TAGS = [
     {id:'vida',name:'VIDA',color:'#73d6a2',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'},
@@ -95,7 +96,8 @@
   const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
   let viewMode=storedViewMode==='pc'||storedViewMode==='mobile'?storedViewMode:(isAndroidDevice||(window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc');
   const storedPage = localStorage.getItem(PAGE_KEY);
-  let currentPage = storedPage==='log'?'finance':['tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
+  let currentPage = storedPage==='log'?'finance':['home','tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
+  if(localStorage.getItem(HOME_GALLERY_KEY)!=='v1'){if(!storedPage||storedPage==='tasks'){currentPage='home';localStorage.setItem(PAGE_KEY,'home');}localStorage.setItem(HOME_GALLERY_KEY,'v1');}
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
@@ -485,22 +487,22 @@
   }
   function saveNotes(schedule=true) {
     localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
-    renderNotes();
+    renderNotes();renderHome();
     if (schedule) scheduleSync();
   }
   function saveLogs(schedule=true) {
     localStorage.setItem(LOGS_KEY,JSON.stringify(logs));
-    renderLogs();
+    renderLogs();renderHome();
     if(schedule)scheduleSync();
   }
   function saveFinanceEntries(schedule=true) {
     finances=finances.map(normalizeFinanceEntry).filter(Boolean);
-    localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);renderFinancePage();
+    localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);renderFinancePage();renderHome();
     if(schedule)scheduleSync();
   }
   function saveUserSettings(schedule=true) {
     userSettings=normalizeUserSettings({...userSettings,updatedAt:nowISO()});
-    localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));renderSummarySettings();
+    localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));renderSummarySettings();renderHome();
     if(schedule)scheduleSync();
   }
   function persistPrivateVault(schedule=true) {
@@ -670,9 +672,8 @@
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
-    if(page==='home')page='tasks';
-    if(!['tasks','finance','notes','settings'].includes(page))return;
-    const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
+    if(!['home','tasks','finance','notes','settings'].includes(page))return;
+    const pageOrder=['home','tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
     pendingLogLockId='';pendingLogUnlockId='';
     if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
@@ -982,14 +983,21 @@
       return `<article class="home-event-row"><div class="home-event-main"><span class="home-item-date">${escapeHTML(day)}${when?` · ${escapeHTML(when)}`:''}</span><div class="home-event-title">${escapeHTML(event.title)}</div>${event.location?`<span class="home-event-location">${escapeHTML(event.location)}</span>`:''}</div>${event.url?`<a class="home-event-link" href="${escapeHTML(event.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir evento">↗</a>`:''}</article>`;
     }).join(''):'<div class="empty">Nenhum evento próximo.</div>';
   }
+  function galleryEscape(value){return escapeHTML(String(value??''));}
+  function galleryRelative(value){const time=Date.parse(value||'');if(!Number.isFinite(time))return '';const mins=Math.max(0,Math.floor((Date.now()-time)/60000));if(mins<1)return 'agora';if(mins<60)return `há ${mins} min`;const hours=Math.floor(mins/60);if(hours<24)return `há ${hours} h`;const days=Math.floor(hours/24);if(days<7)return `há ${days} d`;return new Date(time).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});}
+  function renderGalleryPreview(nodeId,items,empty){const node=$(nodeId);if(!node)return;node.innerHTML=items.length?`<div class="gallery-card-preview">${items.slice(0,3).map(item=>`<div class="gallery-preview-row"><span class="gallery-bullet" style="--tag-color:${galleryEscape(item.color||'')}"></span>${item.html}</div>`).join('')}</div>`:`<span>${galleryEscape(empty)}</span>`;}
+  function renderGalleryLinks(){const node=$('galleryLinksList');if(!node)return;const rows=[];for(const task of tasks.filter(item=>!item.deletedAt&&item.link).map(item=>({title:task.title,url:task.link,kind:'Tarefa',at:task.updatedAt||task.createdAt})))rows.push(task);for(const note of notes.filter(item=>!item.deletedAt)){for(const url of noteLinks(note))rows.push({title:note.title||'Nota sem título',url,kind:'Nota',at:note.updatedAt||note.createdAt});}rows.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));const unique=[];const seen=new Set();for(const row of rows){if(seen.has(row.url))continue;seen.add(row.url);unique.push(row);}node.innerHTML=unique.length?unique.slice(0,6).map(row=>`<a class="gallery-link-card" href="${galleryEscape(row.url)}" target="_blank" rel="noopener noreferrer"><span class="gallery-link-icon" aria-hidden="true">↗</span><span><strong>${galleryEscape(row.title)}</strong><small>${galleryEscape(row.kind)} · ${galleryEscape(galleryRelative(row.at))}</small></span></a>`).join(''):'<div class="gallery-empty">Os links que você anexar às tarefas e notas vão aparecer aqui.</div>';}
+  function renderGalleryActivity(){const node=$('galleryActivityList');if(!node)return;const events=[];for(const task of tasks.filter(item=>!item.deletedAt)){events.push({at:task.updatedAt||task.createdAt,text:task.completedAt?`Tarefa concluída: “${task.title}”`:`Tarefa: “${task.title}”`,kind:'Planner',color:getTag(task.tagId).color});}for(const note of notes.filter(item=>!item.deletedAt))events.push({at:note.updatedAt||note.createdAt,text:`Atualizou a nota “${note.title||'Sem título'}”`,kind:'Notas',color:'#8bafff'});for(const log of logs.filter(item=>!item.deletedAt))events.push({at:log.updatedAt||log.createdAt,text:log.isLocked?'Atualizou um registro protegido':`Registrou: ${String(log.content||'').slice(0,110)}`,kind:'Registro',color:getTag(log.tagId).color});for(const entry of finances.filter(item=>!item.deletedAt))events.push({at:entry.updatedAt||entry.createdAt,text:`${entry.kind==='income'?'Entrada':'Saída'}: ${entry.title}`,kind:'Finanças',color:entry.kind==='income'?'#73d6a2':'#ff8b8b'});events.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));node.innerHTML=events.length?events.slice(0,8).map(item=>`<article class="gallery-activity-item"><span class="gallery-activity-dot" style="--tag-color:${galleryEscape(item.color)}"></span><div class="gallery-activity-copy">${galleryEscape(item.text)}<small>${galleryEscape(item.kind)}</small></div><time class="gallery-activity-time">${galleryEscape(galleryRelative(item.at))}</time></article>`).join(''):'<div class="gallery-empty">Ainda não há atividades registradas.</div>';}
   function renderHome() {
-    const open=visibleTasks('home').filter(task=>!task.completedAt),today=todayKey(),tomorrow=addDays(today,1);
-    const overdue=open.filter(task=>task.executionDate&&task.executionDate<today).sort(taskOrder);
-    const todayTasks=open.filter(task=>task.executionDate===today).sort(taskOrder);
-    const tomorrowTasks=open.filter(task=>task.executionDate===tomorrow).sort(taskOrder);
-    const unplanned=open.filter(task=>!task.executionDate);
-    $('homeOverdueCount').textContent=String(overdue.length); $('homeTodayCount').textContent=String(todayTasks.length); $('homeUnplannedCount').textContent=String(unplanned.length);
-    renderHomeEvents();renderHomeTaskList('homeOverdueList',overdue);renderHomeTaskList('homeTodayList',todayTasks);renderHomeTaskList('homeTomorrowList',tomorrowTasks);
+    const open=visibleTasks('home').filter(task=>!task.completedAt),today=todayKey(),tomorrow=addDays(today,1),overdue=open.filter(task=>task.executionDate&&task.executionDate<today).sort(taskOrder),todayTasks=open.filter(task=>task.executionDate===today).sort(taskOrder),tomorrowTasks=open.filter(task=>task.executionDate===tomorrow).sort(taskOrder),unplanned=open.filter(task=>!task.executionDate);
+    $('homeOverdueCount').textContent=String(overdue.length);$('homeTodayCount').textContent=String(todayTasks.length);$('homeUnplannedCount').textContent=String(unplanned.length);
+    const dateNode=$('galleryDateLabel');if(dateNode)dateNode.textContent=formatDate(today,{weekday:'long',day:'2-digit',month:'long'});
+    const completedNode=$('galleryCompletedCount');if(completedNode)completedNode.textContent=String(visibleTasks('home').filter(task=>task.completedAt).length);
+    renderGalleryPreview('galleryPlannerSummary',[...todayTasks,...tomorrowTasks].slice(0,3).map(task=>({color:getTag(task.tagId).color,html:`<button type="button" data-edit-task="${galleryEscape(task.id)}">${galleryEscape(task.executionDate===today?'Hoje':'Amanhã')} · ${galleryEscape(task.title)}</button>`})),open.length?'Nada urgente por enquanto':'Nenhuma tarefa próxima.');
+    const habits=normalizeUserSettings(userSettings).plannerHabits||[],done=habits.filter(habit=>(habit.doneDates||[]).includes(today)).length;renderGalleryPreview('galleryHabitsSummary',habits.slice(0,3).map(habit=>({color:habit.doneDates?.includes(today)?'#73d6a2':'#8bafff',html:`<span>${habit.doneDates?.includes(today)?'✓':'○'} ${galleryEscape(habit.name)}</span>`})),habits.length?'Nenhum hábito configurado.':'Cadastre hábitos no Planner.');const habitSummary=$('galleryHabitsSummary');if(habitSummary&&habits.length)habitSummary.insertAdjacentHTML('afterbegin',`<div class="gallery-preview-row"><strong>${done}/${habits.length} feitos hoje</strong></div>`);
+    const recentNotes=notes.filter(note=>!note.deletedAt).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))).slice(0,2);renderGalleryPreview('galleryNotesSummary',recentNotes.map(note=>({color:'#8bafff',html:`<span>${galleryEscape(note.title||String(note.content||'').slice(0,48)||'Nota sem título')}</span>`})),notes.some(note=>!note.deletedAt)?'Nenhuma nota aberta.':'Nenhuma nota salva.');
+    const month=today.slice(0,7),entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===month),income=entries.filter(entry=>entry.kind==='income').reduce((sum,item)=>sum+item.amount,0),expense=entries.filter(entry=>entry.kind==='expense').reduce((sum,item)=>sum+item.amount,0);renderGalleryPreview('galleryFinanceSummary',[{color:'#73d6a2',html:`<span>Entradas do mês: <strong>${financeMoney(income)}</strong></span>`},{color:'#ff8b8b',html:`<span>Saídas do mês: <strong>${financeMoney(expense)}</strong></span>`}],entries.length?'Sem lançamentos neste mês.':'Nenhum lançamento neste mês.');
+    renderGalleryLinks();renderGalleryActivity();
   }
   function logTimestampLabel(createdAt,content='') {
     const date=new Date(createdAt);if(!Number.isFinite(date.getTime()))return '';
@@ -2449,7 +2457,7 @@
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;setPage(button.dataset.page);if(button.dataset.page==='tasks')jumpToCurrentWeek();
   });
-  document.addEventListener('click',event=>{const action=event.target.closest('[data-home-action]');if(action){openHomeAction(action.dataset.homeAction);return;}if(event.target.closest('[data-open-tasks]'))setPage('tasks');});
+  document.addEventListener('click',event=>{const action=event.target.closest('[data-home-action]');if(action){openHomeAction(action.dataset.homeAction);return;}const homeGo=event.target.closest('[data-home-go]');if(homeGo){setPage(homeGo.dataset.homeGo);if(homeGo.dataset.homeGo==='tasks')jumpToCurrentWeek();return;}if(event.target.closest('[data-home-open-habits]')){setPage('tasks');setPlannerSubpage('habits');return;}if(event.target.closest('[data-open-tasks]'))setPage('tasks');});
   $('taskForm').addEventListener('submit',saveTaskFromForm);
   $('taskForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'task'));
   $('taskForm').addEventListener('input',event=>{taskDialogDirty=true;if(event.target.matches('[data-task-checklist-text]'))resizeTaskChecklistTextarea(event.target);});
