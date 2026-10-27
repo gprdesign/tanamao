@@ -2454,8 +2454,12 @@
   document.querySelectorAll('[data-note-format]').forEach(button=>button.addEventListener('click',()=>applyNoteFormat(button.dataset.formatTarget,button.dataset.noteFormat)));
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
-    if(button.dataset.page==='tasks'&&currentPage==='tasks'){setPage('home');return;}
-    setPage(button.dataset.page);if(button.dataset.page==='tasks')jumpToCurrentWeek();
+    if(button.dataset.page==='tasks'){
+      const next=currentPage==='home'?'tasks':'home';setPage(next);
+      if(next==='tasks')jumpToCurrentWeek();
+      return;
+    }
+    setPage(button.dataset.page);
   });
   document.addEventListener('click',event=>{
     if(event.target.closest('[data-open-basecamp-calendar]')){renderBasecampCalendarWeek();return;}const calendarTask=event.target.closest('[data-basecamp-task]');if(calendarTask){openTaskDialog(calendarTask.dataset.basecampTask);return;}const calendarDay=event.target.closest('[data-basecamp-open-day]');if(calendarDay){setPage('tasks');setPlannerSubpage('week',false);setWeek(calendarDay.dataset.basecampOpenDay);openDayDialog(calendarDay.dataset.basecampOpenDay);return;}
