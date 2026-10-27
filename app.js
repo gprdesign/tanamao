@@ -2457,9 +2457,12 @@
     setPage(next);
     if(next==='tasks')jumpToCurrentWeek();
   };
-  $('plannerNavLabel').closest('button').addEventListener('click',event=>{
-    event.preventDefault();event.stopPropagation();window.TNMBasecampToggle();
-  },true);
+  const plannerDockButton=$('plannerNavLabel').closest('button');
+  plannerDockButton.onclick=event=>{
+    event.preventDefault();event.stopImmediatePropagation();
+    window.TNMBasecampToggle();
+    return false;
+  };
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
     if(button.dataset.page==='tasks')return;
