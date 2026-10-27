@@ -666,11 +666,12 @@
     clearTimeout(toastTimer);
     toastTimer=setTimeout(()=>node.classList.add('hidden'),duration);
   }
-  function plannerDockButton(){return $('plannerBasecampSwitch');}
+  function plannerDockButton(){return $('plannerBasecampSwitch')||$('plannerNavLabel')?.closest('.nav-btn')||null;}
   function updateNavIndicator(page=currentPage) {
     const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]')),planner=plannerDockButton();
     if(!indicator)return;
     const target=buttons.find(button=>button===planner?['home','tasks'].includes(page):button.dataset.page===page);
+    if(indicator&&planner){const dock=document.querySelector('.main-nav');const index=Array.from(dock?.querySelectorAll('.nav-btn')||[]).indexOf(planner);indicator.style.width=index>=0?`calc((100% - 24px)/3)`:'';}
     if(!target){indicator.hidden=true;return;}
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
