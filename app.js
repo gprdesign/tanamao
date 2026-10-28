@@ -432,7 +432,7 @@
     if(!content&&!isLocked)return null;
     return {id:String(value.id||makeId()),content:isLocked?'':content,isLocked,tagId:String(value.tagId??value.tag_id??''),createdAt:String(value.createdAt||value.created_at||nowISO()),updatedAt:String(value.updatedAt||value.updated_at||value.createdAt||value.created_at||nowISO()),deletedAt:value.deletedAt||value.deleted_at?String(value.deletedAt||value.deleted_at):null};
   }
-  function bankTransactionToRow(item) { return {owner_id:session.user.id,transaction_key:item.transactionKey,occurred_at:item.occurredAt,description:item.description,...(item.displayName?{display_name:item.displayName}:{}),direction:item.direction,amount:item.amount,account:item.account||'',source_message_id:item.sourceMessageId||'',source_consulted_at:item.sourceConsultedAt||item.occurredAt,is_internal_transfer:Boolean(item.isInternalTransfer),planner_version:1,updated_at:item.updatedAt||nowISO()}; }
+  function bankTransactionToRow(item) { return {owner_id:session.user.id,transaction_key:item.transactionKey,occurred_at:item.occurredAt,description:item.description,display_name:item.displayName||'',direction:item.direction,amount:item.amount,account:item.account||'',source_message_id:item.sourceMessageId||'',source_consulted_at:item.sourceConsultedAt||item.occurredAt,is_internal_transfer:Boolean(item.isInternalTransfer),planner_version:1,updated_at:item.updatedAt||nowISO()}; }
   function normalizeBankTransaction(value) {
     if(!value||typeof value!=='object'||!String(value.transactionKey||value.transaction_key||'').trim())return null;
     const amount=Math.round(Number(value.amount)*100)/100,occurredAt=String(value.occurredAt||value.occurred_at||'');
