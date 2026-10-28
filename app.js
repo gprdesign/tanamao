@@ -96,9 +96,9 @@
   const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
   let viewMode=storedViewMode==='pc'||storedViewMode==='mobile'?storedViewMode:(isAndroidDevice||(window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc');
   const storedPage = localStorage.getItem(PAGE_KEY);
-  const routeView=new URLSearchParams(location.search).get('view');
-  let currentPage = routeView==='basecamp'?'home':routeView==='planner'?'tasks':storedPage==='log'?'finance':['home','tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
-  if(localStorage.getItem(HOME_GALLERY_KEY)!=='v2'){if(!routeView&&(!storedPage||storedPage==='tasks')){currentPage='home';localStorage.setItem(PAGE_KEY,'home');}localStorage.setItem(HOME_GALLERY_KEY,'v2');}
+  const pageUrl=new URL(window.location.href),routeView=pageUrl.searchParams.get('view');
+  if(routeView==='basecamp'){pageUrl.searchParams.delete('view');history.replaceState(null,'',pageUrl.pathname+pageUrl.search+pageUrl.hash);}
+  let currentPage = storedPage==='log'?'finance':['tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
@@ -676,8 +676,9 @@
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
-    if(!['home','tasks','finance','notes','settings'].includes(page))return;
-    const pageOrder=['home','tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
+    if(page==='home')page='tasks';
+    if(!['tasks','finance','notes','settings'].includes(page))return;
+    const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
     pendingLogLockId='';pendingLogUnlockId='';
     if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
@@ -688,7 +689,7 @@
       const active=node.id===`${page}Page`;node.classList.toggle('active',active);
       if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
     });
-    const plannerButton=plannerDockButton();if(plannerButton)plannerButton.href=`?view=${page==='home'?'planner':'basecamp'}`;
+    const plannerButton=plannerDockButton();
     document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(button===plannerButton?['home','tasks'].includes(page):button.dataset.page===page)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
     const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent=page==='home'?'BASECAMP':'PLANNER';
     updateNavIndicator(page);renderFilterButton();
