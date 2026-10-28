@@ -2406,8 +2406,10 @@
     authBusy=true; setAuthMessage('Verificando login…'); updateAuthUI();
     try {
       await ensureSession(); session.user=await getCurrentUser(); localStorage.setItem(SESSION_KEY,JSON.stringify(session));
-      const ok=await loadCloudData();if(ok)void startRealtimeSync();
-    } catch { setAuthMessage('Não consegui verificar a conta agora. Tente sincronizar ou entrar novamente.',true); }
+      const ok=await loadCloudData();
+      if(ok){void startRealtimeSync();setAuthMessage('Sincronização concluída.');}
+      else if(authMessage==='Verificando login…')setAuthMessage('Conta conectada, mas a sincronização não foi concluída. Seus dados locais foram mantidos.',true);
+    } catch(error) { setAuthMessage(`Não consegui verificar a conta: ${describeSyncError(error,'autenticação')}`,true); }
     finally { authBusy=false; updateAuthUI(); }
   }
   function automaticBackupSnapshot() {
