@@ -1463,6 +1463,11 @@
     }
     /* PC: typografia mais compacta, dias com colunas fluidas e navegação semanal vertical à direita. */
     @media (min-width:601px) {
+      body[data-view-mode="pc"][data-page="tasks"] .wrap { padding-bottom:calc(104px + env(safe-area-inset-bottom,0px)) !important; }
+      body[data-view-mode="pc"][data-page="tasks"] #tasksPage.active { flex:1 1 auto !important; min-height:0 !important; }
+      body[data-view-mode="pc"][data-page="tasks"] .planner-week-view:not([hidden]) { flex:1 1 0 !important; min-height:0 !important; }
+      body[data-view-mode="pc"][data-page="tasks"] #weekBoard { flex:1 1 0 !important; min-height:0 !important; }
+      body[data-view-mode="pc"][data-page="tasks"] #weekGrid { height:100% !important; }
       html:has(body[data-view-mode="pc"]) { font-size:16px !important; }
       body[data-view-mode="pc"] { font-size:14px !important; }
       body[data-view-mode="pc"] .wrap { width:min(100%,1600px); }
@@ -1573,8 +1578,6 @@
 
   <nav class="week-dock sub-dock notes-dock" id="notesDock" aria-label="Ações das notas"><button class="subdock-item subdock-add-note" id="notesDockAddBtn" type="button">＋ NOTA</button></nav>
 
-  <button class="refresh-sync-btn refresh-sync-action" id="refreshSyncBtn" type="button" aria-label="Atualizar página e sincronizar conta" title="Atualizar e sincronizar"><span aria-hidden="true">↻</span></button>
-
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
     <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">PLANNER</span></button>
@@ -1602,7 +1605,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=175" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=181',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=176" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=182',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
