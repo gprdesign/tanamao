@@ -2098,7 +2098,7 @@
     try { data=text ? JSON.parse(text) : null; } catch { data=text; }
     if (!response.ok) {
       const message=data?.msg || data?.message || data?.error_description || data?.error || `Erro ${response.status}`;
-      const error=new Error(String(message)); error.status=response.status; throw error;
+      const error=new Error(String(message)); error.status=response.status;error.code=data?.code||'';error.details=data?.details||'';error.hint=data?.hint||'';throw error;
     }
     return data;
   }
@@ -2277,40 +2277,52 @@
     renderAll(); createAutomaticBackup(false); updateAuthUI();
     return synced;
   }
+  function describeSyncError(error,stage='Supabase') {
+    const status=Number(error?.status)||0,code=String(error?.code||'').toUpperCase(),raw=String(error?.message||error||'Falha sem detalhes'),detail=raw.replace(/https?:\/\/\S+/g,'endereço removido').replace(/[\r\n\t]+/g,' ').slice(0,240);
+    if(status===401||status===403||/^(401|403|JWT|PGRST301|PGRST302)$/.test(code)||/invalid jwt|jwt expired|refresh token.*(invalid|not found)|not authenticated/i.test(raw))return 'Sessão expirada ou sem autorização. Entre novamente no TNM e tente sincronizar.';
+    if(status===0||/failed to fetch|networkerror|load failed|fetch failed|network request failed/i.test(raw))return 'Falha de conexão com o Supabase. Verifique a internet e tente novamente.';
+    if(code==='PGRST204'||code==='42703'||/column .* does not exist|could not find the .* column/i.test(raw))return `Esquema do Supabase incompatível em ${stage}. Atualize a estrutura do banco antes de tentar novamente.`;
+    if(code==='42P01'||code==='PGRST205'||/relation .* does not exist|could not find the table/i.test(raw))return `A tabela ${stage} não existe ou não está visível no Supabase.`;
+    if(code==='42501'||status===403||/row-level security|violates row-level security|permission denied/i.test(raw))return `O Supabase bloqueou a gravação em ${stage} por permissão/RLS. Nenhum dado local foi apagado.`;
+    if(/duplicate key|unique constraint/i.test(raw))return `Conflito de registro ao sincronizar ${stage}. Os dados locais foram mantidos.`;
+    if(/violates .* constraint|invalid input syntax|out of range/i.test(raw))return `O Supabase rejeitou os dados de ${stage}: ${detail}`;
+    return `Falha em ${stage}${status?` (HTTP ${status})`:''}${code?` [${code}]`:''}: ${detail}`;
+  }
   function scheduleSync() {
     if (!session?.user?.id) return;
     clearTimeout(syncTimer); syncTimer=setTimeout(()=>{ void syncCloud(); },500);
   }
   async function syncCloud() {
-    if (!session?.user?.id) return false;
+    if (!session?.user?.id) {setAuthMessage('Entre na sua conta para sincronizar. Seus dados permanecem neste aparelho.',true);return false;}
     if (syncInFlight) { syncQueued=true; return true; }
-    syncInFlight=true;
+    syncInFlight=true;let syncStage='autenticação/sessão';
     try {
       do {
         syncQueued=false;
-        await syncLocalBankDisplayNames();
+        syncStage='extrato Banco Jota';await syncLocalBankDisplayNames();
+        syncStage='tags';
         const tagRows=tags.map(tagToRow);
-        const taskRows=tasks.map(taskToRow);
-        const noteRows=notes.map(noteToRow);
-        const logRows=logs.map(logToRow);
-        const financeRows=finances.map(financeToRow),bankRows=bankTransactions.map(normalizeBankTransaction).filter(Boolean).map(bankTransactionToRow);
+        syncStage='tarefas';const taskRows=tasks.map(taskToRow);
+        syncStage='notas';const noteRows=notes.map(noteToRow);
+        syncStage='logs';const logRows=logs.map(logToRow);
+        syncStage='finanças';const financeRows=finances.map(financeToRow);syncStage='extrato Banco Jota';const bankRows=bankTransactions.map(normalizeBankTransaction).filter(Boolean).map(bankTransactionToRow);
         const settingsRow=settingsToRow(),vaultRow=privateVaultToRow(),canSyncPrivate=Boolean(privateVault)&&(!privateVault.ownerId||privateVault.ownerId===session.user.id),privateRows=canSyncPrivate?privateCipherRows.map(privateRowToRow):[];
-        if (tagRows.length) await cloudRequest('nmm_tags?on_conflict=owner_id,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(tagRows)});
-        if (taskRows.length) await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});
-        if (noteRows.length) await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});
-        if (logRows.length) await cloudRequest('nmm_logs?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(logRows)});
-        if (financeRows.length) await cloudRequest('nmm_finance_entries?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(financeRows)});
-        if (bankRows.length) await cloudRequest('nmm_bank_transactions?on_conflict=owner_id,transaction_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(bankRows)});
-        await cloudRequest('nmm_user_settings?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(settingsRow)});
-        if(vaultRow)await cloudRequest('nmm_private_vaults?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(vaultRow)});
-        if(privateRows.length)await cloudRequest('nmm_private_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(privateRows)});
+        if (tagRows.length) {syncStage='tags';await cloudRequest('nmm_tags?on_conflict=owner_id,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(tagRows)});}
+        if (taskRows.length) {syncStage='tarefas';await cloudRequest('nmm_tasks?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(taskRows)});}
+        if (noteRows.length) {syncStage='notas';await cloudRequest('nmm_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(noteRows)});}
+        if (logRows.length) {syncStage='logs';await cloudRequest('nmm_logs?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(logRows)});}
+        if (financeRows.length) {syncStage='finanças';await cloudRequest('nmm_finance_entries?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(financeRows)});}
+        if (bankRows.length) {syncStage='extrato Banco Jota';await cloudRequest('nmm_bank_transactions?on_conflict=owner_id,transaction_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(bankRows)});}
+        syncStage='configurações';await cloudRequest('nmm_user_settings?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(settingsRow)});
+        if(vaultRow){syncStage='cofre privado';await cloudRequest('nmm_private_vaults?on_conflict=owner_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(vaultRow)});}
+        if(privateRows.length){syncStage='notas privadas';await cloudRequest('nmm_private_notes?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(privateRows)});}
         syncStatus=`Sincronizado · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
         updateAuthUI();
       } while (syncQueued);
       return true;
-    } catch {
+    } catch(error) {
       syncStatus='Sincronização pendente'; updateAuthUI();
-      setAuthMessage('Não consegui sincronizar agora. Os dados continuam salvos neste aparelho.',true);
+      setAuthMessage(`${describeSyncError(error,syncStage)} Os dados continuam salvos neste aparelho.`,true);
       return false;
     } finally { syncInFlight=false; updateAuthUI(); }
   }
