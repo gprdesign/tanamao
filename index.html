@@ -1485,6 +1485,13 @@
       body[data-view-mode="pc"][data-page="tasks"] .day-heading-button time,body[data-view-mode="pc"][data-page="tasks"] .day-heading-button .day-count { font-size:.64rem !important; }
       body[data-view-mode="pc"][data-page="tasks"] .day-task-list { min-height:0; max-height:none; overflow-y:auto; gap:3px; }
       body[data-view-mode="pc"][data-page="tasks"] .task-card--compact .task-open { font-size:.72rem !important; line-height:1.2; }
+      body[data-view-mode="pc"][data-page="tasks"] #dayDialogList { grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; }
+      body[data-view-mode="pc"][data-page="tasks"] #dayDialogList > .day-dialog-events,
+      body[data-view-mode="pc"][data-page="tasks"] #dayDialogList > .empty,
+      body[data-view-mode="pc"][data-page="tasks"] #dayDialogList > .day-dialog-completed,
+      body[data-view-mode="pc"][data-page="tasks"] #dayDialogList > .day-dialog-overdue-footer { grid-column:1 / -1; min-width:0; }
+      body[data-view-mode="pc"][data-page="tasks"] #dayDialogList > .task-card { min-width:0; align-self:start; }
+      body[data-view-mode="pc"][data-page="tasks"] #dayDialogList .day-dialog-completed-list { grid-template-columns:repeat(3,minmax(0,1fr)); }
     }
 </style>
 </head>
@@ -1606,7 +1613,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=178" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=184',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=179" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=185',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
