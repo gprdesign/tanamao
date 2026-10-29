@@ -20,6 +20,7 @@
   const PRIVATE_VAULT_KEY = 'tnm.weekly.privateVault.v1';
   const PRIVATE_ROWS_KEY = 'tnm.weekly.privateRows.v1';
   const SESSION_KEY = 'naMinhaMao.supabase.session.v1';
+  const SESSION_REFRESH_LOCK = 'tnm-supabase-refresh-token-v1';
   const RESET_KEY = 'tnm.weekly.reset.v1';
   const TAGS_KEY = 'tnm.weekly.tags.v1';
   const TAG_FILTER_KEY = 'tnm.weekly.filterTag.v1';
@@ -2112,10 +2113,69 @@
     session={access_token:data.access_token,refresh_token:data.refresh_token,expires_at:Date.now()+(Number(data.expires_in)||3600)*1000,user:data.user || session?.user || null};
     localStorage.setItem(SESSION_KEY,JSON.stringify(session));
   }
-  async function refreshSession() {
+  async function refreshSessionUnlocked(refreshTokenAtRequest) {
+    const stored=readStored(SESSION_KEY,null);
+    if(stored?.user?.id&&stored.user.id===session?.user?.id&&stored.refresh_token&&stored.refresh_token!==refreshTokenAtRequest&&stored.expires_at>Date.now()+60000){
+      session=stored;
+      if(realtimeClient&&session.access_token)realtimeClient.realtime.setAuth(session.access_token);
+      return;
+    }
+    if(session?.refresh_token&&session.refresh_token!==refreshTokenAtRequest&&session.expires_at>Date.now()+60000){
+      if(realtimeClient&&session.access_token)realtimeClient.realtime.setAuth(session.access_token);
+      return;
+    }
+    if(stored?.user?.id&&stored.user.id===session?.user?.id&&stored.refresh_token&&stored.refresh_token!==session.refresh_token){session=stored;}
     if (!session?.refresh_token) throw new Error('Sessão expirada. Entre novamente.');
-    const data=await authRequest('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
-    storeSession(data);if(realtimeClient&&session?.access_token)realtimeClient.realtime.setAuth(session.access_token);
+    try {
+      const data=await authRequest('token?grant_type=refresh_token',{refresh_token:session.refresh_token});
+      storeSession(data);if(realtimeClient&&session?.access_token)realtimeClient.realtime.setAuth(session.access_token);
+    } catch(error) {
+      const message=String(error?.message||'');
+      if(/invalid refresh token.*already used|refresh token.*already used/i.test(message)){
+        const until=Date.now()+2500;
+        while(Date.now()<until){
+          await new Promise(resolve=>setTimeout(resolve,100));
+          const latest=readStored(SESSION_KEY,null);
+          if(latest?.user?.id&&latest.user.id===session?.user?.id&&latest.refresh_token&&latest.refresh_token!==session.refresh_token){
+            session=latest;
+            if(session.expires_at&&Date.now()<session.expires_at-60000){if(realtimeClient&&session.access_token)realtimeClient.realtime.setAuth(session.access_token);return;}
+            break;
+          }
+        }
+      }
+      throw error;
+    }
+  }
+  async function refreshSession() {
+    if(!session?.refresh_token)throw new Error('Sessão expirada. Entre novamente.');
+    const refreshTokenAtRequest=session.refresh_token;
+    if(navigator.locks?.request){
+      return navigator.locks.request(SESSION_REFRESH_LOCK,{mode:'exclusive'},()=>refreshSessionUnlocked(refreshTokenAtRequest));
+    }
+    const lockKey=`${SESSION_KEY}.refresh-lock`,owner=makeId(),deadline=Date.now()+12000;
+    while(Date.now()<deadline){
+      let lock=null;try{lock=JSON.parse(localStorage.getItem(lockKey)||'null');}catch{}
+      if(!lock||Number(lock.expiresAt)<Date.now()){
+        try{
+          localStorage.setItem(lockKey,JSON.stringify({owner,expiresAt:Date.now()+30000}));
+          const check=JSON.parse(localStorage.getItem(lockKey)||'null');
+          if(check?.owner===owner){
+            try{
+              const latest=readStored(SESSION_KEY,null);
+              if(latest?.user?.id&&latest.user.id===session?.user?.id&&latest.refresh_token&&latest.refresh_token!==refreshTokenAtRequest&&latest.expires_at>Date.now()+60000){session=latest;if(realtimeClient&&session.access_token)realtimeClient.realtime.setAuth(session.access_token);return;}
+              return await refreshSessionUnlocked(refreshTokenAtRequest);
+            }
+            finally{try{const current=JSON.parse(localStorage.getItem(lockKey)||'null');if(current?.owner===owner)localStorage.removeItem(lockKey);}catch{}}
+          }
+        }catch{}
+      }
+      await new Promise(resolve=>setTimeout(resolve,80+Math.floor(Math.random()*100)));
+      const latest=readStored(SESSION_KEY,null);
+      if(latest?.user?.id&&latest.user.id===session?.user?.id&&latest.refresh_token&&latest.refresh_token!==session.refresh_token&&latest.expires_at>Date.now()+60000){
+        session=latest;if(realtimeClient&&session.access_token)realtimeClient.realtime.setAuth(session.access_token);return;
+      }
+    }
+    throw new Error('A renovação da sessão já está acontecendo em outra janela. Aguarde alguns segundos e tente novamente.');
   }
   async function ensureSession() {
     if (!session?.access_token) throw new Error('Entre na sua conta para sincronizar.');
