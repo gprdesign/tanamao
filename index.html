@@ -1461,6 +1461,7 @@
         .basecamp-file-shortcuts { margin-top:auto; }
     body.view-mobile .main-nav,body:not(.view-mobile) .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
     body.view-mobile .nav-indicator,body:not(.view-mobile) .nav-indicator { width:calc((100% - 24px)/4) !important; }
+    body.view-mobile[data-page="tasks"] #planningList { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
     @media(max-width:640px) {
       .basecamp-card { min-height:155px; padding:7px; }
       .basecamp-card-body { gap:5px; }
@@ -1625,6 +1626,6 @@
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./app.js?v=183" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=189',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=190',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
