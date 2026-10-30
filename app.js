@@ -30,6 +30,7 @@
   const AUTO_BACKUP_KEY = 'tnm.weekly.autobackup.v1';
   const CALENDAR_EVENTS_KEY = 'tnm.weekly.calendarEvents.v1';
   const CALENDAR_SYNC_META_KEY = 'tnm.weekly.calendarSync.v1';
+  const GOOGLE_CALENDAR_TOKEN_KEY = 'tnm.googleCalendar.access.v1';
   const AUTO_BACKUP_EVERY = 5*60*1000;
   const WEEK_KEY = 'tnm.weekly.week.v1';
   const PAGE_KEY = 'tnm.weekly.page.v1';
@@ -87,7 +88,9 @@
   let availableGoogleCalendars=[];
   let googleCalendarAccessToken='';
   let googleCalendarAccessTokenExpiresAt=0;
+  try{const cached=JSON.parse(sessionStorage.getItem(GOOGLE_CALENDAR_TOKEN_KEY)||'null');if(cached?.accessToken&&Number(cached.expiresAt)>Date.now()+60000){googleCalendarAccessToken=String(cached.accessToken);googleCalendarAccessTokenExpiresAt=Number(cached.expiresAt);}}catch{}
   let calendarSyncInProgress=false;
+  let calendarListLoadInProgress=false;
   let calendarStatusMessage='';
   let calendarStatusFailed=false;
   let calendarLastSyncAt=String(readStored(CALENDAR_SYNC_META_KEY,'')||'');
@@ -219,10 +222,13 @@
   function getUpcomingCalendarEvents(){const today=todayKey(),now=Date.now();return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>event.allDay?event.startAt>=today:Date.parse(event.startAt)>=now).sort(calendarEventOrder);}
   function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderHomeEvents();if(currentPage==='home')renderHome();if(currentPage==='tasks')renderTasks();}
   window.TNMCalendarBridge=Object.freeze({replaceEvents:setCalendarEvents});
+  function persistGoogleCalendarToken(){try{if(googleCalendarAccessToken&&googleCalendarAccessTokenExpiresAt>Date.now()+60000)sessionStorage.setItem(GOOGLE_CALENDAR_TOKEN_KEY,JSON.stringify({accessToken:googleCalendarAccessToken,expiresAt:googleCalendarAccessTokenExpiresAt}));else sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_KEY);}catch{}}
+  function clearGoogleCalendarToken(){googleCalendarAccessToken='';googleCalendarAccessTokenExpiresAt=0;try{sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_KEY);}catch{}}
   function calendarTokenIsValid(){return Boolean(googleCalendarAccessToken&&Date.now()<googleCalendarAccessTokenExpiresAt-60000);}
   function setCalendarStatus(message,failed=false){calendarStatusMessage=String(message||'');calendarStatusFailed=Boolean(failed);const node=$('calendarStatus');if(node){node.textContent=calendarStatusMessage;node.classList.toggle('is-error',calendarStatusFailed);}}
   function renderCalendarFilters(){
     const list=$('calendarFilters');if(!list)return;
+    if(calendarTokenIsValid()&&!availableGoogleCalendars.length&&!calendarListLoadInProgress){calendarListLoadInProgress=true;setCalendarStatus('Carregando agendas autorizadas nesta aba…');void loadGoogleCalendars(googleCalendarAccessToken).catch(error=>{if(/401|unauthorized|invalid credentials/i.test(String(error?.message||'')))clearGoogleCalendarToken();setCalendarStatus(`Não consegui carregar as agendas: ${error?.message||'erro desconhecido'}`,true);}).finally(()=>{calendarListLoadInProgress=false;if(!calendarStatusFailed){const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null;setCalendarStatus(last&&!Number.isNaN(last.getTime())?`Última sincronização: ${last.toLocaleString('pt-BR')}. Toque em Sincronizar para atualizar.`:'Agendas carregadas. Toque em Sincronizar para atualizar.');}renderCalendarSyncUI();});return;}
     if(!availableGoogleCalendars.length){list.innerHTML=`<p class="muted">${GOOGLE_CALENDAR_CLIENT_ID?'Conecte o Google Calendar para carregar as agendas.':'A configuração do Google Calendar está incompleta.'}</p>`;return;}
     const selected=new Set(userSettings.calendarIds);
     list.innerHTML=availableGoogleCalendars.map(calendar=>{
@@ -245,15 +251,15 @@
     const oauth=window.google?.accounts?.oauth2;if(!oauth)return Promise.reject(new Error('O serviço de autorização do Google não carregou. Atualize a página e tente novamente.'));
     return new Promise((resolve,reject)=>{
       const client=oauth.initTokenClient({client_id:GOOGLE_CALENDAR_CLIENT_ID,scope:'https://www.googleapis.com/auth/calendar.readonly',callback:response=>{
-        if(response?.error||!response?.access_token){googleCalendarAccessToken='';googleCalendarAccessTokenExpiresAt=0;reject(new Error(response?.error_description||response?.error||'Autorização do Google não concluída.'));return;}
-        googleCalendarAccessToken=String(response.access_token);googleCalendarAccessTokenExpiresAt=Date.now()+Math.max(60,Number(response.expires_in)||3600)*1000;resolve(googleCalendarAccessToken);
+        if(response?.error||!response?.access_token){clearGoogleCalendarToken();reject(new Error(response?.error_description||response?.error||'Autorização do Google não concluída.'));return;}
+        googleCalendarAccessToken=String(response.access_token);googleCalendarAccessTokenExpiresAt=Date.now()+Math.max(60,Number(response.expires_in)||3600)*1000;persistGoogleCalendarToken();resolve(googleCalendarAccessToken);
       },error_callback:error=>reject(new Error(error?.message||'A janela de autorização foi fechada.'))});
       try{client.requestAccessToken({prompt:''});}catch(error){reject(error);}
     });
   }
   async function googleCalendarApi(url,token){
     const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`,Accept:'application/json'}});let data={};try{data=await response.json();}catch{}
-    if(!response.ok){if(response.status===401){googleCalendarAccessToken='';googleCalendarAccessTokenExpiresAt=0;}throw new Error(data.error?.message||`Google Calendar respondeu ${response.status}.`);}
+    if(!response.ok){if(response.status===401)clearGoogleCalendarToken();throw new Error(data.error?.message||`Google Calendar respondeu ${response.status}.`);}
     return data;
   }
   async function loadGoogleCalendars(token){
