@@ -2143,6 +2143,17 @@
           }
         }
       }
+      if(/invalid refresh token.*already used|refresh token.*already used/i.test(message)){
+        const latest=readStored(SESSION_KEY,null);
+        if(latest?.user?.id&&latest.user.id===session?.user?.id&&latest.refresh_token&&latest.refresh_token!==session.refresh_token&&latest.expires_at>Date.now()+60000){
+          session=latest;if(realtimeClient&&session.access_token)realtimeClient.realtime.setAuth(session.access_token);return;
+        }
+        stopRealtimeSync();session=null;
+        try{if(!latest?.refresh_token||latest.refresh_token===refreshTokenAtRequest)localStorage.removeItem(SESSION_KEY);}catch{}
+        syncStatus='';
+        setAuthMessage('A sessão salva neste PC já foi usada e não pode ser renovada. Entre novamente para sincronizar; seus dados locais foram mantidos.',true);
+        updateAuthUI();
+      }
       throw error;
     }
   }
@@ -2469,7 +2480,12 @@
       const ok=await loadCloudData();
       if(ok){void startRealtimeSync();setAuthMessage('Sincronização concluída.');}
       else if(authMessage==='Verificando login…')setAuthMessage('Conta conectada, mas a sincronização não foi concluída. Seus dados locais foram mantidos.',true);
-    } catch(error) { setAuthMessage(`Não consegui verificar a conta: ${describeSyncError(error,'autenticação')}`,true); }
+    } catch(error) {
+      if(Number(error?.status)===400&&/invalid refresh token.*already used|refresh token.*already used/i.test(String(error?.message||''))){
+        stopRealtimeSync();session=null;localStorage.removeItem(SESSION_KEY);syncStatus='';
+        setAuthMessage('A sessão salva neste PC já foi usada e não pode ser renovada. Entre novamente para sincronizar; seus dados locais foram mantidos.',true);
+      } else setAuthMessage(`Não consegui verificar a conta: ${describeSyncError(error,'autenticação')}`,true);
+    }
     finally { authBusy=false; updateAuthUI(); }
   }
   function automaticBackupSnapshot() {
