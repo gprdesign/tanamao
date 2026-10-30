@@ -1203,8 +1203,8 @@
     body.view-mobile[data-page="tasks"] #weekDock #weekDockAddTaskBtn { grid-column:4 !important; grid-row:1 !important; min-width:82px !important; height:36px !important; min-height:36px !important; padding:0 8px !important; font-size:.61rem !important; }
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-horizontal { display:inline !important; }
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
-    body.view-mobile .main-nav { grid-template-columns:repeat(3,minmax(0,1fr)); }
-    body.view-mobile .nav-indicator { width:calc((100% - 24px)/3); }
+    body.view-mobile .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    body.view-mobile .nav-indicator { width:calc((100% - 24px)/4); }
     body.view-mobile .planner-income-panel { display:none !important; }
     body.view-mobile[data-page="tasks"] .week-grid { grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-auto-rows:max-content; align-content:start; gap:8px; overflow-y:auto; overscroll-behavior:contain; }
     body.view-mobile[data-page="tasks"] .day-column { min-height:0; padding:9px 10px; overflow:visible; }
@@ -1330,8 +1330,8 @@
     body.view-mobile .brand p { font-size:calc(.62rem - 2pt); }
     #calendarStatus.is-error { color:#ffb0b8; }
     /* PC now opens directly on Planner; Finance cards use a consistent responsive order. */
-    .main-nav { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
-    .nav-indicator { width:calc((100% - 24px)/3); }
+    .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+    .nav-indicator { width:calc((100% - 24px)/4); }
     .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .finance-new-entry-row { width:100%; margin:0 0 10px; }
     #financeAddBtn { display:flex; width:auto; min-width:250px; min-height:46px; justify-content:center; padding:8px 12px; font-size:.84rem; }
@@ -1353,6 +1353,17 @@
       .household-bucket { min-height:188px; }
     }
 
+    /* Ajustes de navegação e planejamento solicitados. */
+    #plannerAddTaskBtn { display:none !important; }
+    #weekDockAddTaskBtn { display:flex; align-items:center; justify-content:center; text-align:center; }
+    #planningList { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+    .task-card.is-recurring:not(.has-tag-entry):not(.has-tag-income):not(.has-tag-expense) { border-color:#b58b2a !important; background:linear-gradient(110deg,rgba(74,57,18,.72),rgba(25,31,46,.86)) !important; }
+    .task-card.is-recurring:not(.has-tag-entry):not(.has-tag-income):not(.has-tag-expense) .task-title-row .tag-dot { box-shadow:0 0 0 2px #ffd16655,0 0 8px #ffd16666; }
+    body[data-view-mode="pc"][data-page="tasks"].planner-expanded .planner-week-view:not([hidden]) { overflow:auto !important; }
+    body[data-view-mode="pc"][data-page="tasks"].planner-expanded #planningPanel:not([hidden]) { flex:none !important; width:100%; max-height:34dvh !important; overflow:auto !important; }
+    body[data-view-mode="pc"][data-page="tasks"].planner-expanded #planningList { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+    body[data-view-mode="pc"][data-page="tasks"].planner-expanded #weekBoard { flex:1 1 auto !important; min-height:250px !important; }
+    body[data-view-mode="pc"][data-page="tasks"] .planner-section-buttons { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
     /* Final dock order override: week controls > Planner tabs > main dock. */
     body[data-page="tasks"] .wrap { padding-bottom:190px !important; }
     body[data-page="tasks"] #plannerSubdock:not([hidden]) { position:fixed !important; top:auto !important; left:50% !important; right:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px) + 62px + 8px) !important; transform:translateX(-50%) !important; z-index:35 !important; display:grid !important; grid-template-columns:1fr 1fr !important; width:min(360px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:42px !important; height:42px !important; margin:0 !important; }
@@ -1448,8 +1459,8 @@
         .basecamp-message-actions { display:flex; gap:3px; }
         .basecamp-card-arrow { font-size:.64rem; }
         .basecamp-file-shortcuts { margin-top:auto; }
-    body.view-mobile .main-nav,body:not(.view-mobile) .main-nav { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
-    body.view-mobile .nav-indicator,body:not(.view-mobile) .nav-indicator { width:calc((100% - 24px)/3) !important; }
+    body.view-mobile .main-nav,body:not(.view-mobile) .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+    body.view-mobile .nav-indicator,body:not(.view-mobile) .nav-indicator { width:calc((100% - 24px)/4) !important; }
     @media(max-width:640px) {
       .basecamp-card { min-height:155px; padding:7px; }
       .basecamp-card-body { gap:5px; }
@@ -1500,7 +1511,7 @@
   <main class="wrap">
     <header class="app-header">
       <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div class="brand-title-copy"><h1>Tá na mão!</h1><p>Seu planner semanal</p></div><h1 class="brand-mobile-title">TNM!</h1></div>
-      <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div><button class="btn ghost small header-settings-btn" id="headerSettingsBtn" type="button" data-page="settings" aria-label="Configurações" title="Configurações">⚙</button></div>
+      <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div></div>
     </header>
 
     <section id="homePage" class="page" aria-label="BASECAMP">
@@ -1524,7 +1535,6 @@
       <nav class="planner-subdock" id="plannerSubdock" aria-label="Seções do planner"><button type="button" class="planner-subdock-tab" id="plannerWeekTab" aria-pressed="true">SEMANA</button><button type="button" class="planner-subdock-tab" id="plannerHabitsTab" aria-pressed="false">HÁBITOS</button></nav>
       <div id="plannerWeekView" class="planner-week-view">
       <div class="planner-section-buttons">
-        <button class="btn primary planner-add-task" id="plannerAddTaskBtn" type="button">＋ TAREFA</button>
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
         <button class="planner-section-btn completed-box" id="completedBtn" type="button" aria-expanded="false" aria-controls="completedPanel">Concluídas <span id="completedCount">0</span></button>
       </div>
@@ -1591,6 +1601,7 @@
     <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">PLANNER</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
     <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
+    <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>CONFIGS</span></button>
   </nav>
 
   <dialog id="taskDialog" class="app-dialog"><form id="taskForm"><div class="dialog-head"><h2 id="taskDialogTitle">Nova tarefa</h2><button class="btn ghost small" id="closeTaskDialog" type="button" aria-label="Fechar">✕</button></div><input id="taskId" type="hidden"><div class="field"><label for="taskTitle">Tarefa ou compromisso</label><input id="taskTitle" maxlength="180" required placeholder="Ex.: reunião com cliente"></div><div class="field"><label for="taskTag">Tag</label><select id="taskTag"></select></div><div class="field"><label for="executionDate">Data de execução <span class="muted">(opcional)</span></label><input id="executionDate" type="date"></div><div class="field"><label for="taskRecurrence">Repetição</label><select id="taskRecurrence"><option value="">Não se repete</option><option value="daily">Diariamente</option><option value="weekly">Semanalmente</option><option value="monthly">Mensalmente</option><option value="yearly">Anualmente</option></select></div><div id="recurrenceOptions" class="recurrence-options" hidden><div class="field"><label for="recurrenceInterval">Repetir a cada</label><div class="recurrence-interval-row"><input id="recurrenceInterval" type="number" min="1" max="999" step="1" value="1"><span id="recurrenceUnit">dia(s)</span></div></div><div class="field" id="recurrenceWeekdaysField" hidden><span class="field-label">Dias da semana</span><div class="recurrence-weekdays"><label><input type="checkbox" name="recurrenceWeekday" value="1"> SEG</label><label><input type="checkbox" name="recurrenceWeekday" value="2"> TER</label><label><input type="checkbox" name="recurrenceWeekday" value="3"> QUA</label><label><input type="checkbox" name="recurrenceWeekday" value="4"> QUI</label><label><input type="checkbox" name="recurrenceWeekday" value="5"> SEX</label><label><input type="checkbox" name="recurrenceWeekday" value="6"> SÁB</label><label><input type="checkbox" name="recurrenceWeekday" value="7"> DOM</label></div></div><div class="field"><label for="recurrenceUntil">Repetir até <span class="muted">(opcional)</span></label><input id="recurrenceUntil" type="date"></div><p class="dialog-hint recurrence-hint">Ao concluir uma ocorrência, a próxima será criada automaticamente.</p></div><div class="field"><label for="taskContent">Conteúdo <span class="muted">(opcional)</span></label><textarea id="taskContent" maxlength="20000" placeholder="Detalhes da tarefa…"></textarea></div><section class="task-checklist" aria-label="Checklist da tarefa"><div class="task-checklist-head"><span class="field-label">Checklist</span><button class="btn small" id="taskChecklistAddBtn" type="button">＋ Adicionar item</button></div><div class="task-checklist-list" id="taskChecklistList"></div></section><div class="field link-attachment-field"><button class="btn small link-attach-btn" id="taskLinkToggle" type="button">＋ Anexar link</button><div class="link-input-row" id="taskLinkWrap" hidden><div><label for="taskLink">Endereço do link</label><input id="taskLink" type="url" maxlength="2048" placeholder="https://…"></div><button class="btn small link-remove-btn" id="taskLinkRemove" type="button">Remover</button></div></div><p class="dialog-hint">Sem data, fica em Planejar. Enter no título vai para Conteúdo; Enter no conteúdo cria linha; Enter numa etapa adiciona outra. Ctrl+Enter salva; repita em até 500 ms para salvar e fechar. Fechar o popup salva automaticamente.</p><div class="form-actions dialog-save-actions"><button class="btn danger" id="deleteTaskBtn" type="button">Excluir</button><button class="btn primary" type="submit">Salvar</button></div></form></dialog>
@@ -1613,7 +1624,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=182" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=188',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=183" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=189',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

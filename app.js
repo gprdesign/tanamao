@@ -114,7 +114,7 @@
   let checklistDragId = '';
   let checklistDragGroup = '';
   let expandedSection = '';
-  let planningVisibleLimit = 6;
+  let planningVisibleLimit = 12;
   let completedVisibleLimit = 6;
   let floatingActionMenu = null;
   let pointerDrag = null;
@@ -678,7 +678,6 @@
     const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]')),planner=plannerDockButton();
     if(!indicator)return;
     const target=buttons.find(button=>button===planner?['home','tasks'].includes(page):button.dataset.page===page);
-    if(indicator&&planner){const dock=document.querySelector('.main-nav');const index=Array.from(dock?.querySelectorAll('.nav-btn')||[]).indexOf(planner);indicator.style.width=index>=0?`calc((100% - 24px)/3)`:'';}
     if(!target){indicator.hidden=true;return;}
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
@@ -711,12 +710,13 @@
   function visibleNotes(page='notes') { return notes.filter(note=>!note.deletedAt&&hasSelectedTag(note.tagIds||[],'notes')); }
   function openTasks(page='tasks') { return visibleTasks(page).filter(task=>!task.completedAt); }
   function taskOrder(a,b) {
+    const recurringDiff=Number(Boolean(b.recurrence))-Number(Boolean(a.recurrence));
     const dateDiff=String(a.executionDate || '9999-12-31').localeCompare(String(b.executionDate || '9999-12-31'));
-    return dateDiff || Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.title).localeCompare(String(b.title),'pt-BR');
+    return recurringDiff || dateDiff || Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.title).localeCompare(String(b.title),'pt-BR');
   }
   function sortOverdueTasks(list) {
     const ranks=new Map(userSettings.overdueTaskOrder.map((id,index)=>[id,index]));
-    return list.sort((a,b)=>{const ai=ranks.get(a.id),bi=ranks.get(b.id);if(ai!==undefined&&bi!==undefined)return ai-bi;if(ai!==undefined)return -1;if(bi!==undefined)return 1;return taskOrder(a,b);});
+    return list.sort((a,b)=>{const recurringDiff=Number(Boolean(b.recurrence))-Number(Boolean(a.recurrence));if(recurringDiff)return recurringDiff;const ai=ranks.get(a.id),bi=ranks.get(b.id);if(ai!==undefined&&bi!==undefined)return ai-bi;if(ai!==undefined)return -1;if(bi!==undefined)return 1;return taskOrder(a,b);});
   }
   function noteOrder(a,b) { return Number(Boolean(b.isPinned))-Number(Boolean(a.isPinned)) || Number(a.sortOrder||0)-Number(b.sortOrder||0) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')); }
   function addNoteTagToSelection(tagId) {
@@ -773,7 +773,7 @@
   }
   function taskCard(task,options={}) {
     const complete=Boolean(task.completedAt), late=!complete&&(options.late ?? Boolean(task.executionDate&&task.executionDate<todayKey())), draggable=!complete&&options.draggable!==false;
-    const classes=['task-card',complete?'completed':'',late?'is-late':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':'',options.dayActions?'has-day-actions':'',options.reprogram?'has-reprogram':''];
+    const classes=['task-card',complete?'completed':'',late?'is-late':'',task.recurrence?'is-recurring':'',options.compact?'task-card--compact':'',options.tile?'task-card--tile':'',options.linked?'is-linked':'',options.dayActions?'has-day-actions':'',options.reprogram?'has-reprogram':''];
     const linked=options.linked?'task-link':'';
     const tag=getTag(task.tagId),normalizedTagName=String(tag.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase(),tagTone=normalizedTagName==='SAIDA'?'has-tag-expense':normalizedTagName==='ENTRADA'?'has-tag-income':'',taskTag=tagDot(task.tagId),taskHandle=draggable?`<button class="task-touch-handle" type="button" data-touch-drag-task="${escapeHTML(task.id)}" style="--tag-color:${escapeHTML(tag.color)}" aria-label="Arrastar ${escapeHTML(task.title)}"><span class="drag-grip" aria-hidden="true">⠿</span></button>`:'';
     if(tagTone)classes.push(tagTone);const className=classes.filter(Boolean).join(' ');
@@ -971,7 +971,7 @@
   function togglePlannerSection(section,forceOpen=false) {
     if (forceOpen) expandedSection=section;
     else expandedSection=expandedSection===section?'':section;
-    if (expandedSection==='planning') planningVisibleLimit=6;
+    if (expandedSection==='planning') planningVisibleLimit=12;
     if (expandedSection==='completed') completedVisibleLimit=6;
     renderTasks();
   }
@@ -1738,12 +1738,12 @@
   function showTaskCompletionToast(nextDate) {
     showToast(nextDate?`Tarefa concluída. Próxima ocorrência: ${formatDate(nextDate,{weekday:'short',day:'2-digit',month:'2-digit'})}.`:'Tarefa concluída.');
   }
-  function setTaskDate(taskId,date) {
+  function setTaskDate(taskId,date,options={}) {
     const task=tasks.find(item=>item.id===String(taskId) && !item.deletedAt && !item.completedAt);
     if (!task || (date && !isDateKey(date))) return;
     if ((task.executionDate||'')!==(date||'')) task.sortOrder=nextTaskOrder(date);
     task.executionDate=date || null; task.updatedAt=nowISO();
-    if (date && date>=todayKey()) setWeek(date);
+    if (!options.keepWeek&&date&&date>=todayKey()) setWeek(date);
     saveTasks();
     showToast(date && date<startOfWeek(todayKey())?'Foi para ATRASADO.':date?'Data de execução atualizada.':'Voltou para Planejar.');
   }
@@ -1754,8 +1754,9 @@
     if(action==='tomorrow')date=addDays(base,1);
     else if(action==='next-monday'){const daysUntilMonday=(8-getIsoWeekday(base))%7||7;date=addDays(base,daysUntilMonday);}
     else if(action==='planning')date='';else return;
-    setTaskDate(task.id,date);
-    if(date){activeDayDate=date;$('dayDialogTitle').textContent=formatDate(date,{weekday:'long',day:'2-digit',month:'2-digit'});if(startOfWeek(date)!==weekStart){setWeek(date);renderTasks();}renderDayDialog();}
+    const dayDialog=$('dayDialog'),wasOpen=dayDialog.open;
+    setTaskDate(task.id,date,{keepWeek:true});
+    if(wasOpen)renderDayDialog();
   }
   function openDayTaskCompletionConfirm(taskId) {
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);if(!task)return;
@@ -2608,14 +2609,13 @@
   $('nextWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,7)));
   $('planningBtn').addEventListener('click',()=>togglePlannerSection('planning'));
   $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
-  $('plannerAddTaskBtn').addEventListener('click',()=>openTaskDialog());
   $('weekDockAddTaskBtn').addEventListener('click',()=>openTaskDialog());
   $('plannerWeekTab').addEventListener('click',()=>setPlannerSubpage('week'));
   $('plannerHabitsTab').addEventListener('click',()=>setPlannerSubpage('habits'));
   $('habitAddForm').addEventListener('submit',addHabit);
   $('habitList').addEventListener('click',handleHabitAction);
   $('dayDialogList').addEventListener('click',event=>{if(!event.target.closest('#dayDialogMobileAddBtn'))return;const date=activeDayKind==='day'?activeDayDate:'',dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog('',date,token);});
-  $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=6;renderTasks();});
+  $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=12;renderTasks();});
   $('completedMoreBtn').addEventListener('click',()=>{completedVisibleLimit+=6;renderTasks();});
   $('dayDialogAddBtn').addEventListener('click',()=>{const date=activeDayKind==='day'?activeDayDate:'',dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog('',date,token);});
   $('dayDialogPrevBtn').addEventListener('click',()=>navigateDayDialog(-1));
@@ -2647,7 +2647,6 @@
   $('logoutBtn').addEventListener('click',signOut);
   $('syncNowBtn').addEventListener('click',syncNow);
   document.querySelectorAll('.refresh-sync-action').forEach(button=>button.addEventListener('click',refreshAndSync));
-  $('headerSettingsBtn').addEventListener('click',()=>setPage('settings'));
   document.querySelectorAll('[data-zoom-action]').forEach(button=>button.addEventListener('click',()=>changeZoom(button.dataset.zoomAction)));
   window.addEventListener('resize',applyZoom,{passive:true});
   window.visualViewport?.addEventListener('resize',applyZoom,{passive:true});
