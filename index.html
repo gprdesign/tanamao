@@ -91,6 +91,11 @@
     .day-heading strong { font-size:.76rem; font-weight:850; letter-spacing:.04em; }
     .day-heading time { color:var(--muted); font-size:.7rem; }
     .day-column[data-kind="overdue"] .day-heading strong { color:#ff9ca5; }
+    .very-overdue-card { display:flex; flex:none; align-items:center; justify-content:space-between; gap:8px; width:100%; min-height:76px; padding:12px; border:1px solid #a94958; border-radius:11px; background:linear-gradient(145deg,#5a2634,#321d2b); color:#ffd9df; text-align:left; cursor:pointer; }
+    .very-overdue-card strong { font-size:.78rem; font-weight:900; letter-spacing:.04em; }
+    .very-overdue-card span { display:grid; place-items:center; min-width:30px; height:30px; padding:0 7px; border-radius:999px; background:#ffffff18; font-size:.75rem; font-weight:900; }
+    .very-overdue-card:hover { border-color:#ff9ca5; filter:brightness(1.08); }
+    .very-overdue-card:focus-visible { outline:2px solid #ff9ca5; outline-offset:2px; }
     .day-column[data-kind="overdue"] .day-task-list { max-height:420px; overflow:auto; overscroll-behavior:contain; }
     .day-task-list { display:grid; align-content:start; gap:7px; min-height:58px; }
     .day-empty { display:grid; flex:1; min-height:52px; place-items:center; color:#8490a6; font-size:.72rem; text-align:center; }
@@ -254,7 +259,11 @@
     .day-heading-button { display:flex; align-items:center; justify-content:space-between; gap:4px; width:100%; min-width:0; padding:0; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
     .day-heading-button strong { overflow:hidden; font-size:.68rem; text-overflow:ellipsis; white-space:nowrap; }
     .day-heading-button time,.day-heading-button .day-count { flex:none; color:var(--muted); font-size:.62rem; }
-    .day-column[data-kind="overdue"] .day-heading-button strong { color:#ff9ca5; } 
+    .day-column[data-kind="overdue"] .day-heading-button strong { color:#ff9ca5; }
+    body.view-mobile[data-page="tasks"] .very-overdue-card { min-height:64px; padding:8px; }
+    body.view-mobile[data-page="tasks"] .very-overdue-card strong { font-size:.66rem; }
+    body.view-mobile[data-page="tasks"] .very-overdue-card span { min-width:25px; height:25px; }
+    body[data-view-mode="pc"][data-page="tasks"] .very-overdue-card { min-height:84px; }
     .day-task-preview { display:flex; flex:none; align-items:center; gap:4px; min-width:0; padding:0; border:0; background:transparent; color:var(--text); text-align:left; cursor:pointer; }
     .day-task-preview span:last-child { min-width:0; overflow:hidden; font-size:.68rem; line-height:1.15; text-overflow:ellipsis; white-space:nowrap; }
     .day-task-preview .tag-dot { width:7px; height:7px; }
@@ -1625,7 +1634,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=183" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=190',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=184" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=191',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

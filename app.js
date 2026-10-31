@@ -926,6 +926,7 @@
   function renderTasks() {
     const all=visibleTasks('tasks'), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
     const overdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
+    const veryOverdue=weekStart>=currentWeek?overdue.filter(task=>task.executionDate<addDays(todayKey(),-7)):[];
     $('weekLabel').textContent=formatWeekRange(weekStart);
     const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
     for (let i=0;i<7;i++) {
@@ -942,8 +943,9 @@
       const calendarEvents=cell.calendarEvents||[],eventLines=calendarEvents.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event${calendarEventClass(event,cell.date)}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
       const calendarBlock=eventLines?`<div class="planner-calendar-events planner-calendar-events-open-day" data-open-day="${escapeHTML(cell.date)}" role="button" tabindex="0" aria-label="Abrir detalhes do dia ${escapeHTML(formatDate(cell.date,{weekday:'long',day:'2-digit',month:'2-digit'}))}">${eventLines}</div><div class="planner-calendar-task-divider" role="separator" aria-label="Tarefas"></div>`:'';
       const empty=cell.kind==='overdue'?'Nada atrasado':'Sem tarefas';
+      const veryOverdueCard=cell.kind==='overdue'&&veryOverdue.length?`<button class="very-overdue-card" type="button" data-open-very-overdue aria-label="Abrir ${veryOverdue.length} tarefas muito atrasadas"><strong>MUITO ATRASADO</strong><span>${veryOverdue.length}</span></button>`:'';
       const extraParts=[];if(extraTaskCount>0)extraParts.push(`+${extraTaskCount} tarefas`);if(completed.length)extraParts.push(`${completed.length} concluídas`);const extra=extraParts.join(' • ');
-      return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div><div class="day-task-list" data-day-drop="${cell.date||''}">${calendarBlock}${cards||`<div class="day-empty">${empty}</div>`}</div>${extra?(viewMode==='mobile'?`<button class="day-extra-count" type="button" data-open-day="${escapeHTML(dayKey)}" aria-label="Abrir todas as tarefas de ${escapeHTML(label)}">${escapeHTML(extra)}</button>`:`<div class="day-extra-count">${escapeHTML(extra)}</div>`):''}</section>`;
+      return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div><div class="day-task-list" data-day-drop="${cell.date||''}">${calendarBlock}${cards||`<div class="day-empty">${empty}</div>`}</div>${veryOverdueCard}${extra?(viewMode==='mobile'?`<button class="day-extra-count" type="button" data-open-day="${escapeHTML(dayKey)}" aria-label="Abrir todas as tarefas de ${escapeHTML(label)}">${escapeHTML(extra)}</button>`:`<div class="day-extra-count">${escapeHTML(extra)}</div>`):''}</section>`;
     }).join('');
     const unplanned=open.filter(task=>!task.executionDate).sort(taskOrder), completed=all.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     $('unplannedCount').textContent=String(unplanned.length); $('completedCount').textContent=String(completed.length);
@@ -1477,12 +1479,12 @@
     note.updatedAt=nowISO();saveNotes();showToast(note.isPinned?'Nota fixada no topo.':'Nota desafixada.');
   }
   function renderDayDialog() {
-    const hint=$('dayDialogHint');hint.hidden=activeDayKind==='day';hint.textContent=activeDayKind==='overdue'?'Só aparecem aqui tarefas atrasadas de semanas anteriores à semana em exibição; as desta semana ficam nos dias correspondentes.':'Aqui aparecem todas as tarefas com data anterior a hoje.';
+    const hint=$('dayDialogHint');hint.hidden=activeDayKind==='day';hint.textContent=activeDayKind==='overdue'?'Só aparecem aqui tarefas atrasadas de semanas anteriores à semana em exibição; as desta semana ficam nos dias correspondentes.':activeDayKind==='very-overdue'?'Somente tarefas em aberto com data de execução há mais de 7 dias.':'Aqui aparecem todas as tarefas com data anterior a hoje.';
     const all=visibleTasks('tasks'),currentWeek=startOfWeek(todayKey()),today=todayKey();
-    const inDay=all.filter(task=>activeDayKind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:activeDayKind==='all-overdue'?task.executionDate&&task.executionDate<today:task.executionDate===activeDayDate);
-    const open=inDay.filter(task=>!task.completedAt),completed=inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
-    if(activeDayKind==='all-overdue')sortOverdueTasks(open);else open.sort(taskOrder);
-    const lateMode=activeDayKind==='overdue'||activeDayKind==='all-overdue';
+    const inDay=all.filter(task=>activeDayKind==='overdue'?weekStart>=currentWeek&&task.executionDate&&task.executionDate<currentWeek:activeDayKind==='all-overdue'?task.executionDate&&task.executionDate<today:activeDayKind==='very-overdue'?task.executionDate&&task.executionDate<addDays(today,-7):task.executionDate===activeDayDate);
+    const open=inDay.filter(task=>!task.completedAt),completed=activeDayKind==='very-overdue'?[]:inDay.filter(task=>task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    if(activeDayKind==='all-overdue'||activeDayKind==='very-overdue')sortOverdueTasks(open);else open.sort(taskOrder);
+    const lateMode=activeDayKind==='overdue'||activeDayKind==='all-overdue'||activeDayKind==='very-overdue';
     const events=activeDayKind==='day'?getCalendarEventsForDate(activeDayDate):[];
     const eventLines=events.map(event=>{const time=calendarEventTimeLabel(event);return `<div class="planner-calendar-event${calendarEventClass(event,activeDayDate)}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>`;}).join('');
     const groups=[];
@@ -1498,10 +1500,11 @@
   }
   function renderDialogLists() { if ($('dayDialog')?.open) renderDayDialog(); }
   function openDayDialog(dayKey) {
-    activeDayKind=dayKey==='all-overdue'?'all-overdue':dayKey==='overdue'?'overdue':'day';
+    activeDayKind=dayKey==='all-overdue'?'all-overdue':dayKey==='very-overdue'?'very-overdue':dayKey==='overdue'?'overdue':'day';
     activeDayDate=activeDayKind==='day'&&isDateKey(dayKey)?dayKey:'';
     if(activeDayKind==='day'&&!activeDayDate)return;
-    $('dayDialogTitle').textContent=activeDayKind==='day'?formatDate(activeDayDate,{weekday:'long',day:'2-digit',month:'2-digit'}):'ATRASADO';
+    $('dayDialogTitle').textContent=activeDayKind==='day'?formatDate(activeDayDate,{weekday:'long',day:'2-digit',month:'2-digit'}):activeDayKind==='very-overdue'?'MUITO ATRASADO':'ATRASADO';
+    $('dayDialogOverdueTitle').textContent=activeDayKind==='very-overdue'?'MUITO ATRASADO':'ATRASADO';
     $('dayDialogAddBtn').hidden=activeDayKind!=='day';$('dayDialogPrevBtn').hidden=activeDayKind!=='day';$('dayDialogNextBtn').hidden=activeDayKind!=='day';dayDialogTouchStart=null;
     renderDayDialog(); showAppDialog($('dayDialog'));
   }
@@ -1832,6 +1835,8 @@
     if (edit) { openTaskDialog(edit.dataset.editTask); return; }
     const add=event.target.closest('[data-add-date]');
     if (add) { openTaskDialog('',add.dataset.addDate); return; }
+    const veryOverdue=event.target.closest('[data-open-very-overdue]');
+    if(veryOverdue){event.preventDefault();event.stopPropagation();openDayDialog('very-overdue');return;}
     const openDay=event.target.closest('[data-open-day]');
     if (openDay) { openDayDialog(openDay.dataset.openDay); return; }
   }
