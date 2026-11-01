@@ -103,18 +103,19 @@
     .kanban-empty { margin:0; padding:14px 7px; color:var(--muted); font-size:.72rem; text-align:center; }
     .kanban-doing { border-top:2px solid #8bafff; }
     .kanban-blocked { border-top:2px solid #ffb36b; }
-    .kanban-side-column { display:flex; flex-direction:column; min-width:0; max-height:calc(100dvh - 225px); gap:8px; }
-    .kanban-events-reminders,.kanban-done { display:flex; flex-direction:column; min-height:0; padding:9px; border:1px solid var(--line); border-radius:13px; background:rgba(20,27,45,.88); }
-    .kanban-events-reminders { flex:2 1 0; border-top:2px solid #a98bff; }
+    .kanban-side-column { display:flex; flex-direction:column; min-width:0; min-height:0; max-height:calc(100dvh - 210px); gap:8px; }
+    .kanban-side-tasks { display:flex; flex:2 1 0; flex-direction:column; min-height:0; gap:8px; }
+    .kanban-events-reminders,.kanban-reminders,.kanban-done { display:flex; flex-direction:column; min-height:0; padding:8px; border:1px solid var(--line); border-radius:13px; background:rgba(20,27,45,.88); }
+    .kanban-events-reminders { flex:1 1 0; border-top:2px solid #a98bff; }
+    .kanban-reminders { flex:1 1 0; border-top:2px solid #b783ff; }
     .kanban-done { flex:1 1 0; border-top:2px solid #73d6a2; }
-    .kanban-side-content { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); flex:1; min-height:0; gap:7px; overflow:hidden; }
-    .kanban-event-group,.kanban-reminder-group { display:flex; flex-direction:column; min-width:0; min-height:0; gap:4px; overflow:hidden; }
-    .kanban-group-title { flex:none; margin:0; color:var(--muted); font-size:.62rem; font-weight:850; letter-spacing:.04em; }
+    .kanban-events-content,.kanban-reminders-content,.kanban-column-list,.kanban-done-list { display:flex; flex:1 1 auto; flex-direction:column; min-height:0; overflow:auto; overscroll-behavior:contain; }
+    .kanban-event-group,.kanban-reminder-group { display:flex; flex:1 1 0; flex-direction:column; min-width:0; min-height:0; gap:3px; overflow:hidden; }
     .kanban-event-section,.kanban-reminder-section { display:flex; flex:1 1 0; flex-direction:column; min-height:0; overflow:hidden; opacity:.5; }
-    .kanban-reminder-section[data-reminder-section="overdue"] { flex:1.35 1 0; }
+    .kanban-reminder-section[data-reminder-section="overdue"] { flex:1.25 1 0; }
     .kanban-event-section h4,.kanban-reminder-section h4 { display:flex; flex:none; justify-content:space-between; gap:4px; margin:0 0 3px; font-size:.61rem; }
     .kanban-event-section h4 span,.kanban-reminder-section h4 span { color:var(--muted); }
-    .kanban-event-list,.kanban-reminder-list,.kanban-done-list { display:grid; align-content:start; gap:4px; min-height:0; overflow:auto; overscroll-behavior:contain; }
+    .kanban-event-list,.kanban-reminder-list { display:grid; align-content:start; gap:4px; min-height:0; overflow:auto; overscroll-behavior:contain; }
     .kanban-event-item { display:grid; grid-template-columns:auto minmax(0,1fr); gap:5px; padding:4px 5px; border-radius:7px; background:#111827; font-size:.62rem; line-height:1.2; overflow-wrap:anywhere; }
     .kanban-event-time { color:#c6b7ff; font-size:.58rem; font-weight:850; white-space:nowrap; }
     .kanban-reminder-item { min-width:0; padding:3px; border:1px solid #34415b; border-radius:8px; background:#111827; }
@@ -122,6 +123,26 @@
     .kanban-reminder-item .task-card { padding:2px; border:0; background:transparent; }
     .kanban-done-list .kanban-task { padding:4px; }
     .kanban-done-list .kanban-task .task-card { padding:1px; }
+    .kanban-side-column .kanban-empty { padding:4px 2px; font-size:.59rem; }
+    .kanban-title-button { padding:0; border:0; background:transparent; color:inherit; font:inherit; font-size:inherit; font-weight:inherit; letter-spacing:inherit; text-align:left; cursor:pointer; }
+    .kanban-title-button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+    .kanban-collapse-btn { display:grid; flex:none; place-items:center; width:28px; height:28px; min-height:28px; padding:0; border:1px solid #465673; border-radius:8px; background:#202b42; color:var(--muted); font-size:1rem; line-height:1; }
+    .kanban-column.is-collapsed,.kanban-subpanel.is-collapsed { align-self:start; max-height:44px; min-height:44px; height:44px; padding-top:5px; padding-bottom:5px; overflow:hidden; }
+    .kanban-column.is-collapsed .kanban-column-list,.kanban-subpanel.is-collapsed .kanban-events-content,.kanban-subpanel.is-collapsed .kanban-reminders-content { display:none; }
+    .kanban-column.is-collapsed .kanban-collapse-btn,.kanban-subpanel.is-collapsed .kanban-collapse-btn { transform:rotate(180deg); }
+    .kanban-side-column .kanban-subpanel.is-collapsed { flex:none; }
+    .kanban-fullscreen-head { display:flex; flex:none; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+    .kanban-fullscreen-head h2 { margin:0; font-size:1.05rem; }
+    .kanban-fullscreen-content { flex:1 1 auto; min-height:0; overflow:auto; }
+    #kanbanColumnDialog { position:fixed; inset:2.5dvh 2.5vw; width:95vw; max-width:none; height:95dvh; max-height:95dvh; margin:auto; padding:16px; }
+    #kanbanColumnDialog[open] { display:flex; flex-direction:column; }
+    #kanbanColumnDialog .kanban-column,#kanbanColumnDialog .kanban-side-column { max-height:none; min-height:0; height:100%; }
+    #kanbanColumnDialog .kanban-column-list,#kanbanColumnDialog .kanban-fullscreen-content>.kanban-column-list { flex:1 1 auto; overflow:auto; }
+    #kanbanColumnDialog .kanban-side-column { display:flex; flex-direction:column; }
+    #kanbanColumnDialog .kanban-side-tasks { flex:2 1 0; }
+    #kanbanColumnDialog .kanban-done { flex:1 1 0; }
+    .kanban-task .task-card { cursor:grab; }
+    .kanban-task .task-card:active { cursor:grabbing; }
     .kanban-side-column .kanban-empty { padding:4px 2px; font-size:.59rem; }
     .planner-week-view[hidden],.planner-kanban-view[hidden],.habits-view[hidden] { display:none !important; }
     .planner-week-view { display:none !important; }
@@ -244,11 +265,16 @@
       .home-stat span { font-size:.68rem; }
       .home-stat strong { font-size:1.35rem; }
       .week-grid { gap:6px; grid-auto-rows:minmax(128px,auto); }
-      body.view-mobile[data-page="tasks"] .kanban-board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,86%); grid-template-columns:none; min-height:0; height:calc(var(--app-zoom-height,100dvh) - 245px); align-items:stretch; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; }
-      body.view-mobile[data-page="tasks"] .kanban-column { min-height:0; max-height:none; scroll-snap-align:start; }
+      body.view-mobile[data-page="tasks"] .kanban-board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,86%); grid-template-columns:none; min-height:0; height:calc(var(--app-zoom-height,100dvh) - 145px); align-items:stretch; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; }
+      body.view-mobile[data-page="tasks"] .kanban-column,body.view-mobile[data-page="tasks"] .kanban-side-column { min-height:0; max-height:none; scroll-snap-align:start; }
       body.view-mobile[data-page="tasks"] .kanban-column-list { overflow-y:auto; }
+      body.view-mobile[data-page="tasks"] .kanban-side-tasks { flex:2 1 0; }
+      body.view-mobile[data-page="tasks"] .kanban-done { flex:1 1 0; }
       body.view-mobile[data-page="tasks"] .kanban-side-column { max-height:none; min-height:0; }
       body.view-mobile[data-page="tasks"] .kanban-events-reminders { flex:2 1 0; }
+      body.view-mobile[data-page="tasks"] .kanban-done { flex:1 1 0; }
+      body.view-mobile[data-page="tasks"] .kanban-side-column { max-height:none; min-height:0; }
+      body.view-mobile[data-page="tasks"] .kanban-side-tasks { flex:2 1 0; min-height:0; }
       body.view-mobile[data-page="tasks"] .kanban-done { flex:1 1 0; }
       body.view-mobile[data-page="tasks"] .planner-kanban-view { min-height:0; }
       .day-column { min-height:128px; padding:7px; }
@@ -1243,24 +1269,8 @@
     .view-mode-switch { display:inline-flex; flex:none; align-items:center; gap:2px; padding:3px; border:1px solid #394663; border-radius:10px; background:rgba(17,24,39,.9); }
     .view-mode-switch button { min-height:30px; padding:4px 7px; border:0; border-radius:7px; background:transparent; color:var(--muted); font-size:.67rem; font-weight:850; }
     .view-mode-switch button[aria-pressed="true"] { background:#789cf0; color:#10172a; }
-    /* Planner dock stack: main dock, section tabs, then week actions above them. */
-    body[data-page="tasks"] .wrap { padding-bottom:178px !important; }
-    body[data-page="tasks"] #plannerSubdock:not([hidden]) { position:fixed !important; left:50% !important; right:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px) + 56px + 7px) !important; transform:translateX(-50%) !important; z-index:30 !important; width:min(320px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:42px !important; margin:0 !important; display:grid !important; grid-template-columns:1fr 1fr !important; padding:4px !important; background:#111827 !important; }
-    body[data-page="tasks"] #plannerSubdock .planner-subdock-tab { width:100% !important; min-width:0 !important; min-height:32px !important; }
-    body[data-page="tasks"]:not(.planner-habits-active) #weekDock { position:fixed !important; left:50% !important; right:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px) + 56px + 7px + 42px + 6px) !important; transform:translateX(-50%) !important; z-index:31 !important; display:flex !important; flex-direction:row !important; align-items:center !important; justify-content:center !important; gap:6px !important; width:min(520px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:42px !important; height:42px !important; margin:0 !important; padding:3px 6px !important; }
-    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #prevWeekBtn,body[data-page="tasks"]:not(.planner-habits-active) #weekDock #nextWeekBtn { flex:none !important; width:38px !important; min-width:38px !important; height:34px !important; min-height:34px !important; padding:0 !important; font-size:1.15rem !important; }
-    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #weekLabel { flex:1 1 auto !important; width:auto !important; min-width:0 !important; font-size:.68rem !important; text-align:center !important; white-space:nowrap !important; }
-    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #weekDockAddTaskBtn { display:flex !important; flex:none !important; width:auto !important; min-width:92px !important; height:34px !important; min-height:34px !important; padding:0 10px !important; font-size:.68rem !important; }
-    body[data-page="tasks"].planner-habits-active #weekDock { display:none !important; }
-    body.view-mobile[data-page="tasks"] .wrap { padding-bottom:210px !important; }
-    body.view-mobile[data-page="tasks"] #plannerSubdock:not([hidden]) { bottom:calc(10px + env(safe-area-inset-bottom,0px) + 52px + 6px) !important; width:min(680px,calc(100% - 24px)) !important; min-height:48px !important; height:48px !important; }
-    body.view-mobile[data-page="tasks"] #plannerSubdock .planner-subdock-tab { height:38px !important; min-height:38px !important; font-size:.72rem !important; }
-    body.view-mobile[data-page="tasks"]:not(.planner-habits-active) #weekDock { display:grid !important; grid-template-columns:38px minmax(0,1fr) 38px auto !important; grid-template-rows:40px !important; bottom:calc(10px + env(safe-area-inset-bottom,0px) + 52px + 6px + 48px + 6px) !important; width:min(680px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:48px !important; height:48px !important; padding:3px 6px !important; }
-    body.view-mobile[data-page="tasks"] #weekDock #prevWeekBtn,body.view-mobile[data-page="tasks"] #weekDock #nextWeekBtn { width:36px !important; min-width:36px !important; height:36px !important; min-height:36px !important; }
-    body.view-mobile[data-page="tasks"] #weekDock #weekLabel { font-size:.62rem !important; }
-    body.view-mobile[data-page="tasks"] #weekDock #weekDockAddTaskBtn { grid-column:4 !important; grid-row:1 !important; min-width:82px !important; height:36px !important; min-height:36px !important; padding:0 8px !important; font-size:.61rem !important; }
-    body.view-mobile[data-page="tasks"] #weekDock .week-arrow-horizontal { display:inline !important; }
-    body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
+    body[data-page="tasks"] .wrap { padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)) !important; }
+    body[data-page="tasks"] #plannerSubdock,body[data-page="tasks"] #weekDock { display:none !important; }
     body.view-mobile .main-nav { grid-template-columns:repeat(5,minmax(0,1fr)); }
     body.view-mobile .nav-indicator { width:calc((100% - 32px)/5); }
     body.view-mobile .planner-income-panel { display:none !important; }
@@ -1275,7 +1285,7 @@
     body.view-mobile[data-page="tasks"] #weekDock #nextWeekBtn { grid-column:3; grid-row:1; width:34px; min-width:34px; height:34px; min-height:34px; padding:0; }
     body.view-mobile[data-page="tasks"].planner-expanded #weekGrid { flex:none; min-height:0; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; overflow:visible; padding-bottom:0; scroll-padding-bottom:0; }
     body.view-mobile[data-page="tasks"] { height:auto !important; min-height:100dvh; overflow-x:hidden !important; overflow-y:auto !important; }
-    body.view-mobile[data-page="tasks"] .wrap { display:block !important; height:auto !important; min-height:100dvh; overflow:visible !important; padding-bottom:calc(188px + env(safe-area-inset-bottom,0px)) !important; }
+    body.view-mobile[data-page="tasks"] .wrap { display:block !important; height:auto !important; min-height:100dvh; overflow:visible !important; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)) !important; }
     body.view-mobile[data-page="tasks"] #tasksPage.active { display:block !important; flex:none !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
     body.view-mobile[data-page="tasks"] .planner-section-buttons { position:sticky; top:calc(env(safe-area-inset-top,0px) + 4px); z-index:24; gap:6px; margin:0 0 8px; padding:4px; border:1px solid #394663; border-radius:12px; background:rgba(11,16,32,.94); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 6px 18px #0006; }
     body.view-mobile #dayDialog .day-dialog-actions { display:none !important; }
@@ -1310,8 +1320,8 @@
     body.view-mobile[data-page="notes"] #notesDock { justify-content:stretch !important; }
     body.view-mobile[data-page="notes"] #notesDock .subdock-add-note { display:flex !important; align-items:center !important; justify-content:center !important; flex:1 1 0 !important; width:100% !important; height:40px !important; min-height:40px !important; border:0 !important; border-radius:11px !important; background:transparent !important; color:var(--text) !important; font-size:.72rem !important; }
     .planner-subdock { display:flex !important; flex:none; visibility:visible !important; opacity:1 !important; position:relative; z-index:30; gap:4px; width:max-content; max-width:100%; margin:0 0 10px; padding:4px; border:1px solid var(--line); border-radius:13px; background:#111827; }
-    body[data-page="tasks"] #plannerSubdock:not([hidden]) { display:flex !important; visibility:visible !important; }
-    body[data-page="tasks"] #plannerWeekTab,body[data-page="tasks"] #plannerHabitsTab { display:flex !important; flex:1 1 0; align-items:center; justify-content:center; visibility:visible !important; opacity:1 !important; }
+    body[data-page="tasks"] #plannerSubdock { display:none !important; visibility:hidden !important; }
+    body[data-page="tasks"] #plannerWeekTab,body[data-page="tasks"] #plannerHabitsTab { display:none !important; }
     .planner-week-view:not([hidden]) { display:flex; flex:1 1 auto; flex-direction:column; min-height:0; overflow:hidden; }
     .planner-week-view[hidden],.habits-view[hidden] { display:none !important; }
     body[data-view-mode="pc"][data-page="tasks"] .habits-view:not([hidden]) { flex:1 1 auto; min-height:0; overflow-y:auto; }
@@ -1581,7 +1591,6 @@
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
       <div class="page-heading"><div><h2>KANBAN</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
-      <nav class="planner-subdock" id="plannerSubdock" aria-label="Seções do planner"><button type="button" class="planner-subdock-tab" id="plannerWeekTab" aria-pressed="false">KANBAN</button><button type="button" class="planner-subdock-tab" id="plannerHabitsTab" aria-pressed="false">HÁBITOS</button></nav>
       <div id="plannerKanbanView" class="planner-kanban-view"><div class="kanban-board" id="kanbanBoard" aria-label="Quadro Kanban"></div></div>
       <div id="plannerWeekView" class="planner-week-view" hidden>
       <div class="planner-section-buttons">
@@ -1593,6 +1602,7 @@
       <section class="planner-income-panel" aria-label="Próximos recebimentos"><div class="planner-income-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span>30 DIAS · TOQUE PARA VER</span></div><div class="planner-income-lines" id="plannerUpcomingIncomeList" aria-live="polite"></div></section>
       <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações da semana"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-add-task" id="weekDockAddTaskBtn" type="button">＋ TAREFA</button></nav></div>
       </div>
+      <dialog id="kanbanColumnDialog" class="app-dialog kanban-fullscreen-dialog" aria-label="Coluna do Kanban"></dialog>
       <div id="kanbanCompletionConfirm" class="day-completion-confirm" role="alertdialog" aria-modal="true" aria-labelledby="kanbanCompletionText" hidden><span id="kanbanCompletionText" class="day-completion-confirm-text">Concluir esta tarefa?</span><div id="kanbanCompletionChecklistWarning" class="day-completion-checklist-warning" hidden><strong>Checklist ainda em aberto:</strong><ul id="kanbanCompletionChecklistItems"></ul></div><div class="day-completion-confirm-actions"><button class="btn ghost small" id="kanbanCompletionCancelBtn" type="button">CANCELAR</button><button class="btn small confirm-yes" id="kanbanCompletionConfirmBtn" type="button">CONCLUIR</button></div></div>
       <section class="habits-view" id="plannerHabitsView" hidden aria-label="Hábitos"><div class="habits-heading"><div><h3>HÁBITOS</h3><p id="habitsDateLabel"></p></div><strong id="habitsProgress" aria-live="polite">0/0</strong></div><form id="habitAddForm" class="habit-add-form"><label class="sr-only" for="habitNameInput">Nome do hábito</label><input id="habitNameInput" type="text" maxlength="80" placeholder="Novo hábito…" required><button class="btn primary" type="submit">＋ ADICIONAR</button></form><div id="habitList" class="habit-list" aria-live="polite"></div></section>
     </section>
@@ -1676,7 +1686,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=188" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=195',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=190" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=197',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
