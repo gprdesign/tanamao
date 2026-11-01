@@ -121,6 +121,7 @@
   let activeDayKind = 'day';
   let activeDayDate = '';
   let pendingDayTaskCompletionId = '';
+  let pendingKanbanCompletionId='';
   let dayDialogTouchStart = null;
   let authBusy = false;
   let taskDialogDirty = false;
@@ -925,16 +926,30 @@
   function getKanbanState(task){return task.completedAt?'done':(['todo','doing','blocked'].includes(userSettings.taskKanbanStates?.[task.id])?userSettings.taskKanbanStates[task.id]:'todo');}
   function setKanbanState(taskId,state){
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task||!['todo','doing','blocked','done'].includes(state))return;
-    if(state==='done'){const nextDate=toggleComplete(task.id,true);showTaskCompletionToast(nextDate);renderKanban();return;}
-    const previousState=getKanbanState(task);
+    if(state==='done'){openKanbanTaskCompletionConfirm(task.id);return;}
+    const previousState=getKanbanState(task),previousBlocker=userSettings.taskKanbanBlockers?.[task.id]||'';
     if(task.completedAt){toggleComplete(task.id,false);}
     userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:state};
     if(state==='blocked'){
-      const note=window.prompt('O que está travando esta tarefa?',userSettings.taskKanbanBlockers?.[task.id]||'');
+      const note=window.prompt('O que está travando esta tarefa?',previousBlocker);
       if(note===null){userSettings.taskKanbanStates[task.id]=previousState;saveUserSettings();renderKanban();return;}
       userSettings.taskKanbanBlockers={...(userSettings.taskKanbanBlockers||{}),[task.id]:note.trim().slice(0,240)};
     }else if(userSettings.taskKanbanBlockers?.[task.id]){const blockers={...userSettings.taskKanbanBlockers};delete blockers[task.id];userSettings.taskKanbanBlockers=blockers;}
     saveUserSettings();renderKanban();
+  }
+  function openKanbanTaskCompletionConfirm(taskId){
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);if(!task)return;
+    pendingKanbanCompletionId=task.id;const open=normalizeTaskSubtasks(task.subtasks).filter(item=>!item.completed);
+    $('kanbanCompletionText').textContent=`Concluir “${task.title}”?`;
+    $('kanbanCompletionChecklistWarning').hidden=!open.length;
+    $('kanbanCompletionChecklistItems').innerHTML=open.map(item=>`<li>${escapeHTML(item.text)}</li>`).join('');
+    $('kanbanCompletionConfirm').classList.toggle('has-open-subtasks',Boolean(open.length));
+    $('kanbanCompletionConfirm').hidden=false;$('kanbanCompletionConfirmBtn').focus();
+  }
+  function closeKanbanTaskCompletionConfirm(){pendingKanbanCompletionId='';$('kanbanCompletionConfirm').hidden=true;}
+  function confirmKanbanTaskCompletion(){
+    const task=tasks.find(item=>item.id===pendingKanbanCompletionId&&!item.deletedAt&&!item.completedAt);if(!task){closeKanbanTaskCompletionConfirm();return;}
+    const nextDate=toggleComplete(task.id,true);closeKanbanTaskCompletionConfirm();showTaskCompletionToast(nextDate);renderKanban();
   }
   function renderKanban(){
     const all=visibleTasks('tasks').filter(task=>!task.deletedAt),board=$('kanbanBoard');if(!board)return;
@@ -942,7 +957,7 @@
       const items=all.filter(task=>getKanbanState(task)===state).sort(taskOrder);
       const cards=items.map(task=>{
         const card=taskCard(task,{canMove:false,late:false,draggable:false});
-        const stateControl=state==='done'?'':`<label class="kanban-state-control"><span class="sr-only">Mover ${escapeHTML(task.title)} para outra etapa</span><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}">${KANBAN_STATES.filter(([key])=>key!=='done').map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}</select></label>`;
+        const stateControl=state==='done'?'':`<div class="kanban-card-controls"><label class="kanban-state-control"><span class="sr-only">Mover ${escapeHTML(task.title)} para outra etapa</span><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}">${KANBAN_STATES.filter(([key])=>key!=='done').map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}</select></label><button class="kanban-complete-btn" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button></div>`;
         const blocker=state==='blocked'&&userSettings.taskKanbanBlockers?.[task.id]?`<small class="kanban-blocker">${escapeHTML(userSettings.taskKanbanBlockers[task.id])}</small>`:'';
         return `<div class="kanban-task">${card}${blocker}${stateControl}</div>`;
       }).join('');
@@ -2609,7 +2624,10 @@
     setPage(button.dataset.page);
   });
   $('kanbanBoard').addEventListener('change',event=>{const control=event.target.closest('[data-kanban-state]');if(control)setKanbanState(control.dataset.kanbanState,control.value);});
-  $('kanbanBoard').addEventListener('click',event=>{if(event.target.closest('[data-kanban-add]'))openTaskDialog();else handleTaskClick(event);});
+  $('kanbanBoard').addEventListener('click',event=>{if(event.target.closest('[data-kanban-add]')){openTaskDialog();return;}const complete=event.target.closest('[data-kanban-complete]');if(complete){openKanbanTaskCompletionConfirm(complete.dataset.kanbanComplete);return;}handleTaskClick(event);});
+  $('kanbanCompletionCancelBtn').addEventListener('click',closeKanbanTaskCompletionConfirm);
+  $('kanbanCompletionConfirmBtn').addEventListener('click',confirmKanbanTaskCompletion);
+  $('kanbanCompletionConfirm').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closeKanbanTaskCompletionConfirm();}});
   document.addEventListener('click',event=>{
     if(event.target.closest('[data-open-basecamp-calendar]')){renderBasecampCalendarWeek();return;}const calendarTask=event.target.closest('[data-basecamp-task]');if(calendarTask){openTaskDialog(calendarTask.dataset.basecampTask);return;}const calendarDay=event.target.closest('[data-basecamp-open-day]');if(calendarDay){setPage('tasks');setPlannerSubpage('week',false);setWeek(calendarDay.dataset.basecampOpenDay);openDayDialog(calendarDay.dataset.basecampOpenDay);return;}
     if(event.target.closest('[data-basecamp-clients]')){setPage('tasks');jumpToCurrentWeek();return;}const clientFilter=event.target.closest('[data-basecamp-client-filter]');if(clientFilter){setPage('tasks');setTagFilter(clientFilter.dataset.basecampClientFilter,false);jumpToCurrentWeek();return;}
