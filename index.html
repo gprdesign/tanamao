@@ -127,7 +127,7 @@
     .kanban-title-button { padding:0; border:0; background:transparent; color:inherit; font:inherit; font-size:inherit; font-weight:inherit; letter-spacing:inherit; text-align:left; cursor:pointer; }
     .kanban-title-button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
     .kanban-collapse-btn { display:grid; flex:none; place-items:center; width:28px; height:28px; min-height:28px; padding:0; border:1px solid #465673; border-radius:8px; background:#202b42; color:var(--muted); font-size:1rem; line-height:1; }
-    .kanban-column.is-collapsed,.kanban-subpanel.is-collapsed { align-self:start; max-height:44px; min-height:44px; height:44px; padding-top:5px; padding-bottom:5px; overflow:hidden; }
+    .kanban-column.is-collapsed,.kanban-subpanel.is-collapsed { flex:none !important; align-self:start; max-height:44px; min-height:44px; height:44px; padding-top:5px; padding-bottom:5px; overflow:hidden; }
     .kanban-column.is-collapsed .kanban-column-list,.kanban-subpanel.is-collapsed .kanban-events-content,.kanban-subpanel.is-collapsed .kanban-reminders-content { display:none; }
     .kanban-column.is-collapsed .kanban-collapse-btn,.kanban-subpanel.is-collapsed .kanban-collapse-btn { transform:rotate(180deg); }
     .kanban-side-column .kanban-subpanel.is-collapsed { flex:none; }
@@ -1689,7 +1689,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=191" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=198',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=192" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=199',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
