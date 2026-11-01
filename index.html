@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="Seu planner semanal, Tá na mão!">
+  <meta name="description" content="Seu quadro de tarefas, Tá na mão!">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Tá na mão!">
   <link rel="manifest" href="./manifest.webmanifest?v=3">
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-  <title>Tá na mão! | Planner semanal</title>
+  <title>Tá na mão! | Kanban</title>
   <style>
     :root { color-scheme:dark; --bg:#0b1020; --panel:#141b2d; --panel2:#1b2439; --line:#2b3650; --text:#f4f6fb; --muted:#aab4c8; --accent:#8bafff; --green:#73d6a2; --red:#ff8b8b; }
     * { box-sizing:border-box; }
@@ -84,6 +84,26 @@
     .planning-content { padding:0 9px 9px; }
     .planning-hint { padding:0 3px 8px; color:var(--muted); font-size:.74rem; }
     .week-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:minmax(142px,auto); gap:9px; }
+    .kanban-board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; min-height:min(68dvh,720px); align-items:stretch; }
+    .kanban-column { display:flex; flex-direction:column; min-width:0; max-height:calc(100dvh - 225px); padding:10px; border:1px solid var(--line); border-radius:13px; background:rgba(20,27,45,.88); }
+    .kanban-column-head { display:flex; align-items:center; gap:7px; flex:none; min-height:32px; margin-bottom:8px; padding-bottom:7px; border-bottom:1px solid #39466380; }
+    .kanban-column-head h3 { flex:1; min-width:0; margin:0; font-size:.78rem; font-weight:900; letter-spacing:.04em; }
+    .kanban-column-head>span { display:grid; place-items:center; min-width:24px; height:24px; border-radius:999px; background:#ffffff12; color:var(--muted); font-size:.68rem; font-weight:800; }
+    .kanban-add { flex:none; width:28px; height:28px; border:1px solid #465673; border-radius:8px; background:#202b42; }
+    .kanban-column-list { display:grid; align-content:start; gap:8px; overflow-y:auto; min-height:0; overscroll-behavior:contain; }
+    .kanban-task { display:grid; gap:5px; min-width:0; padding:7px; border:1px solid #34415b; border-radius:11px; background:#111827; }
+    .kanban-task .task-card { padding:3px; border:0; background:transparent; cursor:default; }
+    .kanban-task .task-card:hover { border:0; background:transparent; }
+    .kanban-task .task-touch-handle { display:none; }
+    .kanban-state-control select { min-height:30px; padding:4px 8px; border-radius:8px; font-size:.68rem; font-weight:800; }
+    .kanban-blocker { display:block; padding:5px 7px; border-left:2px solid #ffb36b; color:#ffcf9b; font-size:.68rem; overflow-wrap:anywhere; }
+    .kanban-empty { margin:0; padding:14px 7px; color:var(--muted); font-size:.72rem; text-align:center; }
+    .kanban-doing { border-top:2px solid #8bafff; }
+    .kanban-blocked { border-top:2px solid #ffb36b; }
+    .kanban-done { border-top:2px solid #73d6a2; }
+    .planner-week-view[hidden],.planner-kanban-view[hidden],.habits-view[hidden] { display:none !important; }
+    .planner-week-view { display:none !important; }
+    .planner-subdock { display:none !important; }
     .day-column { display:flex; flex-direction:column; min-width:0; min-height:142px; padding:10px; border:1px solid var(--line); border-radius:13px; background:rgba(20,27,45,.94); }
     .day-column[data-kind="overdue"] { border-color:#7d414b; background:linear-gradient(145deg,#271b2a,#171a2a); }
     .day-column.is-today { border-color:#8bafff99; box-shadow:inset 0 0 0 1px #8bafff33; }
@@ -174,7 +194,7 @@
     .form-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
     .status-text { min-height:1.2em; margin-top:8px; color:var(--muted); font-size:.78rem; }
     .status-text.error { color:#ff9ca5; }
-    .main-nav { position:fixed; z-index:20; left:50%; bottom:calc(10px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; width:min(640px,calc(100% - 20px)); padding:5px; border:1px solid #394663; border-radius:15px; background:#111827ee; backdrop-filter:blur(14px); box-shadow:0 10px 30px #0008; }
+    .main-nav { position:fixed; z-index:20; left:50%; bottom:calc(10px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; width:min(720px,calc(100% - 20px)); padding:5px; border:1px solid #394663; border-radius:15px; background:#111827ee; backdrop-filter:blur(14px); box-shadow:0 10px 30px #0008; }
     .nav-btn { display:grid; place-items:center; gap:1px; min-height:48px; padding:4px 3px; border:0; border-radius:10px; background:transparent; color:var(--muted); font-size:.69rem; font-weight:750; }
     .nav-btn[aria-current="page"] { background:#202b42; color:var(--text); }
     .nav-icon { display:grid; place-items:center; width:24px; height:24px; font-size:1.05rem; line-height:1; }
@@ -202,6 +222,10 @@
       .home-stat span { font-size:.68rem; }
       .home-stat strong { font-size:1.35rem; }
       .week-grid { gap:6px; grid-auto-rows:minmax(128px,auto); }
+      body.view-mobile[data-page="tasks"] .kanban-board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,86%); grid-template-columns:none; min-height:0; height:calc(var(--app-zoom-height,100dvh) - 245px); align-items:stretch; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; }
+      body.view-mobile[data-page="tasks"] .kanban-column { min-height:0; max-height:none; scroll-snap-align:start; }
+      body.view-mobile[data-page="tasks"] .kanban-column-list { overflow-y:auto; }
+      body.view-mobile[data-page="tasks"] .planner-kanban-view { min-height:0; }
       .day-column { min-height:128px; padding:7px; }
       .day-heading strong { font-size:.7rem; }
       .day-heading time { font-size:.64rem; }
@@ -512,7 +536,7 @@
     .week-dock { bottom:calc(82px + env(safe-area-inset-bottom,0px)); min-height:48px; padding:5px 9px; gap:8px; }
     .week-dock .btn { min-height:38px; padding:6px 10px; font-size:.8rem; }
     #weekLabel { font-size:.8rem; }
-    .main-nav { width:min(680px,calc(100% - 24px)); padding:6px; gap:5px; border-radius:17px; }
+    .main-nav { width:min(760px,calc(100% - 24px)); padding:6px; gap:5px; border-radius:17px; }
     .nav-btn { min-height:56px; gap:3px; padding:5px 4px; font-size:.76rem; }
     .nav-icon { font-size:1.18rem; }
     .nav-indicator { top:6px; bottom:6px; }
@@ -547,7 +571,7 @@
       .app-header { margin-bottom:18px; }
       .brand-icon { width:54px; height:54px; }
       .header-actions .btn { min-height:48px; padding:9px 14px; font-size:.86rem; }
-      .main-nav { width:min(760px,calc(100% - 40px)); padding:8px; }
+      .main-nav { width:min(820px,calc(100% - 40px)); padding:8px; }
       .nav-btn { min-height:62px; font-size:.82rem; }
       .nav-icon { font-size:1.28rem; }
       .week-dock { width:min(620px,calc(100% - 48px)); min-height:54px; }
@@ -880,7 +904,7 @@
     .filter-tag-option[aria-pressed="true"]::after { color:#ffd166; }
     .notes-dock { display:flex; align-items:stretch; justify-content:space-between; gap:6px; }
     .notes-dock .subdock-add-note { flex:1 1 0; min-width:0; }
-    .main-nav { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .main-nav { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); }
     .main-nav .nav-btn { width:100%; min-width:0; }
     .note-card { display:flex !important; flex-direction:column; }
     .note-card-header { flex:none; }
@@ -1212,8 +1236,8 @@
     body.view-mobile[data-page="tasks"] #weekDock #weekDockAddTaskBtn { grid-column:4 !important; grid-row:1 !important; min-width:82px !important; height:36px !important; min-height:36px !important; padding:0 8px !important; font-size:.61rem !important; }
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-horizontal { display:inline !important; }
     body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
-    body.view-mobile .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)); }
-    body.view-mobile .nav-indicator { width:calc((100% - 24px)/4); }
+    body.view-mobile .main-nav { grid-template-columns:repeat(5,minmax(0,1fr)); }
+    body.view-mobile .nav-indicator { width:calc((100% - 32px)/5); }
     body.view-mobile .planner-income-panel { display:none !important; }
     body.view-mobile[data-page="tasks"] .week-grid { grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-auto-rows:max-content; align-content:start; gap:8px; overflow-y:auto; overscroll-behavior:contain; }
     body.view-mobile[data-page="tasks"] .day-column { min-height:0; padding:9px 10px; overflow:visible; }
@@ -1339,8 +1363,8 @@
     body.view-mobile .brand p { font-size:calc(.62rem - 2pt); }
     #calendarStatus.is-error { color:#ffb0b8; }
     /* PC now opens directly on Planner; Finance cards use a consistent responsive order. */
-    .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
-    .nav-indicator { width:calc((100% - 24px)/4); }
+    .main-nav { grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
+    .nav-indicator { width:calc((100% - 32px)/5); }
     .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .finance-new-entry-row { width:100%; margin:0 0 10px; }
     #financeAddBtn { display:flex; width:auto; min-width:250px; min-height:46px; justify-content:center; padding:8px 12px; font-size:.84rem; }
@@ -1373,22 +1397,10 @@
     body[data-view-mode="pc"][data-page="tasks"].planner-expanded #planningList { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
     body[data-view-mode="pc"][data-page="tasks"].planner-expanded #weekBoard { flex:1 1 auto !important; min-height:250px !important; }
     body[data-view-mode="pc"][data-page="tasks"] .planner-section-buttons { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
-    /* Final dock order override: week controls > Planner tabs > main dock. */
-    body[data-page="tasks"] .wrap { padding-bottom:190px !important; }
-    body[data-page="tasks"] #plannerSubdock:not([hidden]) { position:fixed !important; top:auto !important; left:50% !important; right:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px) + 62px + 8px) !important; transform:translateX(-50%) !important; z-index:35 !important; display:grid !important; grid-template-columns:1fr 1fr !important; width:min(360px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:42px !important; height:42px !important; margin:0 !important; }
-    body[data-page="tasks"] #plannerSubdock .planner-subdock-tab { display:flex !important; width:100% !important; min-width:0 !important; min-height:32px !important; align-items:center !important; justify-content:center !important; }
-    body[data-page="tasks"]:not(.planner-habits-active) #weekDock { position:fixed !important; top:auto !important; left:50% !important; right:auto !important; bottom:calc(8px + env(safe-area-inset-bottom,0px) + 62px + 8px + 42px + 6px) !important; transform:translateX(-50%) !important; z-index:36 !important; display:flex !important; flex-direction:row !important; align-items:center !important; justify-content:center !important; gap:6px !important; width:min(520px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:42px !important; height:42px !important; margin:0 !important; padding:3px 6px !important; }
-    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #prevWeekBtn,body[data-page="tasks"]:not(.planner-habits-active) #weekDock #nextWeekBtn { flex:none !important; width:38px !important; min-width:38px !important; height:34px !important; min-height:34px !important; padding:0 !important; font-size:1.15rem !important; }
-    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #weekLabel { flex:1 1 auto !important; width:auto !important; min-width:0 !important; font-size:.68rem !important; text-align:center !important; white-space:nowrap !important; }
-    body[data-page="tasks"]:not(.planner-habits-active) #weekDock #weekDockAddTaskBtn { display:flex !important; flex:none !important; width:auto !important; min-width:92px !important; height:34px !important; min-height:34px !important; padding:0 10px !important; font-size:.68rem !important; }
-    body[data-page="tasks"].planner-habits-active #weekDock { display:none !important; }
-    body.view-mobile[data-page="tasks"] .wrap { padding-bottom:232px !important; }
-    body.view-mobile[data-page="tasks"] #plannerSubdock:not([hidden]) { bottom:calc(10px + env(safe-area-inset-bottom,0px) + 62px + 8px) !important; width:min(680px,calc(100% - 24px)) !important; min-height:48px !important; height:48px !important; }
-    body.view-mobile[data-page="tasks"] #plannerSubdock .planner-subdock-tab { height:38px !important; min-height:38px !important; font-size:.72rem !important; }
-    body.view-mobile[data-page="tasks"]:not(.planner-habits-active) #weekDock { position:fixed !important; top:auto !important; left:50% !important; right:auto !important; bottom:calc(10px + env(safe-area-inset-bottom,0px) + 62px + 8px + 48px + 6px) !important; transform:translateX(-50%) !important; z-index:36 !important; display:grid !important; grid-template-columns:38px minmax(0,1fr) 38px auto !important; grid-template-rows:40px !important; width:min(680px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:48px !important; height:48px !important; padding:3px 6px !important; }
-    body.view-mobile[data-page="tasks"] #weekDock #weekDockAddTaskBtn { grid-column:4 !important; grid-row:1 !important; min-width:82px !important; height:36px !important; min-height:36px !important; padding:0 8px !important; font-size:.61rem !important; }
-    body.view-mobile[data-page="tasks"] #weekDock .week-arrow-horizontal { display:inline !important; }
-    body.view-mobile[data-page="tasks"] #weekDock .week-arrow-vertical { display:none !important; }
+    body[data-page="tasks"] .wrap { padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)) !important; }
+    body[data-page="tasks"] #plannerSubdock,body[data-page="tasks"] #weekDock,body[data-page="tasks"] #plannerWeekView { display:none !important; }
+    body[data-page="tasks"] #plannerKanbanView:not([hidden]),body[data-page="tasks"] #plannerHabitsView:not([hidden]) { display:block !important; }
+    body.view-mobile[data-page="tasks"] .kanban-board { height:calc(var(--app-zoom-height,100dvh) - 180px); }
     @media(max-width:600px) {
       body.view-mobile[data-page="tasks"] #tasksPage.active { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
       body.view-mobile[data-page="tasks"] .planner-week-view:not([hidden]) { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
@@ -1468,8 +1480,8 @@
         .basecamp-message-actions { display:flex; gap:3px; }
         .basecamp-card-arrow { font-size:.64rem; }
         .basecamp-file-shortcuts { margin-top:auto; }
-    body.view-mobile .main-nav,body:not(.view-mobile) .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
-    body.view-mobile .nav-indicator,body:not(.view-mobile) .nav-indicator { width:calc((100% - 24px)/4) !important; }
+    body.view-mobile .main-nav,body:not(.view-mobile) .main-nav { grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
+    body.view-mobile .nav-indicator,body:not(.view-mobile) .nav-indicator { width:calc((100% - 32px)/5) !important; }
     body.view-mobile[data-page="tasks"] #planningList { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
     @media(max-width:640px) {
       .basecamp-card { min-height:155px; padding:7px; }
@@ -1520,7 +1532,7 @@
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
   <main class="wrap">
     <header class="app-header">
-      <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div class="brand-title-copy"><h1>Tá na mão!</h1><p>Seu planner semanal</p></div><h1 class="brand-mobile-title">TNM!</h1></div>
+      <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div class="brand-title-copy"><h1>Tá na mão!</h1><p>Seu quadro de tarefas</p></div><h1 class="brand-mobile-title">TNM!</h1></div>
       <div class="header-actions"><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div></div>
     </header>
 
@@ -1541,9 +1553,10 @@
     </section>
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
-      <div class="page-heading"><div><h2>PLANNER</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
-      <nav class="planner-subdock" id="plannerSubdock" aria-label="Seções do planner"><button type="button" class="planner-subdock-tab" id="plannerWeekTab" aria-pressed="true">SEMANA</button><button type="button" class="planner-subdock-tab" id="plannerHabitsTab" aria-pressed="false">HÁBITOS</button></nav>
-      <div id="plannerWeekView" class="planner-week-view">
+      <div class="page-heading"><div><h2>KANBAN</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <nav class="planner-subdock" id="plannerSubdock" aria-label="Seções do planner"><button type="button" class="planner-subdock-tab" id="plannerWeekTab" aria-pressed="false">KANBAN</button><button type="button" class="planner-subdock-tab" id="plannerHabitsTab" aria-pressed="false">HÁBITOS</button></nav>
+      <div id="plannerKanbanView" class="planner-kanban-view"><div class="kanban-board" id="kanbanBoard" aria-label="Quadro Kanban"></div></div>
+      <div id="plannerWeekView" class="planner-week-view" hidden>
       <div class="planner-section-buttons">
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
         <button class="planner-section-btn completed-box" id="completedBtn" type="button" aria-expanded="false" aria-controls="completedPanel">Concluídas <span id="completedCount">0</span></button>
@@ -1608,7 +1621,8 @@
 
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
-    <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">PLANNER</span></button>
+    <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">KANBAN</span></button>
+    <button class="nav-btn" type="button" data-page="habits"><span class="nav-icon" aria-hidden="true">✓</span><span>HÁBITOS</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
     <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
     <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>CONFIGS</span></button>

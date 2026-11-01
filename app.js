@@ -421,7 +421,7 @@
     const calendarIds=Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[];
     const rawHabits=Array.isArray(source.plannerHabits)?source.plannerHabits:[],plannerHabits=rawHabits.map(item=>({id:String(item?.id||''),name:String(item?.name||'').trim().slice(0,80),doneDates:Array.isArray(item?.doneDates)?Array.from(new Set(item.doneDates.map(String).filter(isDateKey))):[]})).filter(item=>item.id&&item.name).slice(0,100);
     const rawBasecamp=Array.isArray(source.basecampMessages)?source.basecampMessages:[],basecampMessages=rawBasecamp.map(item=>{const text=String(item?.text||'').trim().slice(0,5000),createdAt=String(item?.createdAt||''),id=String(item?.id||'');return text&&id?{id,text,tagId:String(item?.tagId||''),createdAt,updatedAt:String(item?.updatedAt||createdAt)}:null;}).filter(Boolean).slice(0,100);
-    return {summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,plannerHabits,basecampMessages,plannerSubpage:source.plannerSubpage==='habits'?'habits':'week',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    return {summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,plannerHabits,basecampMessages,taskKanbanStates:source.taskKanbanStates&&typeof source.taskKanbanStates==='object'&&!Array.isArray(source.taskKanbanStates)?source.taskKanbanStates:{},taskKanbanBlockers:source.taskKanbanBlockers&&typeof source.taskKanbanBlockers==='object'&&!Array.isArray(source.taskKanbanBlockers)?source.taskKanbanBlockers:{},plannerSubpage:source.plannerSubpage==='habits'?'habits':'kanban',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -674,15 +674,21 @@
     toastTimer=setTimeout(()=>node.classList.add('hidden'),duration);
   }
   function plannerDockButton(){return $('plannerBasecampSwitch')||$('plannerNavLabel')?.closest('.nav-btn')||null;}
+  function isDockButtonSelected(button,page=currentPage){
+    if(button===plannerDockButton())return page==='home'||page==='tasks'&&userSettings.plannerSubpage!=='habits';
+    if(button.dataset.page==='habits')return page==='tasks'&&userSettings.plannerSubpage==='habits';
+    return button.dataset.page===page;
+  }
   function updateNavIndicator(page=currentPage) {
-    const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]')),planner=plannerDockButton();
+    const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]'));
     if(!indicator)return;
-    const target=buttons.find(button=>button===planner?['home','tasks'].includes(page):button.dataset.page===page);
+    const target=buttons.find(button=>isDockButtonSelected(button,page));
     if(!target){indicator.hidden=true;return;}
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
     if(page==='home')page='tasks';
+    if(page==='habits'){page='tasks';userSettings.plannerSubpage='habits';}
     if(!['tasks','finance','notes','settings'].includes(page))return;
     const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
@@ -695,9 +701,8 @@
       const active=node.id===`${page}Page`;node.classList.toggle('active',active);
       if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
     });
-    const plannerButton=plannerDockButton();
-    document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(button===plannerButton?['home','tasks'].includes(page):button.dataset.page===page)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
-    const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent=page==='home'?'BASECAMP':'PLANNER';
+    document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(isDockButtonSelected(button,page))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
+    const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent=page==='home'?'BASECAMP':'KANBAN';
     updateNavIndicator(page);renderFilterButton();
     if(page==='home'){renderHome();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
     if(page==='tasks'){renderTasks();setPlannerSubpage(userSettings.plannerSubpage,false);}
@@ -899,13 +904,6 @@
     if(duplicate){$('tagManagerStatus').textContent='Já existe outra tag com esse nome.';return;}
     tag.name=name;if(validTagColor(color))tag.color=color;tag.updatedAt=nowISO();saveTags();renderTagManager();$('tagManagerStatus').textContent=`Tag ${tag.name} atualizada.`;
   }
-  function setPlannerSubpage(page,save=true) {
-    const next=page==='habits'?'habits':'week';userSettings.plannerSubpage=next;
-    const week=next==='week';$('plannerWeekView').hidden=!week;$('plannerHabitsView').hidden=week;document.body.classList.toggle('planner-habits-active',!week);
-    $('plannerWeekTab').setAttribute('aria-pressed',String(week));$('plannerHabitsTab').setAttribute('aria-pressed',String(!week));
-    if(next==='habits')renderHabits();
-    if(save)saveUserSettings();
-  }
   function renderHabits() {
     const date=todayKey(),habits=normalizeUserSettings(userSettings).plannerHabits||[],done=habits.filter(item=>item.doneDates.includes(date)).length;
     $('habitsDateLabel').textContent=formatDate(date,{weekday:'long',day:'numeric',month:'long'});$('habitsProgress').textContent=`${done}/${habits.length}`;
@@ -923,7 +921,44 @@
     else habits=habits.map(item=>{if(item.id!==id)return item;const dates=new Set(item.doneDates),today=todayKey();dates.has(today)?dates.delete(today):dates.add(today);return {...item,doneDates:Array.from(dates).sort()};});
     userSettings.plannerHabits=habits;saveUserSettings();renderHabits();
   }
+  const KANBAN_STATES=[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO'],['done','FEITO']];
+  function getKanbanState(task){return task.completedAt?'done':(['todo','doing','blocked'].includes(userSettings.taskKanbanStates?.[task.id])?userSettings.taskKanbanStates[task.id]:'todo');}
+  function setKanbanState(taskId,state){
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task||!['todo','doing','blocked','done'].includes(state))return;
+    if(state==='done'){const nextDate=toggleComplete(task.id,true);showTaskCompletionToast(nextDate);renderKanban();return;}
+    const previousState=getKanbanState(task);
+    if(task.completedAt){toggleComplete(task.id,false);}
+    userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:state};
+    if(state==='blocked'){
+      const note=window.prompt('O que está travando esta tarefa?',userSettings.taskKanbanBlockers?.[task.id]||'');
+      if(note===null){userSettings.taskKanbanStates[task.id]=previousState;saveUserSettings();renderKanban();return;}
+      userSettings.taskKanbanBlockers={...(userSettings.taskKanbanBlockers||{}),[task.id]:note.trim().slice(0,240)};
+    }else if(userSettings.taskKanbanBlockers?.[task.id]){const blockers={...userSettings.taskKanbanBlockers};delete blockers[task.id];userSettings.taskKanbanBlockers=blockers;}
+    saveUserSettings();renderKanban();
+  }
+  function renderKanban(){
+    const all=visibleTasks('tasks').filter(task=>!task.deletedAt),board=$('kanbanBoard');if(!board)return;
+    board.innerHTML=KANBAN_STATES.map(([state,label])=>{
+      const items=all.filter(task=>getKanbanState(task)===state).sort(taskOrder);
+      const cards=items.map(task=>{
+        const card=taskCard(task,{canMove:false,late:false,draggable:false});
+        const stateControl=state==='done'?'':`<label class="kanban-state-control"><span class="sr-only">Mover ${escapeHTML(task.title)} para outra etapa</span><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}">${KANBAN_STATES.filter(([key])=>key!=='done').map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}</select></label>`;
+        const blocker=state==='blocked'&&userSettings.taskKanbanBlockers?.[task.id]?`<small class="kanban-blocker">${escapeHTML(userSettings.taskKanbanBlockers[task.id])}</small>`:'';
+        return `<div class="kanban-task">${card}${blocker}${stateControl}</div>`;
+      }).join('');
+      return `<section class="kanban-column kanban-${state}" data-kanban-column="${state}"><header class="kanban-column-head"><h3>${label}</h3><span>${items.length}</span>${state==='todo'?'<button class="kanban-add" type="button" data-kanban-add aria-label="Adicionar tarefa">＋</button>':''}</header><div class="kanban-column-list">${cards||`<p class="kanban-empty">${state==='blocked'?'Nada travado.':state==='done'?'Nada concluído ainda.':'Nenhuma tarefa.'}</p>`}</div></section>`;
+    }).join('');
+  }
+  function setPlannerSubpage(page,save=true) {
+    const next=page==='habits'?'habits':'kanban';userSettings.plannerSubpage=next;
+    const kanban=next==='kanban';$('plannerWeekView').hidden=true;$('plannerKanbanView').hidden=!kanban;$('plannerHabitsView').hidden=kanban;document.body.classList.toggle('planner-habits-active',!kanban);
+    $('plannerWeekTab')?.setAttribute('aria-pressed',String(kanban));$('plannerHabitsTab')?.setAttribute('aria-pressed',String(!kanban));
+    if(next==='habits')renderHabits();else renderKanban();
+    if(save)saveUserSettings();
+    if(currentPage==='tasks'){document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(isDockButtonSelected(button,'tasks'))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});updateNavIndicator('tasks');}
+  }
   function renderTasks() {
+    renderKanban();
     const all=visibleTasks('tasks'), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
     const allOverdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
     const veryOverdue=allOverdue.filter(task=>task.executionDate<addDays(todayKey(),-7));
@@ -1737,7 +1772,9 @@
   function toggleComplete(taskId,complete) {
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task)return null;
     const wasCompleted=Boolean(task.completedAt);task.completedAt=complete?nowISO():null;task.updatedAt=nowISO();
-    const nextDate=complete&&!wasCompleted?createNextTaskOccurrence(task):null;saveTasks();return nextDate;
+    if(complete){userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:'done'};}
+    else if(userSettings.taskKanbanStates?.[task.id]==='done'){const states={...userSettings.taskKanbanStates};delete states[task.id];userSettings.taskKanbanStates=states;}
+    const nextDate=complete&&!wasCompleted?createNextTaskOccurrence(task):null;saveTasks();if(session?.user?.id)scheduleSync();return nextDate;
   }
   function showTaskCompletionToast(nextDate) {
     showToast(nextDate?`Tarefa concluída. Próxima ocorrência: ${formatDate(nextDate,{weekday:'short',day:'2-digit',month:'2-digit'})}.`:'Tarefa concluída.');
@@ -2567,9 +2604,12 @@
   };
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
+    if(button.dataset.page==='tasks'){setPlannerSubpage('kanban');setPage('tasks');return;}
+    if(button.dataset.page==='habits'){setPlannerSubpage('habits');setPage('tasks');return;}
     setPage(button.dataset.page);
-    if(button===$('plannerBasecampSwitch')&&document.body.dataset.page==='tasks')jumpToCurrentWeek();
   });
+  $('kanbanBoard').addEventListener('change',event=>{const control=event.target.closest('[data-kanban-state]');if(control)setKanbanState(control.dataset.kanbanState,control.value);});
+  $('kanbanBoard').addEventListener('click',event=>{if(event.target.closest('[data-kanban-add]'))openTaskDialog();else handleTaskClick(event);});
   document.addEventListener('click',event=>{
     if(event.target.closest('[data-open-basecamp-calendar]')){renderBasecampCalendarWeek();return;}const calendarTask=event.target.closest('[data-basecamp-task]');if(calendarTask){openTaskDialog(calendarTask.dataset.basecampTask);return;}const calendarDay=event.target.closest('[data-basecamp-open-day]');if(calendarDay){setPage('tasks');setPlannerSubpage('week',false);setWeek(calendarDay.dataset.basecampOpenDay);openDayDialog(calendarDay.dataset.basecampOpenDay);return;}
     if(event.target.closest('[data-basecamp-clients]')){setPage('tasks');jumpToCurrentWeek();return;}const clientFilter=event.target.closest('[data-basecamp-client-filter]');if(clientFilter){setPage('tasks');setTagFilter(clientFilter.dataset.basecampClientFilter,false);jumpToCurrentWeek();return;}
@@ -2616,7 +2656,7 @@
   $('planningBtn').addEventListener('click',()=>togglePlannerSection('planning'));
   $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
   $('weekDockAddTaskBtn').addEventListener('click',()=>openTaskDialog());
-  $('plannerWeekTab').addEventListener('click',()=>setPlannerSubpage('week'));
+  $('plannerWeekTab').addEventListener('click',()=>setPlannerSubpage('kanban'));
   $('plannerHabitsTab').addEventListener('click',()=>setPlannerSubpage('habits'));
   $('habitAddForm').addEventListener('submit',addHabit);
   $('habitList').addEventListener('click',handleHabitAction);
