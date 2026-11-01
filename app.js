@@ -925,8 +925,9 @@
   }
   function renderTasks() {
     const all=visibleTasks('tasks'), open=all.filter(task=>!task.completedAt), currentWeek=startOfWeek(todayKey());
-    const overdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
-    const veryOverdue=weekStart>=currentWeek?overdue.filter(task=>task.executionDate<addDays(todayKey(),-7)):[];
+    const allOverdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
+    const veryOverdue=allOverdue.filter(task=>task.executionDate<addDays(todayKey(),-7));
+    const overdue=allOverdue.filter(task=>task.executionDate>=addDays(todayKey(),-7));
     $('weekLabel').textContent=formatWeekRange(weekStart);
     const cells=[{kind:'overdue',title:'ATRASADO',date:'',tasks:overdue}];
     for (let i=0;i<7;i++) {
@@ -945,7 +946,7 @@
       const empty=cell.kind==='overdue'?'Nada atrasado':'Sem tarefas';
       const veryOverdueCard=cell.kind==='overdue'&&veryOverdue.length?`<button class="very-overdue-card" type="button" data-open-very-overdue aria-label="Abrir ${veryOverdue.length} tarefas muito atrasadas"><strong>MUITO ATRASADO</strong><span>${veryOverdue.length}</span></button>`:'';
       const extraParts=[];if(extraTaskCount>0)extraParts.push(`+${extraTaskCount} tarefas`);if(completed.length)extraParts.push(`${completed.length} concluídas`);const extra=extraParts.join(' • ');
-      return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div>${veryOverdueCard}<div class="day-task-list" data-day-drop="${cell.date||''}">${calendarBlock}${cards||`<div class="day-empty">${empty}</div>`}</div>${extra?(viewMode==='mobile'?`<button class="day-extra-count" type="button" data-open-day="${escapeHTML(dayKey)}" aria-label="Abrir todas as tarefas de ${escapeHTML(label)}">${escapeHTML(extra)}</button>`:`<div class="day-extra-count">${escapeHTML(extra)}</div>`):''}</section>`;
+      return `<section class="day-column${cell.date===todayKey()?' is-today':''}" data-kind="${cell.kind}"${cell.date?` data-date="${cell.date}"`:''} aria-label="${label}${dateText?` ${dateText}`:''}"><div class="day-head-row"><button class="day-heading-button" type="button" data-open-day="${dayKey}" aria-label="Abrir ${label}${dateText?` ${dateText}`:''}"><strong>${label}</strong>${dateText?`<time>${dateText}</time>`:''}<span class="day-count">${cell.tasks.length}</span></button>${cell.date?`<button class="icon-btn day-add" type="button" data-add-date="${cell.date}" aria-label="Nova tarefa em ${cell.title} ${dateText}">＋</button>`:''}</div><div class="day-task-list" data-day-drop="${cell.date||''}">${calendarBlock}${cards||`<div class="day-empty">${empty}</div>`}</div>${veryOverdueCard}${extra?(viewMode==='mobile'?`<button class="day-extra-count" type="button" data-open-day="${escapeHTML(dayKey)}" aria-label="Abrir todas as tarefas de ${escapeHTML(label)}">${escapeHTML(extra)}</button>`:`<div class="day-extra-count">${escapeHTML(extra)}</div>`):''}</section>`;
     }).join('');
     const unplanned=open.filter(task=>!task.executionDate).sort(taskOrder), completed=all.filter(task=>Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     $('unplannedCount').textContent=String(unplanned.length); $('completedCount').textContent=String(completed.length);
