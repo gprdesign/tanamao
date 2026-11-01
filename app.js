@@ -2028,7 +2028,7 @@
     document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
     if(!target)return;
     let destination;
-    if(drag.kind==='task')destination=target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
+    if(drag.kind==='task')destination=target.closest('.task-card[data-task-id],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
     else if(drag.kind==='checklist'){
       const sourceGroup=drag.card.closest('[data-task-checklist-group]'),targetGroup=target.closest('[data-task-checklist-group]');
       if(sourceGroup&&targetGroup&&sourceGroup.dataset.taskChecklistGroup===targetGroup.dataset.taskChecklistGroup)destination=target.closest('[data-task-checklist-row]')||targetGroup;
@@ -2624,8 +2624,8 @@
   };
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
-    if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';setPage('tasks');return;}
-    if(button.dataset.page==='habits'){userSettings.plannerSubpage='habits';setPage('tasks');return;}
+    if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
+    if(button.dataset.page==='habits'){userSettings.plannerSubpage='habits';saveUserSettings();setPage('tasks');return;}
     setPage(button.dataset.page);
   });
   function handleKanbanChange(event){const control=event.target.closest('[data-kanban-state]');if(control)setKanbanState(control.dataset.kanbanState,control.value);}
