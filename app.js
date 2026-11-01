@@ -922,8 +922,16 @@
     else habits=habits.map(item=>{if(item.id!==id)return item;const dates=new Set(item.doneDates),today=todayKey();dates.has(today)?dates.delete(today):dates.add(today);return {...item,doneDates:Array.from(dates).sort()};});
     userSettings.plannerHabits=habits;saveUserSettings();renderHabits();
   }
-  const KANBAN_STATES=[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO'],['done','FEITO']];
+  const KANBAN_STATES=[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO']];
   function getKanbanState(task){return task.completedAt?'done':(['todo','doing','blocked'].includes(userSettings.taskKanbanStates?.[task.id])?userSettings.taskKanbanStates[task.id]:'todo');}
+  function renderKanbanSideColumn(all){
+    const today=todayKey(),tomorrow=addDays(today,1),overdue=all.filter(task=>task.recurrence&&!task.completedAt&&(task.executionDate||task.recurrence.anchorDate)<today).sort(taskOrder),todayReminders=all.filter(task=>task.recurrence&&!task.completedAt&&(task.executionDate||task.recurrence.anchorDate)===today).sort(taskOrder),tomorrowReminders=all.filter(task=>task.recurrence&&!task.completedAt&&(task.executionDate||task.recurrence.anchorDate)===tomorrow).sort(taskOrder);
+    const reminderSection=(title,items,key)=>`<section class="kanban-reminder-section" data-reminder-section="${key}"><h4>${title}<span>${items.length}</span></h4><div class="kanban-reminder-list">${items.length?items.map(task=>`<div class="kanban-reminder-item"><span class="kanban-reminder-badge">LEMBRETE</span>${taskCard(task,{canMove:false,late:false,draggable:false})}</div>`).join(''):'<p class="kanban-empty">Nenhum lembrete.</p>'}</div></section>`;
+    const eventSection=(date,title)=>{const events=getCalendarEventsForDate(date);return `<section class="kanban-event-section"><h4>${title}<span>${events.length}</span></h4><div class="kanban-event-list">${events.length?events.map(item=>{const time=calendarEventTimeLabel(item);return `<div class="kanban-event-item"><span class="kanban-event-time">${time?escapeHTML(time):'DIA TODO'}</span><span>${escapeHTML(item.title)}</span></div>`;}).join(''):'<p class="kanban-empty">Sem eventos.</p>'}</div></section>`;};
+    const done=all.filter(task=>!task.recurrence&&task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+    const doneCards=done.map(task=>`<div class="kanban-task">${taskCard(task,{canMove:false,late:false,draggable:false})}</div>`).join('');
+    return `<section class="kanban-side-column"><section class="kanban-events-reminders"><header class="kanban-column-head"><h3>EVENTOS E LEMBRETES</h3></header><div class="kanban-side-content"><div class="kanban-event-group"><h4 class="kanban-group-title">GOOGLE CALENDAR</h4>${eventSection(today,'HOJE')}${eventSection(tomorrow,'AMANHÃ')}</div><div class="kanban-reminder-group"><h4 class="kanban-group-title">LEMBRETES</h4>${reminderSection('ATRASADOS',overdue,'overdue')}${reminderSection('HOJE',todayReminders,'today')}${reminderSection('AMANHÃ',tomorrowReminders,'tomorrow')}</div></div></section><section class="kanban-done"><header class="kanban-column-head"><h3>FEITO</h3><span>${done.length}</span></header><div class="kanban-done-list">${doneCards||'<p class="kanban-empty">Nada concluído ainda.</p>'}</div></section></section>`;
+  }
   function setKanbanState(taskId,state){
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task||!['todo','doing','blocked','done'].includes(state))return;
     if(state==='done'){openKanbanTaskCompletionConfirm(task.id);return;}
@@ -953,16 +961,17 @@
   }
   function renderKanban(){
     const all=visibleTasks('tasks').filter(task=>!task.deletedAt),board=$('kanbanBoard');if(!board)return;
+    const active=all.filter(task=>!task.recurrence&&!task.completedAt);
     board.innerHTML=KANBAN_STATES.map(([state,label])=>{
-      const items=all.filter(task=>getKanbanState(task)===state).sort(taskOrder);
+      const items=active.filter(task=>getKanbanState(task)===state).sort(taskOrder);
       const cards=items.map(task=>{
         const card=taskCard(task,{canMove:false,late:false,draggable:false});
-        const stateControl=state==='done'?'':`<div class="kanban-card-controls"><label class="kanban-state-control"><span class="sr-only">Mover ${escapeHTML(task.title)} para outra etapa</span><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}">${KANBAN_STATES.filter(([key])=>key!=='done').map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}</select></label><button class="kanban-complete-btn" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button></div>`;
+        const stateControl=`<div class="kanban-card-controls"><label class="kanban-state-control"><span class="sr-only">Mover ${escapeHTML(task.title)} para outra etapa</span><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}">${KANBAN_STATES.map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}</select></label><button class="kanban-complete-btn" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button></div>`;
         const blocker=state==='blocked'&&userSettings.taskKanbanBlockers?.[task.id]?`<small class="kanban-blocker">${escapeHTML(userSettings.taskKanbanBlockers[task.id])}</small>`:'';
         return `<div class="kanban-task">${card}${blocker}${stateControl}</div>`;
       }).join('');
-      return `<section class="kanban-column kanban-${state}" data-kanban-column="${state}"><header class="kanban-column-head"><h3>${label}</h3><span>${items.length}</span>${state==='todo'?'<button class="kanban-add" type="button" data-kanban-add aria-label="Adicionar tarefa">＋</button>':''}</header><div class="kanban-column-list">${cards||`<p class="kanban-empty">${state==='blocked'?'Nada travado.':state==='done'?'Nada concluído ainda.':'Nenhuma tarefa.'}</p>`}</div></section>`;
-    }).join('');
+      return `<section class="kanban-column kanban-${state}" data-kanban-column="${state}"><header class="kanban-column-head"><h3>${label}</h3><span>${items.length}</span>${state==='todo'?'<button class="kanban-add" type="button" data-kanban-add aria-label="Adicionar tarefa">＋</button>':''}</header><div class="kanban-column-list">${cards||`<p class="kanban-empty">${state==='blocked'?'Nada travado.':'Nenhuma tarefa.'}</p>`}</div></section>`;
+    }).join('')+renderKanbanSideColumn(all);
   }
   function setPlannerSubpage(page,save=true) {
     const next=page==='habits'?'habits':'kanban';userSettings.plannerSubpage=next;

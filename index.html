@@ -103,7 +103,26 @@
     .kanban-empty { margin:0; padding:14px 7px; color:var(--muted); font-size:.72rem; text-align:center; }
     .kanban-doing { border-top:2px solid #8bafff; }
     .kanban-blocked { border-top:2px solid #ffb36b; }
-    .kanban-done { border-top:2px solid #73d6a2; }
+    .kanban-side-column { display:flex; flex-direction:column; min-width:0; max-height:calc(100dvh - 225px); gap:8px; }
+    .kanban-events-reminders,.kanban-done { display:flex; flex-direction:column; min-height:0; padding:9px; border:1px solid var(--line); border-radius:13px; background:rgba(20,27,45,.88); }
+    .kanban-events-reminders { flex:2 1 0; border-top:2px solid #a98bff; }
+    .kanban-done { flex:1 1 0; border-top:2px solid #73d6a2; }
+    .kanban-side-content { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); flex:1; min-height:0; gap:7px; overflow:hidden; }
+    .kanban-event-group,.kanban-reminder-group { display:flex; flex-direction:column; min-width:0; min-height:0; gap:4px; overflow:hidden; }
+    .kanban-group-title { flex:none; margin:0; color:var(--muted); font-size:.62rem; font-weight:850; letter-spacing:.04em; }
+    .kanban-event-section,.kanban-reminder-section { display:flex; flex:1 1 0; flex-direction:column; min-height:0; overflow:hidden; opacity:.5; }
+    .kanban-reminder-section[data-reminder-section="overdue"] { flex:1.35 1 0; }
+    .kanban-event-section h4,.kanban-reminder-section h4 { display:flex; flex:none; justify-content:space-between; gap:4px; margin:0 0 3px; font-size:.61rem; }
+    .kanban-event-section h4 span,.kanban-reminder-section h4 span { color:var(--muted); }
+    .kanban-event-list,.kanban-reminder-list,.kanban-done-list { display:grid; align-content:start; gap:4px; min-height:0; overflow:auto; overscroll-behavior:contain; }
+    .kanban-event-item { display:grid; grid-template-columns:auto minmax(0,1fr); gap:5px; padding:4px 5px; border-radius:7px; background:#111827; font-size:.62rem; line-height:1.2; overflow-wrap:anywhere; }
+    .kanban-event-time { color:#c6b7ff; font-size:.58rem; font-weight:850; white-space:nowrap; }
+    .kanban-reminder-item { min-width:0; padding:3px; border:1px solid #34415b; border-radius:8px; background:#111827; }
+    .kanban-reminder-badge { display:inline-flex; margin:1px 2px 2px; padding:2px 5px; border-radius:999px; background:#a98bff24; color:#c7b8ff; font-size:.52rem; font-weight:900; letter-spacing:.04em; }
+    .kanban-reminder-item .task-card { padding:2px; border:0; background:transparent; }
+    .kanban-done-list .kanban-task { padding:4px; }
+    .kanban-done-list .kanban-task .task-card { padding:1px; }
+    .kanban-side-column .kanban-empty { padding:4px 2px; font-size:.59rem; }
     .planner-week-view[hidden],.planner-kanban-view[hidden],.habits-view[hidden] { display:none !important; }
     .planner-week-view { display:none !important; }
     .planner-subdock { display:none !important; }
@@ -228,6 +247,9 @@
       body.view-mobile[data-page="tasks"] .kanban-board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,86%); grid-template-columns:none; min-height:0; height:calc(var(--app-zoom-height,100dvh) - 245px); align-items:stretch; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; }
       body.view-mobile[data-page="tasks"] .kanban-column { min-height:0; max-height:none; scroll-snap-align:start; }
       body.view-mobile[data-page="tasks"] .kanban-column-list { overflow-y:auto; }
+      body.view-mobile[data-page="tasks"] .kanban-side-column { max-height:none; min-height:0; }
+      body.view-mobile[data-page="tasks"] .kanban-events-reminders { flex:2 1 0; }
+      body.view-mobile[data-page="tasks"] .kanban-done { flex:1 1 0; }
       body.view-mobile[data-page="tasks"] .planner-kanban-view { min-height:0; }
       .day-column { min-height:128px; padding:7px; }
       .day-heading strong { font-size:.7rem; }
@@ -1654,7 +1676,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=187" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=194',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=188" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=195',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
