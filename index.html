@@ -1679,6 +1679,27 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
 @media (min-width:601px) {
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-title { display:block !important; min-width:0 !important; color:#f2efff !important; font-size:.78rem !important; line-height:1.25 !important; overflow-wrap:anywhere !important; }
 }
+
+/* PC Kanban final layout: Agenda + Doing full-height; bottom-right split for Blocked/Done. */
+@media (min-width:601px) {
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard { grid-template-columns:minmax(0,.85fr) repeat(2,minmax(0,1.1fr)) !important; grid-template-rows:minmax(0,1fr) minmax(0,1fr) !important; grid-template-areas:"agenda doing todo" "agenda doing lower" !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-events-reminders { grid-area:agenda !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing { grid-area:doing !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-todo { grid-area:todo !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower { grid-area:lower !important; display:flex !important; flex-direction:column !important; gap:8px !important; min-width:0 !important; min-height:0 !important; overflow:hidden !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-blocked { display:flex !important; flex:1 1 0 !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done { display:flex !important; flex:0 0 40px !important; width:100% !important; height:40px !important; min-width:0 !important; min-height:40px !important; max-height:40px !important; padding:6px 10px !important; overflow:hidden !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done .kanban-column-head { min-height:26px !important; height:26px !important; margin:0 !important; padding:0 0 4px !important; border-bottom:0 !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done .kanban-column-list { display:none !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-blocked .kanban-column-list { flex:1 1 auto !important; min-height:0 !important; overflow-x:hidden !important; overflow-y:auto !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-blocked .kanban-column-head { flex:none !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing .kanban-column-list { flex:1 1 auto !important; min-height:0 !important; overflow-x:hidden !important; overflow-y:auto !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing .task-card .task-open { -webkit-line-clamp:3 !important; max-height:3.7em !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower .kanban-collapse-btn { display:none !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower .kanban-done .kanban-title-button { pointer-events:auto !important; }
+}
+@media (max-width:600px) { body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower { display:contents !important; } }
+
 </style>
 </head>
 <body>
@@ -1803,7 +1824,7 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=219" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=227',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=220" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=228',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
