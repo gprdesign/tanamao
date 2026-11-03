@@ -354,13 +354,13 @@
     if(frequency==='weekly'&&!weekdays.length)weekdays.push(getIsoWeekday(anchorDate));
     return {frequency,interval,weekdays:frequency==='weekly'?weekdays:[],anchorDate,until:isDateKey(value.until)?String(value.until):null,seriesId:String(value.seriesId||taskId||'')};
   }
-  function normalizeTaskSubtasks(value) {
+  function normalizeTaskSubtasks(value,fallbackCreatedAt=nowISO()) {
     if(!Array.isArray(value))return [];
     const rows=value.slice(0,50).map((item,index)=>{
       const raw=item&&typeof item==='object'?item:{text:item},text=String(raw.text??raw.title??'').trim().slice(0,180);
       if(!text)return null;
       const rawOrder=raw.order,rawDoneOrder=raw.completedOrder;
-      return {id:String(raw.id||makeId()),text,completed:raw.completed===true||raw.done===true||raw.checked===true,order:rawOrder!==null&&rawOrder!==''&&Number.isFinite(Number(rawOrder))?Number(rawOrder):index,completedOrder:rawDoneOrder!==null&&rawDoneOrder!==''&&Number.isFinite(Number(rawDoneOrder))?Number(rawDoneOrder):null};
+      const comments=Array.isArray(raw.comments)?raw.comments.map(comment=>{const entry=comment&&typeof comment==='object'?comment:{text:comment};return{id:String(entry.id||makeId()),text:String(entry.text||'').trim().slice(0,4000),createdAt:String(entry.createdAt||entry.created_at||fallbackCreatedAt)};}).filter(comment=>comment.text).slice(0,100);return {id:String(raw.id||makeId()),text,completed:raw.completed===true||raw.done===true||raw.checked===true,createdAt:String(raw.createdAt||raw.created_at||fallbackCreatedAt),completedAt:raw.completedAt||raw.completed_at?String(raw.completedAt||raw.completed_at):null,comments,order:rawOrder!==null&&rawOrder!==''&&Number.isFinite(Number(rawOrder))?Number(rawOrder):index,completedOrder:rawDoneOrder!==null&&rawDoneOrder!==''&&Number.isFinite(Number(rawDoneOrder))?Number(rawDoneOrder):null};
     }).filter(Boolean).sort((a,b)=>a.order-b.order);
     let doneOrder=0;
     return rows.map((item,index)=>{
@@ -375,14 +375,14 @@
     if (!value || typeof value !== 'object' || !String(value.title || '').trim()) return null;
     const legacyArea=value.area==='outros' ? 'outro' : (['vida','trabalho'].includes(value.area) ? value.area : 'vida');
     const storedTag=value.tagId || value.tag_id,id=String(value.id||makeId()),rawDate=value.executionDate||value.execution_date;
-    const executionDate=isDateKey(rawDate)?String(rawDate):null;
+    const executionDate=isDateKey(rawDate)?String(rawDate):null,createdAt=String(value.createdAt||value.created_at||nowISO());
     return {
       id, title:String(value.title).trim().slice(0,180),
       content:String(value.content ?? value.details ?? '').slice(0,20000),link:normalizeLink(value.link ?? value.link_url ?? ''),
-      tagId:String(storedTag==='outros' ? 'outro' : (storedTag || legacyArea)),executionDate,subtasks:normalizeTaskSubtasks(value.subtasks),
+      tagId:String(storedTag==='outros' ? 'outro' : (storedTag || legacyArea)),executionDate,subtasks:normalizeTaskSubtasks(value.subtasks,createdAt),
       recurrence:normalizeRecurrence(value.recurrence,executionDate,id),
       sortOrder:Number.isFinite(Number(value.sortOrder ?? value.sort_order)) ? Number(value.sortOrder ?? value.sort_order) : 0,
-      createdAt:String(value.createdAt || value.created_at || nowISO()), updatedAt:String(value.updatedAt || value.updated_at || value.createdAt || value.created_at || nowISO()),
+      createdAt, updatedAt:String(value.updatedAt || value.updated_at || createdAt || nowISO()),
       completedAt:value.completedAt || value.completed_at ? String(value.completedAt || value.completed_at) : null,
       deletedAt:value.deletedAt || value.deleted_at ? String(value.deletedAt || value.deleted_at) : null
     };
@@ -632,6 +632,7 @@
     const date=dateAtNoon(key);
     return date ? date.toLocaleDateString('pt-BR',options) : '';
   }
+  function checklistTimestamp(value){const date=new Date(value||'');if(!Number.isFinite(date.getTime()))return '';const weekday=date.toLocaleDateString('pt-BR',{weekday:'short'}).replace(/\./g,'');const day=date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});const time=date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});return `${weekday}, ${day} · ${time}`;}
   function formatWeekRange(start) {
     const end=addDays(start,6);
     const a=dateAtNoon(start), b=dateAtNoon(end);
@@ -1619,7 +1620,7 @@
   function readTaskChecklistDraft(includeEmpty=false) {
     return Array.from($('taskChecklistList').querySelectorAll('[data-task-checklist-row]')).map((row,index)=>{
       const completed=Boolean(row.querySelector('[data-task-checklist-done]')?.checked),order=Number(row.dataset.checklistOrder),completedOrder=Number(row.dataset.checklistCompletedOrder);
-      return {id:String(row.dataset.checklistId||makeId()),text:String(row.querySelector('[data-task-checklist-text]')?.value||'').trim().slice(0,180),completed,order:Number.isFinite(order)?order:index,completedOrder:completed&&Number.isFinite(completedOrder)?completedOrder:null};
+      let comments=[];try{comments=JSON.parse(row.dataset.checklistComments||'[]');}catch{}return {id:String(row.dataset.checklistId||makeId()),text:String(row.querySelector('[data-task-checklist-text]')?.value||'').trim().slice(0,180),completed,createdAt:String(row.dataset.checklistCreatedAt||nowISO()),comments:Array.isArray(comments)?comments:[],completedAt:completed?(row.dataset.checklistCompletedAt||null):null,order:Number.isFinite(order)?order:index,completedOrder:completed&&Number.isFinite(completedOrder)?completedOrder:null};
     }).filter(item=>includeEmpty||item.text).slice(0,50).sort((a,b)=>a.order-b.order);
   }
 
@@ -1629,21 +1630,22 @@
     textarea.style.height=`${Math.max(40,textarea.scrollHeight)}px`;
   }
   function taskChecklistRowHTML(item,index,completed) {
-    const id=String(item.id||makeId()),order=Number.isFinite(Number(item.order))?Number(item.order):index,completedOrder=Number.isFinite(Number(item.completedOrder))?Number(item.completedOrder):index;
-    return `<div class="task-checklist-row${completed?' is-complete':''}" data-task-checklist-row data-checklist-id="${escapeHTML(id)}" data-checklist-order="${order}" data-checklist-completed="${completed?'true':'false'}" data-checklist-completed-order="${completedOrder}" draggable="false"><button class="btn ghost small task-checklist-drag" type="button" draggable="true" data-task-checklist-drag aria-label="Arrastar etapa ${index+1}" title="Arrastar etapa">⠿</button><input type="checkbox" data-task-checklist-done aria-label="Marcar etapa ${index+1} como concluída" ${completed?'checked':''}><textarea data-task-checklist-text maxlength="180" rows="1" placeholder="Etapa ${index+1}" aria-label="Texto da etapa ${index+1}">${escapeHTML(item.text||'')}</textarea><button class="btn ghost small task-checklist-remove" type="button" data-remove-task-checklist-item aria-label="Remover etapa ${index+1}" title="Remover etapa">×</button></div>`;
+    const id=String(item.id||makeId()),order=Number.isFinite(Number(item.order))?Number(item.order):index,completedOrder=Number.isFinite(Number(item.completedOrder))?Number(item.completedOrder):index,createdAt=String(item.createdAt||nowISO()),completedAt=item.completed?String(item.completedAt||''):'',comments=Array.isArray(item.comments)?item.comments.filter(comment=>comment&&String(comment.text||'').trim()):[],commentMarkup=comments.length?`<div class="task-checklist-comments">${comments.map(comment=>`<article class="task-checklist-comment"><p>${escapeHTML(comment.text)}</p><time>${escapeHTML(checklistTimestamp(comment.createdAt))}</time></article>`).join('')}</div>`:'';
+    return `<div class="task-checklist-row${completed?' is-complete':''}" data-task-checklist-row data-checklist-id="${escapeHTML(id)}" data-checklist-created-at="${escapeHTML(createdAt)}" data-checklist-completed-at="${escapeHTML(completedAt)}" data-checklist-comments="${escapeHTML(JSON.stringify(comments))}" data-checklist-order="${order}" data-checklist-completed="${completed?'true':'false'}" data-checklist-completed-order="${completedOrder}" draggable="false"><button class="btn ghost small task-checklist-drag" type="button" draggable="true" data-task-checklist-drag aria-label="Arrastar etapa ${index+1}" title="Arrastar etapa">⠿</button><input type="checkbox" data-task-checklist-done aria-label="Marcar etapa ${index+1} como concluída" ${completed?'checked':''}><textarea data-task-checklist-text maxlength="180" rows="1" placeholder="Etapa ${index+1}" aria-label="Texto da etapa ${index+1}">${escapeHTML(item.text||'')}</textarea><button class="btn ghost small task-checklist-remove" type="button" data-remove-task-checklist-item aria-label="Remover etapa ${index+1}" title="Remover etapa">×</button><div class="task-checklist-item-meta"><time>${escapeHTML(checklistTimestamp(createdAt))}</time>${completedAt?`<span>Concluído ${escapeHTML(checklistTimestamp(completedAt))}</span>`:''}${comments.length?`<span>${comments.length} comentário${comments.length===1?'':'s'}</span>`:''}</div>${commentMarkup}<details class="task-checklist-comment-editor"><summary>＋ Comentário</summary><textarea data-checklist-comment-input maxlength="4000" rows="2" placeholder="Comentário ou detalhe desta etapa…" aria-label="Comentário da etapa ${index+1}"></textarea><button class="btn small" type="button" data-save-checklist-comment>Salvar comentário</button></details></div>`;
   }
 
   function renderTaskChecklist(items=[],options={}) {
-    const list=$('taskChecklistList'),rows=(Array.isArray(items)?items.slice(0,50):[]).map((item,index)=>{const raw=item&&typeof item==='object'?item:{text:item},order=Number(raw.order),completedOrder=Number(raw.completedOrder);return{id:String(raw.id||makeId()),text:String(raw.text??raw.title??'').slice(0,180),completed:raw.completed===true||raw.done===true||raw.checked===true,order:Number.isFinite(order)?order:index,completedOrder:Number.isFinite(completedOrder)?completedOrder:index};}).sort((a,b)=>a.order-b.order),open=rows.filter(item=>!item.completed),completed=rows.filter(item=>item.completed).sort((a,b)=>a.completedOrder-b.completedOrder);
+    const list=$('taskChecklistList'),rows=(Array.isArray(items)?items.slice(0,50):[]).map((item,index)=>{const raw=item&&typeof item==='object'?item:{text:item},order=Number(raw.order),completedOrder=Number(raw.completedOrder);return{id:String(raw.id||makeId()),text:String(raw.text??raw.title??'').slice(0,180),completed:raw.completed===true||raw.done===true||raw.checked===true,createdAt:String(raw.createdAt||nowISO()),completedAt:String(raw.completedAt||''),comments:Array.isArray(raw.comments)?raw.comments:[],order:Number.isFinite(order)?order:index,completedOrder:Number.isFinite(completedOrder)?completedOrder:index};}).sort((a,b)=>a.order-b.order),open=rows.filter(item=>!item.completed),completed=rows.filter(item=>item.completed).sort((a,b)=>a.completedOrder-b.completedOrder);
     const openRows=open.map((item,index)=>taskChecklistRowHTML(item,index,false)).join(''),completedRows=completed.map((item,index)=>taskChecklistRowHTML(item,index,true)).join('');
     const empty=open.length?'':completed.length?'<p class="task-checklist-empty">Nenhuma etapa em aberto.</p>':'<p class="task-checklist-empty">Nenhuma etapa adicionada.</p>';
     list.innerHTML=`<section class="task-checklist-section task-checklist-open-section"><h4 class="task-checklist-section-title">EM ABERTO (${open.length})</h4><div class="task-checklist-group" data-task-checklist-group="open">${openRows||empty}</div></section>${completed.length?`<details class="task-checklist-section task-checklist-completed" data-task-checklist-group="completed"${options.completedOpen?' open':''}><summary class="task-checklist-section-title">CONCLUÍDAS (${completed.length})</summary><div class="task-checklist-completed-list">${completedRows}</div></details>`:''}`;
     list.querySelectorAll('[data-task-checklist-text]').forEach(resizeTaskChecklistTextarea);
   }
+  function saveTaskChecklistComment(button){const row=button.closest('[data-task-checklist-row]'),input=row?.querySelector('[data-checklist-comment-input]'),text=String(input?.value||'').trim();if(!row||!text)return;const items=readTaskChecklistDraft(true),item=items.find(entry=>entry.id===row.dataset.checklistId);if(!item)return;item.comments=Array.isArray(item.comments)?item.comments:[];item.comments.push({id:makeId(),text:text.slice(0,4000),createdAt:nowISO()});const completedOpen=Boolean($('taskChecklistList').querySelector('.task-checklist-completed')?.open);renderTaskChecklist(items,{completedOpen});saveTaskChecklistProgress(items);}
   function moveChecklistItemToCompletion(items,id,complete) {
     const rows=items.slice().sort((a,b)=>a.order-b.order),item=rows.find(row=>row.id===String(id));if(!item)return rows;
     if(Boolean(item.completed)===Boolean(complete))return rows;
-    item.completed=Boolean(complete);
+    item.completed=Boolean(complete);item.completedAt=complete?nowISO():null;
     if(complete){const done=rows.filter(row=>row.completed&&row.id!==item.id);item.completedOrder=done.length?Math.max(...done.map(row=>Number(row.completedOrder)||0))+1:0;}
     else delete item.completedOrder;
     return rows;
@@ -1692,8 +1694,8 @@
   function handleTaskChecklistToggle(checkbox) {
     const row=checkbox.closest('[data-task-checklist-row]');if(!row)return;
     const items=readTaskChecklistDraft(true),id=row.dataset.checklistId,oldCompleted=row.dataset.checklistCompleted==='true',item=items.find(entry=>entry.id===id);
-    if(!item)return;item.completed=oldCompleted;
-    const completedOpen=Boolean($('taskChecklistList').querySelector('.task-checklist-completed')?.open),updated=moveChecklistItemToCompletion(items,id,checkbox.checked);
+    if(!item)return;item.completed=oldCompleted;item.completedAt=oldCompleted?(row.dataset.checklistCompletedAt||null):null;
+    const completedOpen=Boolean($('taskChecklistList').querySelector('.task-checklist-completed')?.open),updated=moveChecklistItemToCompletion(items,id,checkbox.checked),updatedItem=updated.find(entry=>entry.id===id);if(updatedItem){updatedItem.createdAt=updatedItem.createdAt||nowISO();updatedItem.completedAt=checkbox.checked?nowISO():null;}
     renderTaskChecklist(updated,{completedOpen});saveTaskChecklistProgress(updated);
   }
   function reorderTaskChecklist(sourceId,target,clientY=0) {
@@ -1736,7 +1738,7 @@
     const items=readTaskChecklistDraft(true);
     if(items.length>=50){showToast('O checklist aceita até 50 etapas.');return;}
     const order=items.length?Math.max(...items.map(item=>Number(item.order)||0))+1:0;
-    items.push({id:makeId(),text:'',completed:false,order});renderTaskChecklist(items);$('taskChecklistList').querySelector('[data-task-checklist-group="open"] [data-task-checklist-row]:last-child [data-task-checklist-text]')?.focus();taskDialogDirty=true;
+    items.push({id:makeId(),text:'',completed:false,createdAt:nowISO(),comments:[],order});renderTaskChecklist(items);$('taskChecklistList').querySelector('[data-task-checklist-group="open"] [data-task-checklist-row]:last-child [data-task-checklist-text]')?.focus();taskDialogDirty=true;
   }
 
   function openTaskDialog(taskId='',suggestedDate='',reuseHistoryToken='') {
@@ -2689,7 +2691,7 @@
   $('taskForm').addEventListener('input',event=>{taskDialogDirty=true;if(event.target.matches('[data-task-checklist-text]'))resizeTaskChecklistTextarea(event.target);});
   $('taskForm').addEventListener('change',()=>{taskDialogDirty=true;});
   $('taskChecklistAddBtn').addEventListener('click',addTaskChecklistItem);
-  $('taskChecklistList').addEventListener('click',event=>{const button=event.target.closest('[data-remove-task-checklist-item]');if(!button)return;button.closest('[data-task-checklist-row]')?.remove();renderTaskChecklist(readTaskChecklistDraft(true),{completedOpen:Boolean($('taskChecklistList').querySelector('.task-checklist-completed')?.open)});taskDialogDirty=true;});
+  $('taskChecklistList').addEventListener('click',event=>{const saveComment=event.target.closest('[data-save-checklist-comment]');if(saveComment){saveTaskChecklistComment(saveComment);return;}const button=event.target.closest('[data-remove-task-checklist-item]');if(!button)return;button.closest('[data-task-checklist-row]')?.remove();renderTaskChecklist(readTaskChecklistDraft(true),{completedOpen:Boolean($('taskChecklistList').querySelector('.task-checklist-completed')?.open)});taskDialogDirty=true;});
   $('taskChecklistList').addEventListener('change',event=>{const checkbox=event.target.closest('[data-task-checklist-done]');if(checkbox)handleTaskChecklistToggle(checkbox);});
   $('taskChecklistList').addEventListener('dragstart',handleTaskChecklistDragStart);
   $('taskChecklistList').addEventListener('dragover',handleTaskChecklistDragOver);
