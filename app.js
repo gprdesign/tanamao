@@ -683,12 +683,10 @@
     const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]'));
     if(!indicator)return;
     const target=buttons.find(button=>isDockButtonSelected(button,page));
-    buttons.forEach(button=>{if(button===target)button.setAttribute('aria-expanded',String(!document.body.classList.contains('nav-content-collapsed')));else button.removeAttribute('aria-expanded');});
     if(!target){indicator.hidden=true;return;}
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
-    document.body.classList.remove('nav-content-collapsed');
     if(page==='home')page='tasks';
     if(!['tasks','finance','notes','settings'].includes(page))return;
     const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
@@ -2621,15 +2619,13 @@
   };
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
-    if(isDockButtonSelected(button,currentPage)){const collapsed=document.body.classList.toggle('nav-content-collapsed');button.setAttribute('aria-expanded',String(!collapsed));return;}
-    document.body.classList.remove('nav-content-collapsed');
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
         setPage(button.dataset.page);
   });
   function handleKanbanChange(event){const control=event.target.closest('[data-kanban-state]');if(control)setKanbanState(control.dataset.kanbanState,control.value);}
   function handleKanbanClick(event){const add=event.target.closest('[data-kanban-add]');if(add){openTaskDialog();return;}const complete=event.target.closest('[data-kanban-complete]');if(complete){openKanbanTaskCompletionConfirm(complete.dataset.kanbanComplete);return;}const collapse=event.target.closest('[data-kanban-collapse]');if(collapse){toggleKanbanCollapsed(collapse.dataset.kanbanCollapse);return;}if(event.target.closest('[data-close-kanban-dialog]')){$('kanbanColumnDialog').close();return;}handleTaskClick(event);}
   function updateKanbanMobileNav(){const nav=$('kanbanMobileNav'),board=$('kanbanBoard');if(!nav||!board)return;const buttons=[...nav.querySelectorAll('[data-kanban-jump]')],line=150;let active=buttons[0];for(const button of buttons){const lane=board.querySelector(`[data-kanban-column="${button.dataset.kanbanJump}"]`);if(lane&&lane.getBoundingClientRect().top<=line)active=button;}buttons.forEach(button=>button===active?button.setAttribute('aria-current','true'):button.removeAttribute('aria-current'));}
-  $('kanbanMobileNav').addEventListener('click',event=>{const button=event.target.closest('[data-kanban-jump]');if(!button)return;const lane=$('kanbanBoard')?.querySelector(`[data-kanban-column="${button.dataset.kanbanJump}"]`);if(!lane)return;document.querySelectorAll('#kanbanMobileNav [data-kanban-jump]').forEach(item=>item===button?item.setAttribute('aria-current','true'):item.removeAttribute('aria-current'));lane.scrollIntoView({behavior:'smooth',block:'start'});});
+  $('kanbanMobileNav').addEventListener('click',event=>{const button=event.target.closest('[data-kanban-jump]');if(!button)return;const key=button.dataset.kanbanJump,lane=$('kanbanBoard')?.querySelector(`[data-kanban-column="${key}"]`);if(!lane)return;if(button.getAttribute('aria-current')==='true'){toggleKanbanCollapsed(key);return;}document.querySelectorAll('#kanbanMobileNav [data-kanban-jump]').forEach(item=>item===button?item.setAttribute('aria-current','true'):item.removeAttribute('aria-current'));lane.scrollIntoView({behavior:'smooth',block:'start'});});
   window.addEventListener('scroll',()=>requestAnimationFrame(updateKanbanMobileNav),{passive:true});document.addEventListener('scroll',()=>requestAnimationFrame(updateKanbanMobileNav),{passive:true,capture:true});
   $('kanbanBoard').addEventListener('change',handleKanbanChange);$('kanbanBoard').addEventListener('click',handleKanbanClick);$('kanbanBoard').addEventListener('click',handleKanbanTitleClick);$('kanbanBoard').addEventListener('dblclick',event=>{const title=event.target.closest('[data-kanban-title]');if(title){clearTimeout(kanbanTitleClickTimer);openKanbanColumnDialog(title.dataset.kanbanTitle);}});$('kanbanBoard').addEventListener('dragstart',handleDragStart);$('kanbanBoard').addEventListener('dragover',handleDragOver);$('kanbanBoard').addEventListener('drop',handleDrop);
   $('kanbanColumnDialog').addEventListener('change',handleKanbanChange);$('kanbanColumnDialog').addEventListener('click',handleKanbanClick);$('kanbanColumnDialog').addEventListener('click',handleKanbanTitleClick);$('kanbanColumnDialog').addEventListener('dblclick',event=>{const title=event.target.closest('[data-kanban-title]');if(title){clearTimeout(kanbanTitleClickTimer);openKanbanColumnDialog(title.dataset.kanbanTitle);}});$('kanbanColumnDialog').addEventListener('dragstart',handleDragStart);$('kanbanColumnDialog').addEventListener('dragover',handleDragOver);$('kanbanColumnDialog').addEventListener('drop',handleDrop);
