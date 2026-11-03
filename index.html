@@ -1596,6 +1596,53 @@
     body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed .kanban-column-head { flex:none !important; height:40px !important; min-height:40px !important; margin:0 !important; }
     body.view-mobile[data-page="tasks"] .wrap { padding-bottom:calc(148px + env(safe-area-inset-bottom,0px)) !important; }
 
+/* PC Kanban: viewport-fit lanes, with Events and Reminders stacked. */
+@media (min-width: 601px) {
+  body[data-view-mode="pc"][data-page="tasks"] .wrap { height:100dvh !important; min-height:0 !important; overflow:hidden !important; padding-bottom:82px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #tasksPage.active { display:flex !important; flex:1 1 auto !important; flex-direction:column !important; min-height:0 !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #plannerKanbanView { display:flex !important; flex:1 1 auto !important; min-height:0 !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard { display:grid !important; flex:1 1 auto !important; grid-template-columns:minmax(185px,.78fr) repeat(2,minmax(0,1fr)) !important; grid-template-rows:repeat(2,minmax(0,1fr)) !important; grid-auto-flow:row !important; align-content:stretch !important; gap:8px !important; width:100% !important; height:100% !important; min-height:0 !important; max-height:none !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-side-column { display:flex !important; grid-column:1 !important; grid-row:1 / span 2 !important; flex-direction:column !important; min-width:0 !important; min-height:0 !important; max-height:none !important; gap:7px !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-side-column > .kanban-events-reminders, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-side-column > .kanban-reminders { display:flex !important; flex:1 1 0 !important; width:100% !important; min-width:0 !important; min-height:0 !important; max-height:none !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing { grid-column:2 !important; grid-row:1 !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-todo { grid-column:3 !important; grid-row:1 !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-blocked { grid-column:2 !important; grid-row:2 !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-done { grid-column:3 !important; grid-row:2 !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-column { width:100% !important; min-width:0 !important; min-height:0 !important; max-height:none !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-column-list, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-events-content, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminders-content { display:grid !important; flex:1 1 auto !important; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)) !important; grid-auto-rows:minmax(0,1fr) !important; align-content:stretch !important; gap:4px !important; min-height:0 !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-events-content, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminders-content { display:flex !important; flex-direction:column !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-group, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-group { display:grid !important; flex:1 1 0 !important; grid-template-rows:repeat(2,minmax(0,1fr)) !important; gap:4px !important; min-height:0 !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-group { grid-template-rows:repeat(3,minmax(0,1fr)) !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-section, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-section { display:flex !important; flex:1 1 0 !important; flex-direction:column !important; min-width:0 !important; min-height:0 !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-list, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-list { display:grid !important; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)) !important; grid-auto-rows:minmax(0,1fr) !important; align-content:stretch !important; gap:3px !important; min-height:0 !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task { display:grid !important; grid-template-columns:minmax(0,1fr) !important; gap:2px !important; min-width:0 !important; min-height:0 !important; padding:3px !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .task-card { min-width:0 !important; padding:1px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .task-card .task-title-row { gap:3px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .task-card .task-open { display:-webkit-box !important; -webkit-box-orient:vertical !important; -webkit-line-clamp:2 !important; max-height:2.4em !important; min-width:0 !important; white-space:normal !important; overflow:hidden !important; overflow-wrap:anywhere !important; font-size:clamp(.55rem,.67vw,.7rem) !important; line-height:1.15 !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .task-card .task-actions { gap:1px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .task-card .task-menu > summary, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .task-card .task-touch-handle { width:20px !important; min-width:20px !important; height:22px !important; min-height:22px !important; padding:0 !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-card-controls { gap:3px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-state-control select { min-height:23px !important; height:23px !important; padding:1px 4px !important; font-size:.58rem !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-complete-btn { width:23px !important; height:23px !important; min-height:23px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-column-head { min-height:25px !important; margin-bottom:4px !important; padding-bottom:3px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-column-head h3 { font-size:clamp(.62rem,.72vw,.75rem) !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-column-head > span { min-width:19px !important; height:19px !important; font-size:.6rem !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-collapse-btn, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-add { width:22px !important; height:22px !important; min-height:22px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-section h4, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-section h4 { font-size:.55rem !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-item { grid-template-columns:auto minmax(0,1fr) !important; gap:3px !important; padding:2px 3px !important; font-size:clamp(.52rem,.59vw,.62rem) !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-item { min-width:0 !important; padding:2px !important; overflow:hidden !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-badge { font-size:.45rem !important; padding:1px 3px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-empty { padding:3px !important; font-size:.55rem !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanMobileNav { display:none !important; }
+}
+@media (max-height:700px) and (min-width:601px) {
+  body[data-view-mode="pc"][data-page="tasks"] .wrap { padding-top:4px !important; padding-bottom:72px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] .app-header { margin-bottom:3px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #tasksPage .page-heading { margin-bottom:3px !important; min-height:23px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard { gap:5px !important; }
+  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-column { padding:5px !important; }
+}
+
 </style>
 </head>
 <body>
@@ -1720,7 +1767,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=215" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=222',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=216" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=223',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
