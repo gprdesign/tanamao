@@ -1675,6 +1675,10 @@ html { font-size:90% !important; }
 html:has(body[data-view-mode="pc"]) { font-size:14.4px !important; }
 body { font-size:1rem !important; }
 body[data-view-mode="pc"] { font-size:12.6px !important; }
+
+@media (min-width:601px) {
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-title { display:block !important; min-width:0 !important; color:#f2efff !important; font-size:.78rem !important; line-height:1.25 !important; overflow-wrap:anywhere !important; }
+}
 </style>
 </head>
 <body>
@@ -1799,7 +1803,7 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=218" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=226',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=219" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=227',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
