@@ -1730,7 +1730,7 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
  body[data-view-mode="pc"] #taskForm .task-checklist-comment-editor textarea { min-height:50px; height:50px; resize:vertical; }
  body[data-view-mode="pc"] #taskForm .task-checklist-comment-editor button { align-self:flex-start; }
 }
-@media (max-width:800px) { body[data-view-mode="pc"] #taskForm .task-details-grid { grid-template-columns:1fr; } body[data-view-mode="pc"] #taskForm .task-detail-title, body[data-view-mode="pc"] #taskForm .task-detail-content, body[data-view-mode="pc"] #taskForm .task-details-grid > .field:not(.task-detail-title) { grid-column:1 !important; grid-row:auto !important; } body[data-view-mode="pc"] #taskForm .task-checklist-list { grid-template-columns:1fr; } }
+@media (max-width:800px) { body[data-view-mode="pc"] #taskForm .task-details-grid { grid-template-columns:1fr; } body[data-view-mode="pc"] #taskForm .task-detail-title, body[data-view-mode="pc"] #taskForm .task-detail-content, body[data-view-mode="pc"] #taskForm .task-details-grid > .field:not(.task-detail-title):not(.task-detail-content) { grid-column:1 !important; grid-row:auto !important; } body[data-view-mode="pc"] #taskForm .task-checklist-list { grid-template-columns:1fr; } }
 #taskForm .task-checklist-item-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px; color:var(--muted); font-size:.68rem; line-height:1.25; }
 #taskForm .task-checklist-comment-editor { min-width:0; }
 #taskForm .task-checklist-comment-editor summary { color:#b7c6df; font-size:.7rem; cursor:pointer; }
@@ -1865,6 +1865,6 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./app.js?v=224" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=232',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=233',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
