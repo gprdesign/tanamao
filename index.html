@@ -264,20 +264,6 @@
       .home-stat span { font-size:.68rem; }
       .home-stat strong { font-size:1.35rem; }
       .week-grid { gap:6px; grid-auto-rows:minmax(128px,auto); }
-      body.view-mobile[data-page="tasks"] .kanban-board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,86%); grid-template-columns:none; min-height:0; height:calc(var(--app-zoom-height,100dvh) - 145px); align-items:stretch; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; }
-      body.view-mobile[data-page="tasks"] .kanban-column,body.view-mobile[data-page="tasks"] .kanban-side-column { min-height:0; max-height:none; scroll-snap-align:start; }
-      body.view-mobile[data-page="tasks"] .kanban-column-list { overflow-y:auto; }
-      body.view-mobile[data-page="tasks"] .kanban-side-tasks { flex:2 1 0; }
-      body.view-mobile[data-page="tasks"] .kanban-done { flex:1 1 0; }
-      body.view-mobile[data-page="tasks"] .kanban-task .task-touch-handle { display:grid !important; }
-      body.view-mobile[data-page="tasks"] .kanban-side-column { max-height:none; min-height:0; }
-      body.view-mobile[data-page="tasks"] .kanban-events-reminders { flex:2 1 0; }
-      body.view-mobile[data-page="tasks"] .kanban-done { flex:1 1 0; }
-      body.view-mobile[data-page="tasks"] .kanban-task .task-touch-handle { display:grid !important; }
-      body.view-mobile[data-page="tasks"] .kanban-side-column { max-height:none; min-height:0; }
-      body.view-mobile[data-page="tasks"] .kanban-side-tasks { flex:2 1 0; min-height:0; }
-      body.view-mobile[data-page="tasks"] .kanban-done { flex:1 1 0; }
-      body.view-mobile[data-page="tasks"] .kanban-task .task-touch-handle { display:grid !important; }
       body.view-mobile[data-page="tasks"] .planner-kanban-view { min-height:0; }
       .day-column { min-height:128px; padding:7px; }
       .day-heading strong { font-size:.7rem; }
@@ -1565,6 +1551,27 @@
       body[data-view-mode="pc"][data-page="tasks"] #dayDialogList > .task-card { min-width:0; align-self:start; }
       body[data-view-mode="pc"][data-page="tasks"] #dayDialogList .day-dialog-completed-list { grid-template-columns:repeat(3,minmax(0,1fr)); }
     }
+
+    /* MOBILE Kanban: one full-width lane at a time, with direct jumps and independent vertical card scrolling. */
+    body.view-mobile[data-page="tasks"] #kanbanMobileNav { display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; margin:0 0 8px; }
+    body.view-mobile[data-page="tasks"] #kanbanMobileNav button { min-width:0; min-height:42px; padding:5px 3px; border:1px solid #394663; border-radius:9px; background:#111827; color:var(--muted); font-size:clamp(.56rem,2.4vw,.72rem); font-weight:850; line-height:1.1; white-space:nowrap; }
+    body.view-mobile[data-page="tasks"] #kanbanMobileNav button[aria-current="true"] { border-color:#789cf0; background:#263751; color:#fff; box-shadow:inset 0 0 0 1px #789cf055; }
+    body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]) { display:block !important; width:100%; min-width:0; height:auto !important; min-height:0; overflow:visible !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard { display:grid !important; grid-auto-flow:column !important; grid-auto-columns:minmax(100%,100%) !important; grid-template-columns:none !important; grid-template-rows:minmax(0,1fr) !important; gap:0; width:100%; height:min(680px,max(390px,calc(var(--app-zoom-height,100dvh) - 220px))) !important; min-height:390px !important; max-height:calc(var(--app-zoom-height,100dvh) - 170px) !important; padding:0 0 3px; align-items:stretch; overflow-x:auto !important; overflow-y:hidden !important; scroll-snap-type:x mandatory; scroll-behavior:smooth; overscroll-behavior-x:contain; scrollbar-width:thin; scrollbar-color:#52678f transparent; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column,body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-side-column { width:100%; min-width:0; height:100%; min-height:0; max-height:none !important; scroll-snap-align:start; scroll-snap-stop:always; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column { overflow:hidden; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column-list { flex:1 1 0; min-height:0; max-height:none; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; padding:2px 1px 8px; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-tasks { flex:2 1 0; min-height:0; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done { flex:1 1 0; min-height:0; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-content,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-content { min-height:0; overflow:auto; overscroll-behavior:contain; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column-head { min-height:42px; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task { gap:7px; padding:9px; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task .task-touch-handle { display:grid !important; width:30px; height:34px; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-state-control select,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-complete-btn { min-height:38px; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-collapse-btn,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-add { width:36px; height:36px; min-height:36px; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed { flex:none !important; height:48px; min-height:48px !important; max-height:48px !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-subpanel.is-collapsed { flex:none !important; height:48px; min-height:48px !important; max-height:48px !important; }
+    body:not(.view-mobile) #kanbanMobileNav { display:none !important; }
 </style>
 </head>
 <body>
@@ -1593,6 +1600,7 @@
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
       <div class="page-heading"><div><h2>KANBAN</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <nav id="kanbanMobileNav" class="kanban-mobile-nav" aria-label="Ir para coluna do Kanban"><button type="button" data-kanban-jump="todo" aria-current="true">A FAZER</button><button type="button" data-kanban-jump="doing">FAZENDO</button><button type="button" data-kanban-jump="blocked">TRAVADO</button><button type="button" data-kanban-jump="side">AGENDA</button></nav>
       <div id="plannerKanbanView" class="planner-kanban-view"><div class="kanban-board" id="kanbanBoard" aria-label="Quadro Kanban"></div></div>
       <div id="plannerWeekView" class="planner-week-view" hidden>
       <div class="planner-section-buttons">
@@ -1688,7 +1696,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=195" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=202',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=196" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=203',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
