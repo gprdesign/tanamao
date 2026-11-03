@@ -973,7 +973,7 @@
       }).join(''),collapsed=Boolean(userSettings.kanbanCollapsedColumns?.includes(state));
       lanes[state]=`<section class="kanban-column kanban-${state}${collapsed?' is-collapsed':''}" data-kanban-column="${state}"><header class="kanban-column-head"><h3><button class="kanban-title-button" type="button" data-kanban-title="${state}">${label}</button></h3><span>${items.length}</span>${state==='todo'?'<button class="kanban-add" type="button" data-kanban-add aria-label="Adicionar tarefa">＋</button>':''}<button class="kanban-collapse-btn" type="button" data-kanban-collapse="${state}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Expandir':'Recolher'} ${label.toLocaleLowerCase('pt-BR')}">⌄</button></header><div class="kanban-column-list" data-kanban-body="${state}"${collapsed?' hidden':''}>${cards||`<p class="kanban-empty">${state==='blocked'?'Nada travado.':'Nenhuma tarefa.'}</p>`}</div></section>`;
     }
-    const panels=renderKanbanSideColumn(all);board.innerHTML=panels.events+panels.reminders+lanes.doing+lanes.todo+lanes.blocked+renderKanbanDoneColumn(all);
+    const panels=renderKanbanSideColumn(all);board.innerHTML=`<div class="kanban-side-column" data-kanban-column="agenda">${panels.events}${panels.reminders}</div>${lanes.doing}${lanes.todo}${lanes.blocked}${renderKanbanDoneColumn(all)}`;
   }
 
   function setPlannerSubpage(page,save=true) {
