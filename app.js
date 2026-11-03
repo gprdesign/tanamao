@@ -422,7 +422,7 @@
     const calendarIds=Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[];
     const rawHabits=Array.isArray(source.plannerHabits)?source.plannerHabits:[],plannerHabits=rawHabits.map(item=>({id:String(item?.id||''),name:String(item?.name||'').trim().slice(0,80),doneDates:Array.isArray(item?.doneDates)?Array.from(new Set(item.doneDates.map(String).filter(isDateKey))):[]})).filter(item=>item.id&&item.name).slice(0,100);
     const rawBasecamp=Array.isArray(source.basecampMessages)?source.basecampMessages:[],basecampMessages=rawBasecamp.map(item=>{const text=String(item?.text||'').trim().slice(0,5000),createdAt=String(item?.createdAt||''),id=String(item?.id||'');return text&&id?{id,text,tagId:String(item?.tagId||''),createdAt,updatedAt:String(item?.updatedAt||createdAt)}:null;}).filter(Boolean).slice(0,100);
-    return {summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,plannerHabits,basecampMessages,taskKanbanStates:source.taskKanbanStates&&typeof source.taskKanbanStates==='object'&&!Array.isArray(source.taskKanbanStates)?source.taskKanbanStates:{},taskKanbanBlockers:source.taskKanbanBlockers&&typeof source.taskKanbanBlockers==='object'&&!Array.isArray(source.taskKanbanBlockers)?source.taskKanbanBlockers:{},kanbanCollapsedColumns:Array.isArray(source.kanbanCollapsedColumns)?Array.from(new Set(source.kanbanCollapsedColumns.map(String).filter(key=>['todo','doing','blocked','events','reminders','done'].includes(key)))):[],plannerSubpage:source.plannerSubpage==='habits'?'habits':'kanban',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    return {summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,plannerHabits,basecampMessages,taskKanbanStates:source.taskKanbanStates&&typeof source.taskKanbanStates==='object'&&!Array.isArray(source.taskKanbanStates)?source.taskKanbanStates:{},taskKanbanBlockers:source.taskKanbanBlockers&&typeof source.taskKanbanBlockers==='object'&&!Array.isArray(source.taskKanbanBlockers)?source.taskKanbanBlockers:{},kanbanCollapsedColumns:Array.isArray(source.kanbanCollapsedColumns)?Array.from(new Set(source.kanbanCollapsedColumns.map(String).filter(key=>['todo','doing','blocked','events','reminders','done'].includes(key)))):[],plannerSubpage:'kanban',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -676,8 +676,7 @@
   }
   function plannerDockButton(){return $('plannerBasecampSwitch')||$('plannerNavLabel')?.closest('.nav-btn')||null;}
   function isDockButtonSelected(button,page=currentPage){
-    if(button===plannerDockButton())return page==='home'||page==='tasks'&&userSettings.plannerSubpage!=='habits';
-    if(button.dataset.page==='habits')return page==='tasks'&&userSettings.plannerSubpage==='habits';
+    if(button===plannerDockButton())return page==='home'||page==='tasks';
     return button.dataset.page===page;
   }
   function updateNavIndicator(page=currentPage) {
@@ -689,7 +688,6 @@
   }
   function setPage(page) {
     if(page==='home')page='tasks';
-    if(page==='habits'){page='tasks';userSettings.plannerSubpage='habits';}
     if(!['tasks','finance','notes','settings'].includes(page))return;
     const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
@@ -706,7 +704,7 @@
     const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent=page==='home'?'BASECAMP':'KANBAN';
     updateNavIndicator(page);renderFilterButton();
     if(page==='home'){renderHome();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
-    if(page==='tasks'){renderTasks();setPlannerSubpage(userSettings.plannerSubpage,false);}
+    if(page==='tasks'){renderTasks();setPlannerSubpage('kanban',false);}
     if(page==='finance'){renderFinancePage();void refreshFinanceCloudData();}
     if(page==='notes'){renderNotes();renderNotesMode();}
     if(page==='settings'){updateAuthUI();renderSettings();}
@@ -905,23 +903,6 @@
     if(duplicate){$('tagManagerStatus').textContent='Já existe outra tag com esse nome.';return;}
     tag.name=name;if(validTagColor(color))tag.color=color;tag.updatedAt=nowISO();saveTags();renderTagManager();$('tagManagerStatus').textContent=`Tag ${tag.name} atualizada.`;
   }
-  function renderHabits() {
-    const date=todayKey(),habits=normalizeUserSettings(userSettings).plannerHabits||[],done=habits.filter(item=>item.doneDates.includes(date)).length;
-    $('habitsDateLabel').textContent=formatDate(date,{weekday:'long',day:'numeric',month:'long'});$('habitsProgress').textContent=`${done}/${habits.length}`;
-    $('habitList').innerHTML=habits.length?habits.map(item=>{const checked=item.doneDates.includes(date);return `<article class="habit-row" data-habit-id="${escapeHTML(item.id)}"><button type="button" class="habit-toggle" data-habit-toggle="${escapeHTML(item.id)}" aria-pressed="${checked}" aria-label="${checked?'Desmarcar':'Marcar'} ${escapeHTML(item.name)}">${checked?'✓':''}</button><span class="habit-name">${escapeHTML(item.name)}</span><button type="button" class="habit-delete" data-habit-delete="${escapeHTML(item.id)}" aria-label="Excluir hábito ${escapeHTML(item.name)}" title="Excluir hábito">×</button></article>`;}).join(''):'<p class="habit-empty">Nenhum hábito cadastrado ainda. Adicione o primeiro acima.</p>';
-  }
-  function addHabit(event) {
-    event.preventDefault();const input=$('habitNameInput'),name=input.value.trim().replace(/\s+/g,' ').slice(0,80);if(!name)return;
-    const current=normalizeUserSettings(userSettings).plannerHabits;if(current.some(item=>item.name.toLocaleLowerCase('pt-BR')===name.toLocaleLowerCase('pt-BR'))){showToast('Esse hábito já está cadastrado.');return;}
-    userSettings.plannerHabits=[...current,{id:makeId(),name,doneDates:[]}];input.value='';saveUserSettings();renderHabits();showToast('Hábito adicionado.');
-  }
-  function handleHabitAction(event) {
-    const toggle=event.target.closest('[data-habit-toggle]'),remove=event.target.closest('[data-habit-delete]');if(!toggle&&!remove)return;
-    const id=(toggle||remove).dataset.habitToggle||(toggle||remove).dataset.habitDelete;let habits=normalizeUserSettings(userSettings).plannerHabits;
-    if(remove)habits=habits.filter(item=>item.id!==id);
-    else habits=habits.map(item=>{if(item.id!==id)return item;const dates=new Set(item.doneDates),today=todayKey();dates.has(today)?dates.delete(today):dates.add(today);return {...item,doneDates:Array.from(dates).sort()};});
-    userSettings.plannerHabits=habits;saveUserSettings();renderHabits();
-  }
   const KANBAN_STATES=[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO']];
   function getKanbanState(task){return task.completedAt?'done':(['todo','doing','blocked'].includes(userSettings.taskKanbanStates?.[task.id])?userSettings.taskKanbanStates[task.id]:'todo');}
   function renderKanbanSideColumn(all){
@@ -996,9 +977,9 @@
   }
 
   function setPlannerSubpage(page,save=true) {
-    const next=page==='habits'?'habits':'kanban';userSettings.plannerSubpage=next;
-    const kanban=next==='kanban';$('plannerWeekView').hidden=true;$('plannerKanbanView').hidden=!kanban;$('plannerHabitsView').hidden=kanban;document.body.classList.toggle('planner-habits-active',!kanban);
-    if(next==='habits')renderHabits();else renderKanban();
+    userSettings.plannerSubpage='kanban';
+    $('plannerWeekView').hidden=true;$('plannerKanbanView').hidden=false;
+    renderKanban();
     if(save)saveUserSettings();
     if(currentPage==='tasks'){document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(isDockButtonSelected(button,'tasks'))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});updateNavIndicator('tasks');}
   }
@@ -2639,8 +2620,7 @@
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
-    if(button.dataset.page==='habits'){userSettings.plannerSubpage='habits';saveUserSettings();setPage('tasks');return;}
-    setPage(button.dataset.page);
+        setPage(button.dataset.page);
   });
   function handleKanbanChange(event){const control=event.target.closest('[data-kanban-state]');if(control)setKanbanState(control.dataset.kanbanState,control.value);}
   function handleKanbanClick(event){const add=event.target.closest('[data-kanban-add]');if(add){openTaskDialog();return;}const complete=event.target.closest('[data-kanban-complete]');if(complete){openKanbanTaskCompletionConfirm(complete.dataset.kanbanComplete);return;}const collapse=event.target.closest('[data-kanban-collapse]');if(collapse){toggleKanbanCollapsed(collapse.dataset.kanbanCollapse);return;}if(event.target.closest('[data-close-kanban-dialog]')){$('kanbanColumnDialog').close();return;}handleTaskClick(event);}
@@ -2698,8 +2678,6 @@
   $('planningBtn').addEventListener('click',()=>togglePlannerSection('planning'));
   $('completedBtn').addEventListener('click',()=>togglePlannerSection('completed'));
   $('weekDockAddTaskBtn').addEventListener('click',()=>openTaskDialog());
-  $('habitAddForm').addEventListener('submit',addHabit);
-  $('habitList').addEventListener('click',handleHabitAction);
   $('dayDialogList').addEventListener('click',event=>{if(!event.target.closest('#dayDialogMobileAddBtn'))return;const date=activeDayKind==='day'?activeDayDate:'',dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog('',date,token);});
   $('planningMoreBtn').addEventListener('click',()=>{planningVisibleLimit+=12;renderTasks();});
   $('completedMoreBtn').addEventListener('click',()=>{completedVisibleLimit+=6;renderTasks();});
