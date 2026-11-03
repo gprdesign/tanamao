@@ -1713,10 +1713,12 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
 
 @media (min-width:801px) {
  body[data-view-mode="pc"] #taskDialog.app-dialog { width:min(96vw,1120px) !important; max-width:calc(100vw - 40px) !important; max-height:92dvh !important; overflow-y:auto !important; }
- body[data-view-mode="pc"] #taskForm .task-details-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:0 14px; }
- body[data-view-mode="pc"] #taskForm .task-detail-title { grid-column:1 / -1; }
- body[data-view-mode="pc"] #taskForm .task-details-grid > .field:not(.task-detail-title):not(.task-detail-content) { grid-column:1; min-width:0; }
- body[data-view-mode="pc"] #taskForm .task-detail-content { grid-column:2 !important; grid-row:2 / span 3; min-height:150px; }
+ body[data-view-mode="pc"] #taskForm { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; align-items:start !important; gap:0 14px !important; }
+ body[data-view-mode="pc"] #taskForm > .dialog-head, body[data-view-mode="pc"] #taskForm > input[type="hidden"], body[data-view-mode="pc"] #taskForm > #recurrenceOptions, body[data-view-mode="pc"] #taskForm > .task-checklist, body[data-view-mode="pc"] #taskForm > .link-attachment-field, body[data-view-mode="pc"] #taskForm > .dialog-hint, body[data-view-mode="pc"] #taskForm > .form-actions { grid-column:1 / -1 !important; }
+ body[data-view-mode="pc"] #taskForm .task-details-grid { display:contents !important; }
+ body[data-view-mode="pc"] #taskForm .task-detail-title { grid-column:1 / -1 !important; }
+ body[data-view-mode="pc"] #taskForm .task-details-grid > .field:not(.task-detail-title):not(.task-detail-content) { grid-column:1 !important; min-width:0 !important; }
+ body[data-view-mode="pc"] #taskForm .task-detail-content { grid-column:2 !important; grid-row:2 / span 3 !important; min-height:150px !important; }
  body[data-view-mode="pc"] #taskForm .task-detail-content textarea { min-height:150px !important; }
  body[data-view-mode="pc"] #taskForm .task-checklist-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:8px; }
  body[data-view-mode="pc"] #taskForm .task-checklist-section { min-width:0; }
