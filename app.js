@@ -683,10 +683,12 @@
     const indicator=$('navIndicator'),buttons=Array.from(document.querySelectorAll('.nav-btn[data-page]'));
     if(!indicator)return;
     const target=buttons.find(button=>isDockButtonSelected(button,page));
+    buttons.forEach(button=>{if(button===target)button.setAttribute('aria-expanded',String(!document.body.classList.contains('nav-content-collapsed')));else button.removeAttribute('aria-expanded');});
     if(!target){indicator.hidden=true;return;}
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
+    document.body.classList.remove('nav-content-collapsed');
     if(page==='home')page='tasks';
     if(!['tasks','finance','notes','settings'].includes(page))return;
     const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
@@ -2619,6 +2621,8 @@
   };
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
+    if(isDockButtonSelected(button,currentPage)){const collapsed=document.body.classList.toggle('nav-content-collapsed');button.setAttribute('aria-expanded',String(!collapsed));return;}
+    document.body.classList.remove('nav-content-collapsed');
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
         setPage(button.dataset.page);
   });
