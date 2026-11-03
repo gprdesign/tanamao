@@ -1611,6 +1611,19 @@
     body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed .kanban-column-head { flex:none !important; min-height:40px !important; margin:0 !important; }
     body.view-mobile[data-page="tasks"] #kanbanMobileNav { bottom:calc(108px + env(safe-area-inset-bottom,0px)) !important; }
     body.view-mobile[data-page="tasks"] .wrap { padding-bottom:calc(164px + env(safe-area-inset-bottom,0px)) !important; }
+
+    /* Final mobile Kanban: nav immediately above the main dock; independent collapse bodies. */
+    body.view-mobile[data-page="tasks"] #kanbanMobileNav { position:fixed !important; left:50% !important; bottom:calc(88px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; z-index:22 !important; width:min(720px,calc(100% - 20px)) !important; grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard { display:flex !important; flex-direction:column !important; grid-template-columns:none !important; grid-auto-flow:row !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; scroll-snap-type:none !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-column,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-tasks { display:contents !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-reminders,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done { display:block !important; flex:none !important; align-self:stretch !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; margin:0 0 8px !important; overflow:visible !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-content,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-content,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-group,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-group,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-section,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-section { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; margin:0 0 8px !important; overflow:visible !important; opacity:1 !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard [data-kanban-body][hidden] { display:none !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed { display:flex !important; flex:none !important; flex-direction:column !important; align-self:stretch !important; width:100% !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed .kanban-column-head { flex:none !important; height:40px !important; min-height:40px !important; margin:0 !important; }
+    body.view-mobile[data-page="tasks"] .wrap { padding-bottom:calc(148px + env(safe-area-inset-bottom,0px)) !important; }
+
 </style>
 </head>
 <body>
@@ -1735,7 +1748,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=208" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=215',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=209" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=216',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

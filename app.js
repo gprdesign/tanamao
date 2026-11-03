@@ -969,9 +969,12 @@
   function finishKanbanDrop(taskId,state){const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task||!['todo','doing','blocked','done'].includes(state))return;if(state==='done'){openKanbanTaskCompletionConfirm(task.id);return;}if(task.completedAt)toggleComplete(task.id,false);userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:state};if(state!=='blocked'&&userSettings.taskKanbanBlockers?.[task.id]){const next={...userSettings.taskKanbanBlockers};delete next[task.id];userSettings.taskKanbanBlockers=next;}saveUserSettings();renderKanban();}
   function toggleKanbanCollapsed(key){
     const keys=new Set(userSettings.kanbanCollapsedColumns||[]),wasCollapsed=keys.has(key);wasCollapsed?keys.delete(key):keys.add(key);userSettings.kanbanCollapsedColumns=[...keys];saveUserSettings();
-    const lane=document.querySelector(`#kanbanBoard [data-kanban-column="${key}"]`),body=lane?.querySelector(`[data-kanban-body="${key}"]`),button=lane?.querySelector(`[data-kanban-collapse="${key}"]`),collapsed=!wasCollapsed;
-    if(lane){lane.classList.toggle('is-collapsed',collapsed);if(body)body.hidden=collapsed;if(button){button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',`${collapsed?'Expandir':'Recolher'} ${key==='todo'?'a fazer':key==='doing'?'fazendo':key==='blocked'?'travado':key==='events'?'eventos':key==='reminders'?'lembretes':'feito'}`);}}
-    const dialog=$('kanbanColumnDialog');if(dialog.open&&dialog.dataset.columnKey===key)openKanbanColumnDialog(key);
+    const selector=`[data-kanban-column="${key}"]`,collapsed=!wasCollapsed;
+    document.querySelectorAll(`#kanbanBoard ${selector},#kanbanColumnDialog ${selector}`).forEach(lane=>{
+      const body=lane.querySelector(`[data-kanban-body="${key}"]`),button=lane.querySelector(`[data-kanban-collapse="${key}"]`);
+      lane.classList.toggle('is-collapsed',collapsed);if(body)body.hidden=collapsed;
+      if(button){button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',`${collapsed?'Expandir':'Recolher'} ${key==='todo'?'a fazer':key==='doing'?'fazendo':key==='blocked'?'travado':key==='events'?'eventos':key==='reminders'?'lembretes':'feito'}`);}
+    });
   }
   let kanbanTitleClickTimer=0;
   function openKanbanColumnDialog(key){const source=document.querySelector(`#kanbanBoard [data-kanban-column="${key}"]`),dialog=$('kanbanColumnDialog');if(!source||!dialog)return;clearTimeout(kanbanTitleClickTimer);dialog.dataset.columnKey=key;dialog.innerHTML=`<div class="kanban-fullscreen-head"><h2>${escapeHTML(source.querySelector('[data-kanban-title]')?.textContent||key)}</h2><button class="btn ghost small" type="button" data-close-kanban-dialog aria-label="Fechar">✕</button></div><div class="kanban-fullscreen-content">${source.innerHTML}</div>`;if(!dialog.open)showAppDialog(dialog);}
