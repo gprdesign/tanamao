@@ -1561,9 +1561,14 @@
     body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column,body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-side-column { flex:none !important; width:100%; height:auto !important; min-width:0; min-height:0; max-height:none !important; scroll-margin-top:60px; }
     body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column { overflow:visible; }
     body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column-list { display:grid; flex:none; min-height:0; max-height:none; overflow:visible; gap:8px; }
-    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-tasks { display:flex; flex:none; min-height:0; }
-    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done { flex:none; min-height:0; }
-    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-content,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-content { flex:none; min-height:0; overflow:visible; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-side-column { display:flex; flex-direction:column; gap:8px; overflow:visible; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-tasks { display:flex; flex:none !important; flex-direction:column; min-height:0; gap:8px; overflow:visible; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-reminders,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done { display:flex; flex:none !important; height:auto !important; min-height:0; max-height:none; overflow:visible; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-content,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-content { display:flex; flex:none !important; min-height:0; max-height:none; overflow:visible; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-group,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-group { display:flex; flex:none !important; min-height:0; overflow:visible; gap:6px; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-section,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-section { display:flex; flex:none !important; min-height:0; overflow:visible; opacity:1; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-list,body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-list { display:grid; flex:none; min-height:0; overflow:visible; }
+    body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list { gap:8px; }
     body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column-head { min-height:42px; }
     body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task { gap:7px; padding:9px; }
     body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task .task-touch-handle { display:grid !important; width:30px; height:34px; }
@@ -1696,7 +1701,7 @@
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=197" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=204',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=198" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=205',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
