@@ -1740,6 +1740,26 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
 #taskForm .task-checklist-comment { min-width:0; padding:6px 8px; border-left:2px solid #8bafff; border-radius:5px; background:#19243a; }
 #taskForm .task-checklist-comment p { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:.72rem; line-height:1.3; }
 #taskForm .task-checklist-comment time { display:block; margin-top:3px; color:var(--muted); font-size:.64rem; }
+
+/* Make task cards and calendar entries read as interactive controls. */
+body[data-view-mode="pc"][data-page="tasks"] .kanban-task .task-card { cursor:pointer !important; }
+body[data-view-mode="pc"][data-page="tasks"] .kanban-task .task-card:hover { border-radius:7px; background:rgba(139,175,255,.08) !important; }
+.kanban-reminder-item { display:block; width:100%; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.kanban-reminder-item:hover { border-color:#a98bff !important; filter:brightness(1.13); }
+.kanban-reminder-item:focus-visible,.kanban-event-item:focus-visible { outline:2px solid #a98bff; outline-offset:2px; }
+.kanban-event-item { color:inherit; text-decoration:none; cursor:pointer; }
+.kanban-event-item:hover { outline:1px solid #a98bff; filter:brightness(1.13); }
+
+
+/* Kanban task cards open on click; nested controls keep their own actions. */
+body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-card { cursor:pointer !important; }
+body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-card:hover { border-radius:8px; background:rgba(139,175,255,.08) !important; }
+.kanban-reminder-item { display:block; width:100%; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.kanban-reminder-item:hover { border-color:#a98bff !important; filter:brightness(1.13); }
+.kanban-reminder-item:focus-visible,.kanban-event-item:focus-visible { outline:2px solid #a98bff; outline-offset:2px; }
+.kanban-event-item { color:inherit; text-decoration:none; cursor:pointer; }
+.kanban-event-item:hover { outline:1px solid #a98bff; filter:brightness(1.13); }
+
 </style>
 </head>
 <body>
@@ -1864,7 +1884,7 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=224" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=233',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=225" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=234',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
