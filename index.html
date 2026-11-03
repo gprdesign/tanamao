@@ -1700,6 +1700,11 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
 }
 @media (max-width:600px) { body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower { display:contents !important; } }
 
+
+/* Reduce Fazendo's track by 10%; give the freed width to the right column. */
+@media (min-width:601px) {
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard { grid-template-columns:minmax(0,.85fr) minmax(0,.99fr) minmax(0,1.21fr) !important; }
+}
 </style>
 </head>
 <body>
@@ -1824,7 +1829,7 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=220" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=228',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=221" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=229',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
