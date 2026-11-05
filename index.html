@@ -1682,8 +1682,8 @@
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-list,
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-list { overscroll-behavior:contain !important; }
 }
-/* Reduce typographic scale across the whole site by 10%, including rem-based UI. */
-html { font-size:90% !important; }
+/* Shared typography base: mobile rem scale matches Kanban; PC baseline unchanged. */
+html { font-size:16.2px !important; }
 html:has(body[data-view-mode="pc"]) { font-size:14.4px !important; }
 body { font-size:1rem !important; }
 body[data-view-mode="pc"] { font-size:12.6px !important; }
@@ -1722,9 +1722,12 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done { order:5 !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done { flex:none !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done .kanban-done-list { display:none !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done .kanban-collapse-btn { display:none !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack { display:contents !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day, body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { display:flex !important; flex:none !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-list { display:grid !important; flex:none !important; width:100% !important; min-height:0 !important; overflow:visible !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed { flex:none !important; align-self:stretch !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed [data-kanban-body] { display:none !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day { order:1 !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { order:2 !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-todo { order:3 !important; }
@@ -1914,7 +1917,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=237" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=249',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=239" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=251',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
