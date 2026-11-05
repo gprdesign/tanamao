@@ -1885,6 +1885,12 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacit
 .task-menu-divider { height:1px; margin:4px 5px; background:#465673; }
 .menu-action.menu-reminder { color:#f1c75b; }
 .menu-action.menu-reminder:hover { background:#3a321d; }
+
+/* Floating action menus must scroll within the viewport so reminder actions remain reachable on phones. */
+.floating-action-menu { max-height:min(78dvh,560px) !important; overflow-x:hidden !important; overflow-y:auto !important; overscroll-behavior:contain; scrollbar-width:thin; }
+body.view-mobile .floating-action-menu { width:min(260px,calc(100vw - 24px)) !important; max-height:72dvh !important; padding:7px !important; }
+body.view-mobile .floating-action-menu .menu-action { min-height:38px !important; padding:8px 10px !important; }
+body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
 </style>
 </head>
 <body>
@@ -2008,7 +2014,7 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacit
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=245" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=258',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=247" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=260',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
