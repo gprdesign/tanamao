@@ -1881,6 +1881,10 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacit
 .kanban-reminder-row.is-completed .kanban-reminder-title { text-decoration:line-through; }
 .kanban-reminder-repeat { flex:none; color:#cfbfff; font-weight:900; }
 .kanban-reminder-reopen { display:grid; place-items:center; flex:none; width:38px; min-width:38px; min-height:38px; padding:0; border:1px solid #52617b; border-radius:9px; background:#202b42; color:#cbd5ea; }
+
+.task-menu-divider { height:1px; margin:4px 5px; background:#465673; }
+.menu-action.menu-reminder { color:#f1c75b; }
+.menu-action.menu-reminder:hover { background:#3a321d; }
 </style>
 </head>
 <body>
@@ -2004,7 +2008,7 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacit
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=244" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=257',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=245" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=258',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

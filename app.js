@@ -763,9 +763,10 @@
     const time=date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     return `Concluída às ${time} · ${days===0?'hoje · há 0 dias':days===1?'há 1 dia':`há ${days} dias`}`;
   }
-  function taskMenu(task,canMove=true) {
-    const id=escapeHTML(task.id), move=canMove&&!task.completedAt,completionAction=task.completedAt?'false':'true',completionLabel=task.completedAt?'REABRIR':'CONCLUIR';
-    return `<details class="task-menu"><summary aria-label="Mais ações para ${escapeHTML(task.title)}" title="Mais ações">⋮</summary><div class="task-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-task="${id}">EDITAR</button><button class="menu-action" type="button" data-toggle-complete-task="${id}" data-complete="${completionAction}">${completionLabel}</button>${move?`<button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="up">↑ SUBIR</button><button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="down">↓ DESCER</button>`:''}<button class="menu-action menu-delete" type="button" data-delete-task="${id}">EXCLUIR</button></div></details>`;
+  function taskMenu(task,canMove=true,quickReminder=false) {
+    const id=escapeHTML(task.id),move=canMove&&!task.completedAt,completionAction=task.completedAt?'false':'true',completionLabel=task.completedAt?'REABRIR':'CONCLUIR';
+    const reminderActions=quickReminder&&!task.completedAt?`<div class="task-menu-divider" role="separator"></div><button class="menu-action menu-reminder" type="button" data-quick-reminder="${id}" data-reminder-date="today">🎗️ HOJE</button><button class="menu-action menu-reminder" type="button" data-quick-reminder="${id}" data-reminder-date="tomorrow">🎗️ AMANHÃ</button><button class="menu-action menu-reminder" type="button" data-quick-reminder="${id}" data-reminder-date="other">🎗️ OUTRO DIA</button>`:'';
+    return `<details class="task-menu"><summary aria-label="Mais ações para ${escapeHTML(task.title)}" title="Mais ações">⋮</summary><div class="task-menu-popover"><button class="menu-action menu-edit" type="button" data-edit-task="${id}">EDITAR</button><button class="menu-action" type="button" data-toggle-complete-task="${id}" data-complete="${completionAction}">${completionLabel}</button>${reminderActions}${move?`<button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="up">↑ SUBIR</button><button class="menu-action menu-move" type="button" data-move-task="${id}" data-direction="down">↓ DESCER</button>`:''}<button class="menu-action menu-delete" type="button" data-delete-task="${id}">EXCLUIR</button></div></details>`;
   }
   function taskCard(task,options={}) {
     const complete=Boolean(task.completedAt), late=!complete&&(options.late ?? Boolean(task.executionDate&&task.executionDate<todayKey())), draggable=!complete&&options.draggable!==false;
@@ -779,7 +780,7 @@
     const myDayRemove=options.myDay?`<button class="my-day-remove" type="button" data-my-day-remove="${escapeHTML(task.id)}" aria-label="Tirar ${escapeHTML(task.title)} do Meu Dia" title="Tirar do Meu Dia">×</button>`:'';
     return `<article class="${className}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}${task.recurrence?' · Tarefa recorrente':''}">
       <div class="task-main"><div class="task-title-row">${taskTag}${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span>':''}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
-      <div class="task-actions">${myDayComplete}${myDayRemove}${options.myDay?'':taskMenu(task,options.canMove!==false)}${taskHandle}</div>${dayActions}
+      <div class="task-actions">${myDayComplete}${myDayRemove}${options.myDay?'':taskMenu(task,options.canMove!==false,options.quickReminder)}${taskHandle}</div>${dayActions}
     </article>`;
   }
   function renderFilterButton() {
@@ -902,6 +903,33 @@
   function normalizedTaskTagName(task){return String(getTag(task?.tagId)?.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleUpperCase('pt-BR');}
   function isReminderTask(task){return Boolean(task&&(task.recurrence||['LEMBRETE','LEMBRETES'].includes(normalizedTaskTagName(task))));}
   function getReminderTag(){const active=tags.filter(tag=>!tag.deletedAt),name=tag=>tag.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleUpperCase('pt-BR');return active.find(tag=>name(tag)==='LEMBRETES')||active.find(tag=>name(tag)==='LEMBRETE')||null;}
+  function ensurePluralReminderTag(){
+    const tag=tags.find(item=>!item.deletedAt&&item.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleUpperCase('pt-BR')==='LEMBRETES');
+    if(tag)return tag;
+    const now=nowISO(),created={id:makeId(),name:'LEMBRETES',color:'#a98bff',createdAt:now,updatedAt:now,deletedAt:null};tags.push(created);saveTags();return created;
+  }
+  function applyQuickReminder(taskId,date){
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);if(!task||!isDateKey(date))return;
+    const tag=ensurePluralReminderTag();
+    if((task.executionDate||'')!==(date||''))task.sortOrder=nextTaskOrder(date);
+    task.tagId=tag.id;task.executionDate=date;task.updatedAt=nowISO();saveTasks();
+    showToast(`Lembrete definido para ${formatDate(date,{weekday:'short',day:'2-digit',month:'2-digit'})}.`);
+  }
+  function chooseQuickReminderDate(taskId){
+    const input=document.createElement('input');input.type='date';input.setAttribute('aria-label','Escolher data do lembrete');
+    Object.assign(input.style,{position:'fixed',left:'50%',top:'50%',width:'2px',height:'2px',opacity:'0.01',zIndex:'10050',pointerEvents:'none'});
+    document.body.append(input);const cleanup=()=>{if(input.isConnected)input.remove();};
+    input.addEventListener('change',()=>{const date=input.value;cleanup();if(date)applyQuickReminder(taskId,date);},{once:true});
+    input.addEventListener('cancel',cleanup,{once:true});
+    try{if(typeof input.showPicker==='function')input.showPicker();else input.click();}catch{input.click();}
+    setTimeout(()=>{if(input.isConnected&&!input.value)cleanup();},120000);
+  }
+  function handleQuickReminderAction(button){
+    const id=button.dataset.quickReminder,choice=button.dataset.reminderDate;
+    if(choice==='other'){chooseQuickReminderDate(id);return;}
+    if(choice==='today'){applyQuickReminder(id,todayKey());return;}
+    if(choice==='tomorrow')applyQuickReminder(id,addDays(todayKey(),1));
+  }
   function openQuickReminder(){
     let tag=getReminderTag();
     if(!tag){const now=nowISO();tag={id:makeId(),name:'LEMBRETES',color:'#a98bff',createdAt:now,updatedAt:now,deletedAt:null};tags.push(tag);saveTags();}
@@ -996,7 +1024,7 @@
     const eligibleMyDayIds=(userSettings.myDayTaskIds||[]).filter(id=>{const task=all.find(item=>item.id===id);return task&&!isReminderTask(task)&&!task.completedAt;});if(eligibleMyDayIds.length!==(userSettings.myDayTaskIds||[]).length){userSettings.myDayTaskIds=eligibleMyDayIds;saveUserSettings();}const myDayIds=new Set(userSettings.myDayTaskIds||[]),active=all.filter(task=>!isReminderTask(task)&&!task.completedAt&&!myDayIds.has(task.id)),lanes={};
     for(const [state,label] of [['doing','FAZENDO'],['todo','A FAZER'],['blocked','TRAVADO']]){
       const items=active.filter(task=>getKanbanState(task)===state).sort(taskOrder),cards=items.map(task=>{
-        const card=taskCard(task,{canMove:false,late:false,draggable:true});
+        const card=taskCard(task,{canMove:false,late:false,draggable:true,quickReminder:true});
         const controls=`<div class="kanban-card-controls"><label class="kanban-state-control"><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}">${[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO']].map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}</select></label><button class="kanban-complete-btn" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button></div>`;
         const blocker=state==='blocked'&&userSettings.taskKanbanBlockers?.[task.id]?`<small class="kanban-blocker">${escapeHTML(userSettings.taskKanbanBlockers[task.id])}</small>`:'';
         return `<div class="kanban-task">${card}${blocker}${controls}</div>`;
@@ -1941,6 +1969,7 @@
     const header=column.querySelector('[data-open-day]');if(header)openDayDialog(header.dataset.openDay);
   }
   function handleTaskClick(event) {
+    const quickReminder=event.target.closest('[data-quick-reminder]');if(quickReminder){event.preventDefault();event.stopPropagation();handleQuickReminderAction(quickReminder);return;}
     if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();return;}
     const reprogram=event.target.closest('[data-reprogram-task]');
     if(reprogram){event.preventDefault();event.stopPropagation();const task=tasks.find(item=>item.id===String(reprogram.dataset.reprogramTask)&&!item.deletedAt&&!item.completedAt);if(!task)return;const dialog=$('dayDialog'),token=dialog.dataset.historyToken||'';dialog.close();delete dialog.dataset.historyToken;openTaskDialog(task.id,'',token);const dateInput=$('executionDate');dateInput?.focus();try{dateInput?.showPicker?.();}catch{dateInput?.click();}return;}
@@ -1980,7 +2009,7 @@
     menu.addEventListener('click',event=>{
       const action=event.target.closest('button'); if(!action)return;
       event.preventDefault();event.stopPropagation();
-      if(action.matches('[data-edit-task],[data-toggle-complete-task],[data-move-task],[data-delete-task]'))handleTaskClick(event);
+      if(action.matches('[data-edit-task],[data-toggle-complete-task],[data-move-task],[data-delete-task],[data-quick-reminder]'))handleTaskClick(event);
       else handleNotesClick(event);
       closeFloatingActionMenu();
     });
