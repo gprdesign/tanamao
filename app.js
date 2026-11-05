@@ -907,7 +907,7 @@
     return {events};
   }
   function setMyDayTask(taskId,beforeTaskId=''){
-    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt&&!item.recurrence);if(!task)return;
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt&&!item.recurrence);if(!task||String(beforeTaskId)===task.id)return;
     const ordered=(userSettings.myDayTaskIds||[]).filter(id=>id!==task.id&&tasks.some(item=>item.id===id&&!item.deletedAt&&!item.completedAt&&!item.recurrence));
     const index=beforeTaskId?ordered.indexOf(String(beforeTaskId)):-1;
     if(index>=0)ordered.splice(index,0,task.id);else ordered.push(task.id);
@@ -915,7 +915,7 @@
   }
   function removeMyDayTask(taskId){userSettings.myDayTaskIds=(userSettings.myDayTaskIds||[]).filter(id=>id!==String(taskId));saveUserSettings();renderKanban();}
   function renderMyDayColumn(all){
-    const selected=new Set(userSettings.myDayTaskIds||[]),items=all.filter(task=>selected.has(task.id)&&!task.completedAt&&!task.recurrence),cards=items.map(task=>`<div class="kanban-task my-day-task">${taskCard(task,{canMove:false,late:false,draggable:true})}<button class="my-day-remove" type="button" data-my-day-remove="${escapeHTML(task.id)}" aria-label="Tirar ${escapeHTML(task.title)} do Meu Dia" title="Tirar do Meu Dia">×</button></div>`).join('');
+    const items=(userSettings.myDayTaskIds||[]).map(id=>all.find(task=>task.id===id&&!task.completedAt&&!task.recurrence)).filter(Boolean),cards=items.map(task=>`<div class="kanban-task my-day-task">${taskCard(task,{canMove:false,late:false,draggable:true})}<div class="my-day-controls"><button class="my-day-remove" type="button" data-my-day-remove="${escapeHTML(task.id)}" aria-label="Tirar ${escapeHTML(task.title)} do Meu Dia" title="Tirar do Meu Dia">×</button><button class="my-day-sort-handle" type="button" data-myday-sort-task="${escapeHTML(task.id)}" aria-label="Reordenar ${escapeHTML(task.title)}" title="Arraste para ordenar" draggable="true">⠿</button></div></div>`).join('');
     return `<section class="kanban-column kanban-my-day" data-my-day-drop aria-label="Meu Dia"><header class="kanban-column-head"><h3>MEU DIA</h3><span>${items.length}</span></header><div class="kanban-column-list kanban-my-day-list" data-my-day-list>${cards||'<p class="kanban-empty my-day-empty">Arraste para cá as tarefas que você escolheu fazer hoje.</p>'}</div></section>`;
   }
   function renderKanbanDoneColumn(all){
@@ -2085,11 +2085,11 @@
   }
   function startPointerDrag(event) {
     if(event.pointerType==='mouse'||event.pointerType==='touch'||event.button!==0||pointerDrag)return;
-    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]');
+    const taskHandle=event.target.closest('[data-myday-sort-task],[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]');
     if(!taskHandle&&!noteHandle&&!checklistHandle)return;
     const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
+    event.preventDefault();pointerDrag={kind,id:taskHandle?(taskHandle.dataset.mydaySortTask||taskHandle.dataset.touchDragTask):noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
     card.setAttribute('draggable','false');card.classList.add('is-dragging');try{event.target.setPointerCapture(event.pointerId);}catch{}
   }
   function movePointerDrag(event) {
@@ -2102,11 +2102,11 @@
   }
   function startTouchDrag(event) {
     if(pointerDrag)return;
-    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]'),touch=event.changedTouches?.[0];
+    const taskHandle=event.target.closest('[data-myday-sort-task],[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]'),touch=event.changedTouches?.[0];
     if((!taskHandle&&!noteHandle&&!checklistHandle)||!touch)return;
     const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,source:'touch',card,wasDraggable:card.getAttribute('draggable')};
+    event.preventDefault();pointerDrag={kind,id:taskHandle?(taskHandle.dataset.mydaySortTask||taskHandle.dataset.touchDragTask):noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,source:'touch',card,wasDraggable:card.getAttribute('draggable')};
     card.setAttribute('draggable','false');card.classList.add('is-dragging');
   }
   function moveTouchDrag(event) {
