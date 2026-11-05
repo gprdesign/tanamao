@@ -939,19 +939,25 @@
     }else if(userSettings.taskKanbanBlockers?.[task.id]){const blockers={...userSettings.taskKanbanBlockers};delete blockers[task.id];userSettings.taskKanbanBlockers=blockers;}
     saveUserSettings();renderKanban();
   }
-  function openKanbanTaskCompletionConfirm(taskId){
+  function openKanbanTaskCompletionConfirm(taskId,returnDialog=''){
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);if(!task)return;
-    pendingKanbanCompletionId=task.id;const open=normalizeTaskSubtasks(task.subtasks).filter(item=>!item.completed);
+    pendingKanbanCompletionId=task.id;const open=normalizeTaskSubtasks(task.subtasks).filter(item=>!item.completed),confirm=$('kanbanCompletionConfirm');
     $('kanbanCompletionText').textContent=`Concluir “${task.title}”?`;
     $('kanbanCompletionChecklistWarning').hidden=!open.length;
     $('kanbanCompletionChecklistItems').innerHTML=open.map(item=>`<li>${escapeHTML(item.text)}</li>`).join('');
-    $('kanbanCompletionConfirm').classList.toggle('has-open-subtasks',Boolean(open.length));
-    $('kanbanCompletionConfirm').hidden=false;$('kanbanCompletionConfirmBtn').focus();
+    confirm.classList.toggle('has-open-subtasks',Boolean(open.length));
+    if(returnDialog==='task-dialog'){$('taskDialog').append(confirm);confirm.dataset.kanbanReturnDialog=returnDialog;}
+    confirm.hidden=false;$('kanbanCompletionConfirmBtn').focus();
   }
-  function closeKanbanTaskCompletionConfirm(){pendingKanbanCompletionId='';$('kanbanCompletionConfirm').hidden=true;}
+  function closeKanbanTaskCompletionConfirm(){const confirm=$('kanbanCompletionConfirm');pendingKanbanCompletionId='';confirm.hidden=true;if(confirm.dataset.kanbanReturnDialog==='task-dialog'){$('tasksPage').append(confirm);delete confirm.dataset.kanbanReturnDialog;}}
   function confirmKanbanTaskCompletion(){
     const task=tasks.find(item=>item.id===pendingKanbanCompletionId&&!item.deletedAt&&!item.completedAt);if(!task){closeKanbanTaskCompletionConfirm();return;}
-    const returnDialog=$('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog||'';delete $('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog;const nextDate=toggleComplete(task.id,true);closeKanbanTaskCompletionConfirm();showTaskCompletionToast(nextDate);renderKanban();if(returnDialog&&$('kanbanColumnDialog').open)openKanbanColumnDialog(returnDialog);
+    const returnDialog=$('kanbanCompletionConfirm').dataset.kanbanReturnDialog||$('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog||'';delete $('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog;const nextDate=toggleComplete(task.id,true);closeKanbanTaskCompletionConfirm();if(returnDialog==='task-dialog')closeTaskDialog();showTaskCompletionToast(nextDate);renderKanban();if(returnDialog&&returnDialog!=='task-dialog'&&$('kanbanColumnDialog').open)openKanbanColumnDialog(returnDialog);
+  }
+  function completeTaskFromDialog(){
+    const id=$('taskId').value,task=tasks.find(item=>item.id===id&&!item.deletedAt&&!item.completedAt);if(!task)return;
+    if(taskDialogDirty&&!saveTaskFromForm({preventDefault(){}},false))return;
+    openKanbanTaskCompletionConfirm(task.id,'task-dialog');
   }
   function finishKanbanDrop(taskId,state){const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task||!['todo','doing','blocked','done'].includes(state))return;if(state==='done'){openKanbanTaskCompletionConfirm(task.id);return;}if(task.completedAt)toggleComplete(task.id,false);userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:state};if(state!=='blocked'&&userSettings.taskKanbanBlockers?.[task.id]){const next={...userSettings.taskKanbanBlockers};delete next[task.id];userSettings.taskKanbanBlockers=next;}saveUserSettings();renderKanban();}
   function toggleKanbanCollapsed(key){
@@ -1759,6 +1765,7 @@
     const recurrence=task?.recurrence||null;$('taskRecurrence').value=recurrence?.frequency||'';$('recurrenceInterval').value=String(recurrence?.interval||1);$('recurrenceUntil').value=recurrence?.until||'';
     document.querySelectorAll('[name="recurrenceWeekday"]').forEach(box=>{box.checked=Boolean(recurrence?.weekdays?.includes(Number(box.value)));});updateTaskRecurrenceUI(false);
     $('deleteTaskBtn').classList.toggle('hidden',!task);
+    $('taskDialogCompleteBtn').classList.toggle('hidden',!task||Boolean(task.completedAt));
     showAppDialog($('taskDialog'),reuseHistoryToken);
     requestAnimationFrame(()=>{ $('taskChecklistList').querySelectorAll('[data-task-checklist-text]').forEach(resizeTaskChecklistTextarea); });
   }
@@ -2710,6 +2717,7 @@
   $('taskLinkRemove').addEventListener('click',()=>clearLinkAttachment('task'));
   $('closeTaskDialog').addEventListener('click',closeTaskDialogSafely);
   $('deleteTaskBtn').addEventListener('click',softDeleteTask);
+  $('taskDialogCompleteBtn').addEventListener('click',completeTaskFromDialog);
   $('weekGrid').addEventListener('click',handleTaskClick);
   $('weekGrid').addEventListener('keydown',event=>{if(event.target.closest('.planner-calendar-events-open-day')&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openDayDialog(event.target.closest('.planner-calendar-events-open-day').dataset.openDay);}});
   $('weekGrid').addEventListener('dblclick',handleDayAreaDoubleClick);
