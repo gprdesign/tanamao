@@ -100,6 +100,16 @@
     .kanban-state-control select { min-height:30px; padding:4px 8px; border-radius:8px; font-size:.68rem; font-weight:800; }
     .kanban-blocker { display:block; padding:5px 7px; border-left:2px solid #ffb36b; color:#ffcf9b; font-size:.68rem; overflow-wrap:anywhere; }
     .kanban-empty { margin:0; padding:14px 7px; color:var(--muted); font-size:.72rem; text-align:center; }
+    .kanban-doing-stack { display:flex; flex-direction:column; min-width:0; min-height:0; gap:8px; }
+    .kanban-my-day { border-top:2px solid #f1c75b; background:linear-gradient(145deg,rgba(105,80,28,.30),rgba(20,27,45,.94) 60%); }
+    .my-day-task { position:relative; padding-right:31px; border-color:#826d36; background:linear-gradient(120deg,#282414,#171a21); }
+    .my-day-task .task-card { cursor:grab; }
+    .my-day-task .task-menu { display:none !important; }
+    .my-day-task .task-touch-handle { color:#f1d47b; }
+    .my-day-task .task-open { color:#fff0be; }
+    .my-day-remove { position:absolute; top:5px; right:5px; display:grid; place-items:center; width:24px; height:24px; padding:0; border:1px solid #786638; border-radius:7px; background:#332b17; color:#ffe19a; font-size:1rem; }
+    .my-day-remove:hover { background:#493b1b; }
+    .my-day-empty { border:1px dashed #786638; border-radius:9px; color:#d8c98f; }
     .kanban-doing { border-top:2px solid #8bafff; }
     .kanban-blocked { border-top:2px solid #ffb36b; }
     .kanban-side-column { display:flex; flex-direction:column; min-width:0; min-height:0; max-height:calc(100dvh - 210px); gap:8px; }
@@ -1600,7 +1610,10 @@
  body[data-view-mode="pc"][data-page="tasks"] #plannerKanbanView { display:flex !important; flex:1 1 0 !important; width:100% !important; height:100% !important; min-height:0 !important; overflow:hidden !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard { display:grid !important; flex:1 1 0 !important; grid-template-columns:minmax(0,.85fr) repeat(2,minmax(0,1.1fr)) !important; grid-template-rows:minmax(0,1fr) minmax(0,1fr) !important; grid-template-areas:"agenda doing todo" "agenda blocked done" !important; grid-auto-rows:minmax(0,1fr) !important; align-content:stretch !important; align-items:stretch !important; gap:10px !important; width:100% !important; height:100% !important; min-height:0 !important; max-height:none !important; overflow:hidden !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-events-reminders { grid-area:agenda !important; display:flex !important; flex-direction:column !important; width:100% !important; height:100% !important; min-width:0 !important; min-height:0 !important; max-height:none !important; padding:12px !important; border-top:3px solid #b89bff !important; background:linear-gradient(155deg,rgba(85,64,138,.35),rgba(20,27,45,.97) 48%) !important; overflow:hidden !important; }
- body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing { grid-area:doing !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack { grid-area:doing !important; display:flex !important; flex-direction:column !important; gap:8px !important; min-width:0 !important; min-height:0 !important; overflow:hidden !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { display:flex !important; flex:1 1 0 !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; overflow:hidden !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-list { flex:1 1 auto !important; min-height:0 !important; overflow-x:hidden !important; overflow-y:auto !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-head { flex:none !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-blocked { grid-area:todo !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-todo { grid-area:blocked !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-done { grid-area:done !important; }
@@ -1681,7 +1694,10 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
 @media (min-width:601px) {
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard { grid-template-columns:minmax(0,.85fr) repeat(2,minmax(0,1.1fr)) !important; grid-template-rows:minmax(0,1fr) minmax(0,1fr) !important; grid-template-areas:"agenda doing todo" "agenda doing lower" !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-events-reminders { grid-area:agenda !important; }
- body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing { grid-area:doing !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack { grid-area:doing !important; display:flex !important; flex-direction:column !important; gap:8px !important; min-width:0 !important; min-height:0 !important; overflow:hidden !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { display:flex !important; flex:1 1 0 !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; overflow:hidden !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-list { flex:1 1 auto !important; min-height:0 !important; overflow-x:hidden !important; overflow-y:auto !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-head { flex:none !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-todo { grid-area:todo !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower { grid-area:lower !important; display:flex !important; flex-direction:column !important; gap:8px !important; min-width:0 !important; min-height:0 !important; overflow:hidden !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-blocked { display:flex !important; flex:1 1 0 !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; }
@@ -1690,12 +1706,17 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done .kanban-column-list { display:none !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-blocked .kanban-column-list { flex:1 1 auto !important; min-height:0 !important; overflow-x:hidden !important; overflow-y:auto !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-blocked .kanban-column-head { flex:none !important; }
- body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing .kanban-column-list { flex:1 1 auto !important; min-height:0 !important; overflow-x:hidden !important; overflow-y:auto !important; }
- body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing .task-card .task-open { -webkit-line-clamp:3 !important; max-height:3.7em !important; }
- body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower .kanban-collapse-btn { display:none !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing .kanban-column-list { flex:1 1 auto !important; min-height:0 !important; overflow-x:hidden !important; overflow-y:auto !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing .task-card .task-open { -webkit-line-clamp:3 !important; max-height:3.7em !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-collapse-btn, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower .kanban-collapse-btn { display:none !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower .kanban-done .kanban-title-button { pointer-events:auto !important; }
 }
-@media (max-width:600px) { body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower { display:contents !important; } }
+@media (max-width:600px) {
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack { display:contents !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day, body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { display:flex !important; flex:none !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-list { display:grid !important; flex:none !important; width:100% !important; min-height:0 !important; overflow:visible !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower { display:contents !important; }
+}
 
 
 /* Reduce Fazendo's track by 10%; give the freed width to the right column. */
@@ -1880,7 +1901,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=228" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=240',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=229" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=241',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
