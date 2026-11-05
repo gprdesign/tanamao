@@ -966,7 +966,7 @@
 
   function renderKanban(){
     const all=visibleTasks('tasks').filter(task=>!task.deletedAt),board=$('kanbanBoard');if(!board)return;
-    const active=all.filter(task=>!task.recurrence&&!task.completedAt),lanes={};
+    const myDayIds=new Set(userSettings.myDayTaskIds||[]),active=all.filter(task=>!task.recurrence&&!task.completedAt&&!myDayIds.has(task.id)),lanes={};
     for(const [state,label] of [['doing','FAZENDO'],['todo','A FAZER'],['blocked','TRAVADO']]){
       const items=active.filter(task=>getKanbanState(task)===state).sort(taskOrder),cards=items.map(task=>{
         const card=taskCard(task,{canMove:false,late:false,draggable:true});
