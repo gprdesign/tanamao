@@ -1874,6 +1874,13 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) 
 body.view-mobile[data-page="tasks"] #kanbanBoard [data-touch-drag-task] { touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; }
 body.view-mobile[data-page="tasks"] #kanbanBoard [data-touch-drag-task].drag-armed { color:#f1c75b !important; transform:scale(1.08); }
 body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacity:.42 !important; outline:2px dashed #f1c75b !important; outline-offset:2px !important; }
+
+.kanban-reminder-future .kanban-reminder-badge { background:#263751; color:#cbd8f3; }
+.kanban-reminder-undated .kanban-reminder-badge { background:#333041; color:#d5c9f0; }
+.kanban-reminder-row.is-completed .kanban-reminder-item { opacity:.68; }
+.kanban-reminder-row.is-completed .kanban-reminder-title { text-decoration:line-through; }
+.kanban-reminder-repeat { flex:none; color:#cfbfff; font-weight:900; }
+.kanban-reminder-reopen { display:grid; place-items:center; flex:none; width:38px; min-width:38px; min-height:38px; padding:0; border:1px solid #52617b; border-radius:9px; background:#202b42; color:#cbd5ea; }
 </style>
 </head>
 <body>
@@ -1997,7 +2004,7 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacit
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=243" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=256',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=244" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=257',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
