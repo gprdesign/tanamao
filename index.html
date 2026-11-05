@@ -1692,7 +1692,7 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
 
 /* PC Kanban final layout: Agenda + Doing full-height; bottom-right split for Blocked/Done. */
 @media (min-width:601px) {
- body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard { grid-template-columns:minmax(0,.85fr) repeat(2,minmax(0,1.1fr)) !important; grid-template-rows:minmax(0,1fr) minmax(0,1fr) !important; grid-template-areas:"agenda doing todo" "agenda doing lower" !important; }
+ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard { grid-template-columns:minmax(0,.85fr) repeat(2,minmax(0,1.1fr)) !important; grid-template-rows:minmax(0,1fr) minmax(0,1fr) !important; grid-template-areas:"agenda todo doing" "agenda todo lower" !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-events-reminders { grid-area:agenda !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack { grid-area:doing !important; display:flex !important; flex-direction:column !important; gap:8px !important; min-width:0 !important; min-height:0 !important; overflow:hidden !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day, body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { display:flex !important; flex:1 1 0 !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; overflow:hidden !important; }
@@ -1715,6 +1715,9 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack { display:contents !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day, body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { display:flex !important; flex:none !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-list { display:grid !important; flex:none !important; width:100% !important; min-height:0 !important; overflow:visible !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day { order:1 !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { order:2 !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-todo { order:3 !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower { display:contents !important; }
 }
 
@@ -1901,7 +1904,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=230" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=242',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=231" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=243',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
