@@ -774,10 +774,11 @@
     if(tagTone)classes.push(tagTone);const className=classes.filter(Boolean).join(' ');
     const reprogram=options.reprogram&&!complete?`<button class="task-reprogram-btn" type="button" data-reprogram-task="${escapeHTML(task.id)}">REPROGRAMAR</button>`:'';
     const dayActions=options.dayActions&&!complete?`<div class="task-day-actions"><button class="task-day-action task-day-action--planning" type="button" data-day-task-action="planning" data-day-task-id="${escapeHTML(task.id)}">PLANEJAR</button><button class="task-day-action task-day-action--tomorrow" type="button" data-day-task-action="tomorrow" data-day-task-id="${escapeHTML(task.id)}">AMANHÃ</button><button class="task-day-action task-day-action--next-week" type="button" data-day-task-action="next-monday" data-day-task-id="${escapeHTML(task.id)}">SEG</button><button class="task-day-action task-day-action--complete" type="button" data-day-task-action="complete" data-day-task-id="${escapeHTML(task.id)}" aria-label="Concluir tarefa: ${escapeHTML(task.title)}" title="Concluir">✅</button></div>`:'';
+    const myDayComplete=options.myDay?`<button class="kanban-complete-btn my-day-complete" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button>`:'';
     const myDayRemove=options.myDay?`<button class="my-day-remove" type="button" data-my-day-remove="${escapeHTML(task.id)}" aria-label="Tirar ${escapeHTML(task.title)} do Meu Dia" title="Tirar do Meu Dia">×</button>`:'';
     return `<article class="${className}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}${task.recurrence?' · Tarefa recorrente':''}">
       <div class="task-main"><div class="task-title-row">${taskTag}${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span>':''}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
-      <div class="task-actions">${myDayRemove}${options.myDay?'':taskMenu(task,options.canMove!==false)}${taskHandle}</div>${dayActions}
+      <div class="task-actions">${myDayComplete}${myDayRemove}${options.myDay?'':taskMenu(task,options.canMove!==false)}${taskHandle}</div>${dayActions}
     </article>`;
   }
   function renderFilterButton() {
