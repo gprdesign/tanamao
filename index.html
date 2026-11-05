@@ -101,9 +101,9 @@
     .kanban-blocker { display:block; padding:5px 7px; border-left:2px solid #ffb36b; color:#ffcf9b; font-size:.68rem; overflow-wrap:anywhere; }
     .kanban-empty { margin:0; padding:14px 7px; color:var(--muted); font-size:.72rem; text-align:center; }
     .kanban-doing-stack { display:flex; flex-direction:column; min-width:0; min-height:0; gap:8px; }
-    .kanban-my-day { border-top:2px solid #8bafff; }
+    .kanban-my-day { border-top:2px solid #f1c75b; background:linear-gradient(145deg,rgba(105,80,28,.30),rgba(20,27,45,.94) 60%); }
     .kanban-my-day-list { grid-template-columns:minmax(0,1fr) !important; }
-    .my-day-task { background:#111827; }
+    .my-day-task { border-color:#826d36; background:linear-gradient(120deg,#282414,#171a21); }
     .my-day-task .task-card { cursor:default; }
     .my-day-task .task-menu { display:none !important; }
     .my-day-task .task-touch-handle { color:var(--muted) !important; }
@@ -1906,7 +1906,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=235" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=247',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=236" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=248',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
