@@ -117,6 +117,7 @@
   let completedVisibleLimit = 6;
   let floatingActionMenu = null;
   let pointerDrag = null;
+  let touchDragPending = null;
   let activeDayKind = 'day';
   let activeDayDate = '';
   let pendingDayTaskCompletionId = '';
@@ -2120,23 +2121,52 @@
     if(!pointerDrag||pointerDrag.source!=='pointer'||event.pointerId!==pointerDrag.pointerId)return;
     finishDragAt(pointerDrag,document.elementFromPoint(event.clientX,event.clientY),cancel,event.clientY);
   }
+  function cancelPendingTouchDrag(){
+    if(!touchDragPending)return;
+    clearTimeout(touchDragPending.timer);touchDragPending.handle.classList.remove('drag-armed');
+    if(touchDragPending.wasDraggable!==null)touchDragPending.card.setAttribute('draggable',touchDragPending.wasDraggable);
+    touchDragPending=null;
+  }
   function startTouchDrag(event) {
-    if(pointerDrag)return;
+    if(pointerDrag||touchDragPending||event.touches?.length!==1)return;
     const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]'),touch=event.changedTouches?.[0];
     if((!taskHandle&&!noteHandle&&!checklistHandle)||!touch)return;
-    const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
+    const kind=taskHandle?'task':noteHandle?'note':'checklist',handle=taskHandle||noteHandle||checklistHandle,card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,source:'touch',card,wasDraggable:card.getAttribute('draggable')};
-    card.setAttribute('draggable','false');card.classList.add('is-dragging');
+    const pending={kind,handle,card,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,startX:touch.clientX,startY:touch.clientY,wasDraggable:card.getAttribute('draggable')};
+    // Disable native HTML5 touch dragging immediately; the custom long-press path owns the gesture.
+    card.setAttribute('draggable','false');
+    pending.timer=setTimeout(()=>{
+      if(touchDragPending!==pending)return;
+      touchDragPending=null;handle.classList.remove('drag-armed');
+      pointerDrag={...pending,source:'touch',lastX:pending.startX,lastY:pending.startY,autoScrollFrame:0};
+      card.setAttribute('draggable','false');card.classList.add('is-dragging');
+      pointerDrag.autoScrollFrame=requestAnimationFrame(function autoScrollTouchDrag(){
+        const drag=pointerDrag;if(!drag||drag.source!=='touch')return;
+        const edge=78,speed=8;
+        if(drag.lastY<edge)window.scrollBy(0,-speed);else if(drag.lastY>window.innerHeight-edge)window.scrollBy(0,speed);
+        updateDragHighlight(drag,document.elementFromPoint(drag.lastX,drag.lastY));
+        drag.autoScrollFrame=requestAnimationFrame(autoScrollTouchDrag);
+      });
+    },240);
+    touchDragPending=pending;handle.classList.add('drag-armed');
   }
   function moveTouchDrag(event) {
+    const pending=touchDragPending;
+    if(pending){
+      const touch=Array.from(event.changedTouches||[]).find(item=>item.identifier===pending.touchId)||Array.from(event.touches||[]).find(item=>item.identifier===pending.touchId);
+      if(touch&&Math.hypot(touch.clientX-pending.startX,touch.clientY-pending.startY)>10)cancelPendingTouchDrag();
+      return;
+    }
     if(!pointerDrag||pointerDrag.source!=='touch')return;
     const touch=Array.from(event.changedTouches||[]).find(item=>item.identifier===pointerDrag.touchId)||Array.from(event.touches||[]).find(item=>item.identifier===pointerDrag.touchId);
-    if(!touch)return;event.preventDefault();updateDragHighlight(pointerDrag,document.elementFromPoint(touch.clientX,touch.clientY));
+    if(!touch)return;event.preventDefault();pointerDrag.lastX=touch.clientX;pointerDrag.lastY=touch.clientY;updateDragHighlight(pointerDrag,document.elementFromPoint(touch.clientX,touch.clientY));
   }
   function finishTouchDrag(event,cancel=false) {
+    if(touchDragPending){cancelPendingTouchDrag();return;}
     if(!pointerDrag||pointerDrag.source!=='touch')return;
     const drag=pointerDrag,touch=Array.from(event.changedTouches||[]).find(item=>item.identifier===drag.touchId);
+    if(drag.autoScrollFrame)cancelAnimationFrame(drag.autoScrollFrame);
     finishDragAt(drag,touch?document.elementFromPoint(touch.clientX,touch.clientY):null,cancel,touch?.clientY||0);
   }
   function renderNoteTagChoices(selected=[]) {

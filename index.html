@@ -1869,6 +1869,11 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) 
 body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) .kanban-blocker {
   width:100% !important; min-width:0 !important; overflow-wrap:anywhere !important;
 }
+
+/* Mobile drag starts on a deliberate hold; ordinary finger movement can still scroll. */
+body.view-mobile[data-page="tasks"] #kanbanBoard [data-touch-drag-task] { touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; }
+body.view-mobile[data-page="tasks"] #kanbanBoard [data-touch-drag-task].drag-armed { color:#f1c75b !important; transform:scale(1.08); }
+body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacity:.42 !important; outline:2px dashed #f1c75b !important; outline-offset:2px !important; }
 </style>
 </head>
 <body>
@@ -1992,7 +1997,7 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) 
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=242" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=255',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=243" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=256',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
