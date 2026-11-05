@@ -14,7 +14,6 @@
   const FINANCE_EXIT_TAG_ID = 'flow-exit';
   const FINANCE_MONTH_KEY = 'tnm.weekly.financeMonth.v1';
   const LOG_RANGE_KEY = 'tnm.weekly.logsRange.v1';
-  const ZOOM_KEY = 'tnm.weekly.zoom.v1';
   const VIEW_MODE_KEY = 'tnm.weekly.viewMode.v1';
   const USER_SETTINGS_KEY = 'tnm.weekly.userSettings.v1';
   const PRIVATE_VAULT_KEY = 'tnm.weekly.privateVault.v1';
@@ -105,7 +104,6 @@
   let currentPage = storedPage==='log'?'finance':['tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
-  let zoomLevel = Math.min(1.25,Math.max(.8,Number(localStorage.getItem(ZOOM_KEY))||1));
   let weekStart = (()=>{const current=startOfWeek(todayKey()),saved=localStorage.getItem(WEEK_KEY),selected=saved?startOfWeek(saved):current;return selected<current?current:selected;})();
   let observedToday=todayKey();
   let observedCurrentWeek=startOfWeek(observedToday);
@@ -658,16 +656,6 @@
     observedToday=today; observedCurrentWeek=current;
     if (weekStart<current) {weekStart=current;localStorage.setItem(WEEK_KEY,weekStart);}
     renderAll();
-  }
-  function applyZoom() {
-    const root=document.documentElement,viewportHeight=window.visualViewport?.height||root.clientHeight||window.innerHeight;
-    root.style.setProperty('--app-zoom',String(zoomLevel));
-    root.style.setProperty('--app-zoom-height',`${Math.ceil(viewportHeight/zoomLevel)}px`);
-    document.querySelectorAll('[data-zoom-value]').forEach(node=>node.textContent=`${Math.round(zoomLevel*100)}%`);
-  }
-  function changeZoom(direction) {
-    zoomLevel=Math.min(1.25,Math.max(.8,Math.round((zoomLevel+(direction==='in'?.05:-.05))*100)/100));
-    localStorage.setItem(ZOOM_KEY,String(zoomLevel));applyZoom();
   }
   function showToast(message,duration=2600) {
     const node=$('toast');
@@ -2756,9 +2744,6 @@
   $('logoutBtn').addEventListener('click',signOut);
   $('syncNowBtn').addEventListener('click',syncNow);
   document.querySelectorAll('.refresh-sync-action').forEach(button=>button.addEventListener('click',refreshAndSync));
-  document.querySelectorAll('[data-zoom-action]').forEach(button=>button.addEventListener('click',()=>changeZoom(button.dataset.zoomAction)));
-  window.addEventListener('resize',applyZoom,{passive:true});
-  window.visualViewport?.addEventListener('resize',applyZoom,{passive:true});
   $('logForm').addEventListener('submit',saveLogFromForm);
   $('logsList').addEventListener('click',handleLogsClick);
   $('logsList').addEventListener('change',handleLogTagChange);
@@ -2849,5 +2834,5 @@
   window.addEventListener('resize',()=>updateNavIndicator());
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false); });
 
-  syncViewModeSwitch();applyZoom();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
+  syncViewModeSwitch();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
 })();

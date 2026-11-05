@@ -276,10 +276,10 @@
     /* Compact full-screen home and weekly overview. Full task lists open in dialogs. */
     body { overflow:hidden; }
     body[data-page="notes"],body[data-page="settings"] { overflow-y:auto; }
-    .wrap { display:flex; flex-direction:column; height:var(--app-zoom-height,100dvh); min-height:0; overflow:hidden; padding:10px 14px calc(76px + env(safe-area-inset-bottom,0px)); }
+    .wrap { display:flex; flex-direction:column; height:100dvh; min-height:0; overflow:hidden; padding:10px 14px calc(76px + env(safe-area-inset-bottom,0px)); }
     body[data-page="tasks"] .wrap { padding-bottom:calc(132px + env(safe-area-inset-bottom,0px)); }
-    body[data-page="notes"] .wrap { display:flex; flex-direction:column; height:var(--app-zoom-height,100dvh); min-height:0; overflow:hidden; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
-    body[data-page="settings"] .wrap { display:block; height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="notes"] .wrap { display:flex; flex-direction:column; height:100dvh; min-height:0; overflow:hidden; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="settings"] .wrap { display:block; height:auto; min-height:100dvh; overflow:visible; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
     body[data-page="notes"] #notesPage.active { display:flex; flex:1; flex-direction:column; min-height:0; overflow:hidden; }
     body[data-page="notes"] #notesPage .page-heading,body[data-page="notes"] #notesPage .notes-mode-tabs { flex:none; }
     body[data-page="notes"] #normalNotesView,body[data-page="notes"] #privateNotesView { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
@@ -493,7 +493,7 @@
     #planningBtn[aria-expanded="true"],#planningBtn { color:#ffd166; }
     #completedBtn[aria-expanded="true"] { color:#8fe0b5; }
     body[data-page="tasks"].planner-expanded { overflow-y:auto; }
-    body[data-page="tasks"].planner-expanded .wrap { height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; }
+    body[data-page="tasks"].planner-expanded .wrap { height:auto; min-height:100dvh; overflow:visible; }
     body[data-page="tasks"].planner-expanded #tasksPage.active { overflow:visible; }
     body[data-page="tasks"].planner-expanded .week-grid { flex:none; min-height:350px; grid-template-rows:repeat(4,minmax(74px,1fr)); }
     body[data-page="tasks"].planner-expanded .planner-panel:not([hidden]) { max-height:none; overflow:visible; }
@@ -517,7 +517,7 @@
     dialog[open] { animation:dialog-in .22s cubic-bezier(.22,.75,.25,1) both; }
     @keyframes dialog-in { from { opacity:0; transform:translateY(8px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
     /* Interface ampliada para leitura confortável em celular e tablet. */
-    html { font-size:18px; zoom:var(--app-zoom,1); }
+    html { font-size:18px;  }
     body { font-size:16px; }
     .wrap { padding-top:12px; padding-right:16px; padding-left:16px; padding-bottom:calc(92px + env(safe-area-inset-bottom,0px)); }
     .app-header { margin-bottom:13px; }
@@ -817,9 +817,6 @@
     .home-stat-overdue { background:rgba(169,73,88,.8); }
     .home-stat-today { background:rgba(77,112,178,.8); }
     .home-stat-unplanned { background:rgba(153,111,44,.8); }
-    .zoom-controls { display:flex; flex:none; align-items:center; gap:3px; }
-    .zoom-controls button { display:grid; place-items:center; width:30px; height:30px; padding:0; border:1px solid #53627e; border-radius:8px; background:#19253b; color:var(--text); font-size:.9rem; font-weight:800; }
-    .zoom-controls span { min-width:38px; color:var(--muted); font-size:.62rem; text-align:center; }
     .header-settings-btn { width:40px; padding:5px !important; font-size:1rem !important; }
     .dialog-save-actions { display:flex; justify-content:space-between; align-items:center; }
     .btn.danger { border-color:#a94958; color:#ffc5cb; }
@@ -960,7 +957,7 @@
     /* Reserve the full bottom dock area and keep scrollable pages reachable. */
     .wrap { padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
     body[data-page="notes"] .wrap,body[data-page="tasks"] .wrap,body[data-page="tasks"].planner-expanded .wrap { padding-bottom:calc(152px + env(safe-area-inset-bottom,0px)); }
-    body[data-page="settings"] .wrap,body[data-page="log"] .wrap { height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="settings"] .wrap,body[data-page="log"] .wrap { height:auto; min-height:100dvh; overflow:visible; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
     body[data-page="log"] { overflow-x:hidden; overflow-y:auto; }
     .nav-indicator[hidden] { display:none; }
     .tag-manager-add { display:grid; grid-template-columns:minmax(0,1fr) 64px auto; align-items:end; gap:8px; }
@@ -1015,7 +1012,7 @@
     .recurrence-weekdays input { width:18px; height:18px; margin:0; accent-color:#8bafff; }
     .recurrence-hint { margin:0; }
     .task-recurrence-icon { flex:none; color:#a9c4ff; font-size:.82rem; font-weight:900; line-height:1; }
-    body[data-page="finance"] .wrap { height:auto; min-height:var(--app-zoom-height,100dvh); overflow:visible; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="finance"] .wrap { height:auto; min-height:100dvh; overflow:visible; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)); }
     body[data-page="finance"] { overflow-x:hidden; overflow-y:auto; }
     .finance-upcoming { margin:10px 0 14px; padding:11px; border:1px solid #315944; border-radius:14px; background:rgba(20,38,31,.38); }
     .finance-upcoming-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
@@ -1416,7 +1413,7 @@
     }
 
     /* Basecamp home: four small boards and one searchable quick-message timeline. */
-    body[data-page="home"] .wrap { height:var(--app-zoom-height,100dvh); min-height:0; overflow:hidden; padding-bottom:calc(76px + env(safe-area-inset-bottom,0px)); }
+    body[data-page="home"] .wrap { height:100dvh; min-height:0; overflow:hidden; padding-bottom:calc(76px + env(safe-area-inset-bottom,0px)); }
     #homePage.active { display:flex !important; flex:1 1 auto; flex-direction:column; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:3px 2px 18px; }
     .basecamp-header,.basecamp-board-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .basecamp-header { margin:0 0 9px; }
@@ -1771,7 +1768,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
     </header>
 
     <section id="homePage" class="page" aria-label="BASECAMP">
-      <div class="basecamp-header"><div><p class="eyebrow">BASECAMP</p><h2 id="basecampOrgTitle">GPR DESIGN</h2><p id="galleryDateLabel" class="gallery-date"></p><p id="basecampActivityLine" class="basecamp-activity-line"></p></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <div class="basecamp-header"><div><p class="eyebrow">BASECAMP</p><h2 id="basecampOrgTitle">GPR DESIGN</h2><p id="galleryDateLabel" class="gallery-date"></p><p id="basecampActivityLine" class="basecamp-activity-line"></p></div></div>
       <section class="basecamp-grid" aria-label="Quadros do Basecamp">
         <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-open-basecamp-calendar><span class="basecamp-card-icon">▣</span><span>Calendário</span><span class="basecamp-card-arrow">↗</span></button><div class="basecamp-card-body"><section><h4>HOJE</h4><div id="basecampCalendarToday"></div></section><section><h4>AMANHÃ</h4><div id="basecampCalendarTomorrow"></div></section></div><button type="button" class="basecamp-calendar-connect" data-basecamp-connect-calendar>Conectar/sincronizar Google Calendar</button></article>
         <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-basecamp-clients><span class="basecamp-card-icon">♙</span><span>Clientes</span><span class="basecamp-card-arrow">↗</span></button><div id="basecampClients" class="basecamp-card-body"></div></article>
@@ -1787,7 +1784,6 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
     </section>
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
-      <div class="page-heading"><div><h2>KANBAN</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
       <nav id="kanbanMobileNav" class="kanban-mobile-nav" aria-label="Navegação do Kanban"><button type="button" data-kanban-jump="events" aria-current="true">AGENDA</button><button type="button" data-kanban-jump="doing">FAZENDO</button><button type="button" data-kanban-jump="todo">A FAZER</button><button type="button" data-kanban-jump="blocked">TRAVADO</button><button type="button" data-kanban-jump="done">FEITO</button></nav>
       <div id="plannerKanbanView" class="planner-kanban-view"><div class="kanban-board" id="kanbanBoard" aria-label="Quadro Kanban"></div></div>
       <div id="plannerWeekView" class="planner-week-view" hidden>
@@ -1805,7 +1801,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
     </section>
 
     <section id="financePage" class="page" aria-label="Finanças">
-      <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div></div>
       <div class="finance-topbar"><div class="finance-month-title"><span aria-hidden="true">🗓️</span><strong id="financeMonthLabel" aria-live="polite"></strong></div><div class="finance-month-toolbar"><button class="btn ghost small" id="financePrevMonth" type="button" aria-label="Mês anterior">‹ <span class="finance-month-label-wide">VOLTAR</span></button><button class="btn ghost small" id="financeNextMonth" type="button" aria-label="Próximo mês"><span class="finance-month-label-wide">AVANÇAR</span> ›</button></div><button class="btn primary finance-new-entry" id="financeAddBtn" type="button"><span aria-hidden="true">＋</span> NOVO LANÇAMENTO</button></div>
       <section class="finance-budget-grid" aria-label="Saldo e valor diário">
         <article class="finance-budget-card balance"><span>SALDO ATUAL EM CONTA</span><strong id="financeAccountBalance">Aguardando saldo</strong><small id="financeBalanceUpdated">O Radar ainda não recebeu saldo.</small></article>
@@ -1819,14 +1815,14 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
     </section>
 
     <section id="logPage" class="page" aria-label="Arquivo de logs" hidden>
-      <div class="page-heading"><div><h2>LOG DE EVENTOS</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <div class="page-heading"><div><h2>LOG DE EVENTOS</h2></div></div>
       <form id="logForm" class="log-form"><textarea id="logText" maxlength="20000" rows="2" required aria-label="Texto do registro" placeholder="Escreva um registro…"></textarea><select id="logTagSelect" aria-label="Tag do registro"><option value="">SEM TAG</option></select><button class="btn primary" type="submit">REGISTRAR</button></form>
       <div class="log-ranges" role="group" aria-label="Período do log"><button type="button" data-log-range="7d" aria-pressed="true">7 DIAS</button><button type="button" data-log-range="30d" aria-pressed="false">30 DIAS</button><button type="button" data-log-range="12w" aria-pressed="false">12 SEMANAS</button><button type="button" data-log-range="all" aria-pressed="false">TUDO</button></div>
       <div id="logsList" class="logs-list" aria-live="polite"></div>
     </section>
 
     <section id="notesPage" class="page" aria-label="Notas">
-      <div class="page-heading"><div><h2>Notas</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <div class="page-heading"><div><h2>Notas</h2></div></div>
       <div class="notes-mode-tabs" role="tablist" aria-label="Tipo de notas"><button id="regularNotesTab" type="button" data-notes-mode="public" aria-selected="true">NOTAS</button><button id="privateNotesTab" type="button" data-notes-mode="private" aria-selected="false">NOTAS PRIVADAS 🔒</button></div>
       <div id="normalNotesView"><div class="note-list" id="notesList"></div></div>
       <section id="privateNotesView" class="private-notes-view" hidden>
@@ -1838,7 +1834,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
     </section>
 
     <section id="settingsPage" class="page" aria-label="Configurações">
-      <div class="page-heading"><div><p class="eyebrow">PREFERÊNCIAS</p><h2>Configurações</h2></div><div class="zoom-controls" aria-label="Zoom"><button type="button" data-zoom-action="out" aria-label="Diminuir zoom">−</button><span data-zoom-value>100%</span><button type="button" data-zoom-action="in" aria-label="Aumentar zoom">＋</button></div></div>
+      <div class="page-heading"><div><p class="eyebrow">PREFERÊNCIAS</p><h2>Configurações</h2></div></div>
       <div class="settings-stack">
         <section class="panel" aria-label="Login e sincronização"><h3>Login e sincronização</h3><p class="muted" id="authStatus">Modo local</p>
           <div id="authFields"><div class="field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" placeholder="voce@exemplo.com"></div><div class="field"><label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Mínimo de 8 caracteres"></div></div>
