@@ -101,17 +101,17 @@
     .kanban-blocker { display:block; padding:5px 7px; border-left:2px solid #ffb36b; color:#ffcf9b; font-size:.68rem; overflow-wrap:anywhere; }
     .kanban-empty { margin:0; padding:14px 7px; color:var(--muted); font-size:.72rem; text-align:center; }
     .kanban-doing-stack { display:flex; flex-direction:column; min-width:0; min-height:0; gap:8px; }
-    .kanban-my-day { border-top:2px solid #f1c75b; background:linear-gradient(145deg,rgba(105,80,28,.30),rgba(20,27,45,.94) 60%); }
-    .my-day-task { grid-template-columns:minmax(0,1fr) 32px; align-items:center; padding-right:7px; border-color:#826d36; background:linear-gradient(120deg,#282414,#171a21); }
+    .kanban-my-day { border-top:2px solid #8bafff; }
+    .kanban-my-day-list { grid-template-columns:minmax(0,1fr) !important; }
+    .my-day-task { background:#111827; }
     .my-day-task .task-card { cursor:default; }
-    .my-day-task .task-menu,.my-day-task .task-touch-handle { display:none !important; }
-    .my-day-task .task-open { color:#fff0be; }
-    .my-day-controls { display:flex; flex-direction:column; align-items:center; gap:4px; }
-    .my-day-sort-handle { display:grid; place-items:center; width:28px; height:34px; padding:0; border:1px solid #786638; border-radius:7px; background:#332b17; color:#ffe19a; font-size:1.05rem; line-height:1; cursor:grab; touch-action:none; }
-    .my-day-sort-handle:active { cursor:grabbing; background:#493b1b; }
-    .my-day-remove { display:grid; place-items:center; width:22px; height:22px; padding:0; border:1px solid #786638; border-radius:6px; background:#332b17; color:#ffe19a; font-size:.8rem; }
-    .my-day-remove:hover { background:#493b1b; }
-    .my-day-empty { border:1px dashed #786638; border-radius:9px; color:#d8c98f; }
+    .my-day-task .task-menu { display:none !important; }
+    .my-day-task .task-touch-handle { color:var(--muted) !important; }
+    .my-day-task .task-touch-handle::after { content:none !important; }
+    .my-day-task .task-touch-handle .drag-grip { display:block !important; color:var(--muted) !important; font-size:.88rem; line-height:1; transform:none !important; }
+    .my-day-remove { display:grid; flex:none; place-items:center; width:22px; height:22px; padding:0; border:1px solid #465673; border-radius:7px; background:#202b42; color:var(--muted); font-size:.8rem; }
+    .my-day-remove:hover { border-color:#657ba7; background:#172239; color:var(--text); }
+    .my-day-empty { border:1px dashed #394663; border-radius:9px; color:var(--muted); }
     .kanban-doing { border-top:2px solid #8bafff; }
     .kanban-blocked { border-top:2px solid #ffb36b; }
     .kanban-side-column { display:flex; flex-direction:column; min-width:0; min-height:0; max-height:calc(100dvh - 210px); gap:8px; }
@@ -1906,7 +1906,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=234" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=246',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=235" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=247',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

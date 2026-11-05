@@ -774,9 +774,10 @@
     if(tagTone)classes.push(tagTone);const className=classes.filter(Boolean).join(' ');
     const reprogram=options.reprogram&&!complete?`<button class="task-reprogram-btn" type="button" data-reprogram-task="${escapeHTML(task.id)}">REPROGRAMAR</button>`:'';
     const dayActions=options.dayActions&&!complete?`<div class="task-day-actions"><button class="task-day-action task-day-action--planning" type="button" data-day-task-action="planning" data-day-task-id="${escapeHTML(task.id)}">PLANEJAR</button><button class="task-day-action task-day-action--tomorrow" type="button" data-day-task-action="tomorrow" data-day-task-id="${escapeHTML(task.id)}">AMANHÃ</button><button class="task-day-action task-day-action--next-week" type="button" data-day-task-action="next-monday" data-day-task-id="${escapeHTML(task.id)}">SEG</button><button class="task-day-action task-day-action--complete" type="button" data-day-task-action="complete" data-day-task-id="${escapeHTML(task.id)}" aria-label="Concluir tarefa: ${escapeHTML(task.title)}" title="Concluir">✅</button></div>`:'';
+    const myDayRemove=options.myDay?`<button class="my-day-remove" type="button" data-my-day-remove="${escapeHTML(task.id)}" aria-label="Tirar ${escapeHTML(task.title)} do Meu Dia" title="Tirar do Meu Dia">×</button>`:'';
     return `<article class="${className}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}${task.recurrence?' · Tarefa recorrente':''}">
       <div class="task-main"><div class="task-title-row">${taskTag}${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span>':''}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
-      <div class="task-actions">${reprogram}${taskMenu(task,options.canMove!==false)}${taskHandle}</div>${dayActions}
+      <div class="task-actions">${myDayRemove}${options.myDay?'':taskMenu(task,options.canMove!==false)}${taskHandle}</div>${dayActions}
     </article>`;
   }
   function renderFilterButton() {
@@ -915,7 +916,7 @@
   }
   function removeMyDayTask(taskId){userSettings.myDayTaskIds=(userSettings.myDayTaskIds||[]).filter(id=>id!==String(taskId));saveUserSettings();renderKanban();}
   function renderMyDayColumn(all){
-    const items=(userSettings.myDayTaskIds||[]).map(id=>all.find(task=>task.id===id&&!task.completedAt&&!task.recurrence)).filter(Boolean),cards=items.map(task=>`<div class="kanban-task my-day-task">${taskCard(task,{canMove:false,late:false,draggable:true})}<div class="my-day-controls"><button class="my-day-remove" type="button" data-my-day-remove="${escapeHTML(task.id)}" aria-label="Tirar ${escapeHTML(task.title)} do Meu Dia" title="Tirar do Meu Dia">×</button><button class="my-day-sort-handle" type="button" data-myday-sort-task="${escapeHTML(task.id)}" aria-label="Reordenar ${escapeHTML(task.title)}" title="Arraste para ordenar" draggable="true">⠿</button></div></div>`).join('');
+    const items=(userSettings.myDayTaskIds||[]).map(id=>all.find(task=>task.id===id&&!task.completedAt&&!task.recurrence)).filter(Boolean),cards=items.map(task=>`<div class="kanban-task my-day-task">${taskCard(task,{canMove:false,late:false,draggable:true,myDay:true})}</div>`).join('');
     return `<section class="kanban-column kanban-my-day" data-my-day-drop aria-label="Meu Dia"><header class="kanban-column-head"><h3>MEU DIA</h3><span>${items.length}</span></header><div class="kanban-column-list kanban-my-day-list" data-my-day-list>${cards||'<p class="kanban-empty my-day-empty">Arraste para cá as tarefas que você escolheu fazer hoje.</p>'}</div></section>`;
   }
   function renderKanbanDoneColumn(all){
@@ -2085,11 +2086,11 @@
   }
   function startPointerDrag(event) {
     if(event.pointerType==='mouse'||event.pointerType==='touch'||event.button!==0||pointerDrag)return;
-    const taskHandle=event.target.closest('[data-myday-sort-task],[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]');
+    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]');
     if(!taskHandle&&!noteHandle&&!checklistHandle)return;
     const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    event.preventDefault();pointerDrag={kind,id:taskHandle?(taskHandle.dataset.mydaySortTask||taskHandle.dataset.touchDragTask):noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
+    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
     card.setAttribute('draggable','false');card.classList.add('is-dragging');try{event.target.setPointerCapture(event.pointerId);}catch{}
   }
   function movePointerDrag(event) {
@@ -2102,11 +2103,11 @@
   }
   function startTouchDrag(event) {
     if(pointerDrag)return;
-    const taskHandle=event.target.closest('[data-myday-sort-task],[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]'),touch=event.changedTouches?.[0];
+    const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]'),touch=event.changedTouches?.[0];
     if((!taskHandle&&!noteHandle&&!checklistHandle)||!touch)return;
     const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    event.preventDefault();pointerDrag={kind,id:taskHandle?(taskHandle.dataset.mydaySortTask||taskHandle.dataset.touchDragTask):noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,source:'touch',card,wasDraggable:card.getAttribute('draggable')};
+    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,source:'touch',card,wasDraggable:card.getAttribute('draggable')};
     card.setAttribute('draggable','false');card.classList.add('is-dragging');
   }
   function moveTouchDrag(event) {
