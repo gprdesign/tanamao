@@ -920,7 +920,7 @@
     return `<section class="kanban-column kanban-my-day" data-my-day-drop aria-label="Meu Dia"><header class="kanban-column-head"><h3>MEU DIA</h3><span>${items.length}</span></header><div class="kanban-column-list kanban-my-day-list" data-my-day-list>${cards||'<p class="kanban-empty my-day-empty">Arraste para cá as tarefas que você escolheu fazer hoje.</p>'}</div></section>`;
   }
   function renderKanbanDoneColumn(all){
-    const collapsed=!document.body.classList.contains('view-mobile')&&!userSettings.kanbanDoneDialogOpen||(userSettings.kanbanCollapsedColumns||[]).includes('done'),done=all.filter(task=>!task.recurrence&&task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt))),cards=done.map(task=>`<div class="kanban-task">${taskCard(task,{canMove:false,late:false,draggable:true})}</div>`).join('');
+    const collapsed=document.body.classList.contains('view-mobile')||!userSettings.kanbanDoneDialogOpen||(userSettings.kanbanCollapsedColumns||[]).includes('done'),done=all.filter(task=>!task.recurrence&&task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt))),cards=done.map(task=>`<div class="kanban-task">${taskCard(task,{canMove:false,late:false,draggable:true})}</div>`).join('');
     return `<section class="kanban-column kanban-done${collapsed?' is-collapsed':''}" data-kanban-column="done"><header class="kanban-column-head"><h3><button class="kanban-title-button" type="button" data-kanban-title="done">FEITO</button></h3><span>${done.length}</span><button class="kanban-collapse-btn" type="button" data-kanban-collapse="done" aria-expanded="${!collapsed}" aria-label="${collapsed?'Expandir':'Recolher'} feito">⌄</button></header><div class="kanban-column-list kanban-done-list" data-kanban-body="done"${collapsed?' hidden':''}>${cards||'<p class="kanban-empty">Nada concluído ainda.</p>'}</div></section>`;
   }
 
@@ -953,6 +953,7 @@
   }
   function finishKanbanDrop(taskId,state){const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task||!['todo','doing','blocked','done'].includes(state))return;if(state==='done'){openKanbanTaskCompletionConfirm(task.id);return;}if(task.completedAt)toggleComplete(task.id,false);userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:state};if(state!=='blocked'&&userSettings.taskKanbanBlockers?.[task.id]){const next={...userSettings.taskKanbanBlockers};delete next[task.id];userSettings.taskKanbanBlockers=next;}saveUserSettings();renderKanban();}
   function toggleKanbanCollapsed(key){
+    if(key==='done'&&document.body.classList.contains('view-mobile'))return;
     const keys=new Set(userSettings.kanbanCollapsedColumns||[]),wasCollapsed=keys.has(key);wasCollapsed?keys.delete(key):keys.add(key);userSettings.kanbanCollapsedColumns=[...keys];saveUserSettings();
     const selector=`[data-kanban-column="${key}"]`,collapsed=!wasCollapsed;
     document.querySelectorAll(`#kanbanBoard ${selector},#kanbanColumnDialog ${selector}`).forEach(lane=>{

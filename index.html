@@ -1714,6 +1714,14 @@ body[data-view-mode="pc"] { font-size:12.6px !important; }
  body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard > .kanban-pc-lower .kanban-done .kanban-title-button { pointer-events:auto !important; }
 }
 @media (max-width:600px) {
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-events-reminders { order:0 !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day { order:1 !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { order:2 !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-todo { order:3 !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-blocked { order:4 !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done { order:5 !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done { flex:none !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important; }
+ body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done .kanban-done-list { display:none !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack { display:contents !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day, body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { display:flex !important; flex:none !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; }
  body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-list { display:grid !important; flex:none !important; width:100% !important; min-height:0 !important; overflow:visible !important; }
@@ -1810,7 +1818,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
     </section>
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
-      <nav id="kanbanMobileNav" class="kanban-mobile-nav" aria-label="Navegação do Kanban"><button type="button" data-kanban-jump="events" aria-current="true">AGENDA</button><button type="button" data-kanban-jump="doing">FAZENDO</button><button type="button" data-kanban-jump="todo">A FAZER</button><button type="button" data-kanban-jump="blocked">TRAVADO</button><button type="button" data-kanban-jump="done">FEITO</button></nav>
+      <nav id="kanbanMobileNav" class="kanban-mobile-nav" aria-label="Navegação do Kanban"><button type="button" data-kanban-jump="events" aria-current="true">AGENDA | DIA</button><button type="button" data-kanban-jump="doing">FAZENDO</button><button type="button" data-kanban-jump="todo">A FAZER</button><button type="button" data-kanban-jump="blocked">TRAVADO</button><button type="button" data-kanban-jump="done">FEITO</button></nav>
       <div id="plannerKanbanView" class="planner-kanban-view"><div class="kanban-board" id="kanbanBoard" aria-label="Quadro Kanban"></div></div>
       <div id="plannerWeekView" class="planner-week-view" hidden>
       <div class="planner-section-buttons">
@@ -1906,7 +1914,7 @@ body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-task .task-car
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=236" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=248',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=237" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=249',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
