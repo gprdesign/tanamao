@@ -1024,8 +1024,8 @@
     const eligibleMyDayIds=(userSettings.myDayTaskIds||[]).filter(id=>{const task=all.find(item=>item.id===id);return task&&!isReminderTask(task)&&!task.completedAt;});if(eligibleMyDayIds.length!==(userSettings.myDayTaskIds||[]).length){userSettings.myDayTaskIds=eligibleMyDayIds;saveUserSettings();}const myDayIds=new Set(userSettings.myDayTaskIds||[]),active=all.filter(task=>!isReminderTask(task)&&!task.completedAt&&!myDayIds.has(task.id)),lanes={};
     for(const [state,label] of [['doing','FAZENDO'],['todo','A FAZER'],['blocked','TRAVADO']]){
       const items=active.filter(task=>getKanbanState(task)===state).sort(taskOrder),cards=items.map(task=>{
-        const card=taskCard(task,{canMove:false,late:false,draggable:true,quickReminder:true});
-        const controls=`<div class="kanban-card-controls"><label class="kanban-state-control"><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}">${[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO']].map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}</select></label><button class="kanban-complete-btn" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button></div>`;
+        const card=taskCard(task,{canMove:false,late:false,draggable:true});
+        const controls=`<div class="kanban-card-controls"><label class="kanban-state-control"><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}">${[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO']].map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}<option disabled>──────────</option><option value="reminder-today">01 🎗️ HOJE</option><option value="reminder-tomorrow">02 🎗️ AMANHÃ</option><option value="reminder-other">03 🎗️ DEPOIS</option></select></label><button class="kanban-complete-btn" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button></div>`;
         const blocker=state==='blocked'&&userSettings.taskKanbanBlockers?.[task.id]?`<small class="kanban-blocker">${escapeHTML(userSettings.taskKanbanBlockers[task.id])}</small>`:'';
         return `<div class="kanban-task">${card}${blocker}${controls}</div>`;
       }).join(''),collapsed=Boolean(userSettings.kanbanCollapsedColumns?.includes(state));
@@ -2751,7 +2751,14 @@
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
         setPage(button.dataset.page);
   });
-  function handleKanbanChange(event){const control=event.target.closest('[data-kanban-state]');if(control)setKanbanState(control.dataset.kanbanState,control.value);}
+  function handleKanbanChange(event){
+    const control=event.target.closest('[data-kanban-state]');if(!control)return;
+    const taskId=control.dataset.kanbanState,choice=control.value;
+    if(choice==='reminder-today'){applyQuickReminder(taskId,todayKey());return;}
+    if(choice==='reminder-tomorrow'){applyQuickReminder(taskId,addDays(todayKey(),1));return;}
+    if(choice==='reminder-other'){const task=tasks.find(item=>item.id===String(taskId));control.value=task?getKanbanState(task):'todo';chooseQuickReminderDate(taskId);return;}
+    setKanbanState(taskId,choice);
+  }
   function handleKanbanClick(event){const removeMyDay=event.target.closest('[data-my-day-remove]');if(removeMyDay){removeMyDayTask(removeMyDay.dataset.myDayRemove);return;}const taskCardNode=event.target.closest('.kanban-task .task-card');if(taskCardNode&&!event.target.closest('button,summary,input,select,a,[data-kanban-state],[data-task-touch-handle]')){openTaskDialog(taskCardNode.dataset.taskId);return;}const addReminder=event.target.closest('[data-kanban-add-reminder]');if(addReminder){openQuickReminder();return;}const add=event.target.closest('[data-kanban-add]');if(add){openTaskDialog();return;}const complete=event.target.closest('[data-kanban-complete]');if(complete){openKanbanTaskCompletionConfirm(complete.dataset.kanbanComplete);return;}const collapse=event.target.closest('[data-kanban-collapse]');if(collapse){toggleKanbanCollapsed(collapse.dataset.kanbanCollapse);return;}if(event.target.closest('[data-close-kanban-dialog]')){$('kanbanColumnDialog').close();return;}handleTaskClick(event);}
   function updateKanbanMobileNav(){const nav=$('kanbanMobileNav'),board=$('kanbanBoard');if(!nav||!board)return;const buttons=[...nav.querySelectorAll('[data-kanban-jump]')],line=150;let active=buttons[0];for(const button of buttons){const lane=board.querySelector(`[data-kanban-column="${button.dataset.kanbanJump}"]`);if(lane&&lane.getBoundingClientRect().top<=line)active=button;}buttons.forEach(button=>button===active?button.setAttribute('aria-current','true'):button.removeAttribute('aria-current'));}
   let kanbanNavTapTimer=0,kanbanNavTapKey='';
