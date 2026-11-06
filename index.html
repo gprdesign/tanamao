@@ -1901,6 +1901,18 @@ body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
 #kanbanBoard .kanban-reminders-month-toggle { min-height:30px; padding:4px 8px; border:1px solid #67589d; border-radius:8px; background:#25203a; color:#cfbfff; font-size:.61rem; font-weight:850; line-height:1.1; white-space:nowrap; }
 #kanbanBoard .kanban-reminders-month-toggle:hover { border-color:#a98bff; background:#302747; }
 @media(max-width:600px) { body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-month-toggle { min-height:34px !important; padding:5px 8px !important; font-size:.62rem !important; } body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-header-actions { gap:6px !important; } }
+
+/* Shared Kanban visual design: keep palette and emphasis consistent; view-specific layout stays separate. */
+#kanbanBoard .kanban-event-section,#kanbanBoard .kanban-reminder-section { opacity:1; }
+#kanbanBoard .kanban-task:not(.my-day-task) { border-color:#34415b; border-radius:12px; background:#111827; }
+#kanbanBoard .my-day-task { border-color:#826d36; background:linear-gradient(120deg,#282414,#171a21); }
+#kanbanBoard .my-day-task .my-day-complete { border:1px solid #397653; background:#183b2d; color:#8fe0b5; }
+#kanbanBoard .my-day-task .my-day-remove { border:1px solid #465673; background:#202b42; color:var(--muted); }
+#kanbanBoard .my-day-task .task-touch-handle { border:1px solid #34415b; background:#111827; }
+#kanbanBoard .kanban-add-reminder { border:1px solid #67589d; border-radius:8px; background:#25203a; color:#cfbfff; }
+#kanbanBoard .kanban-reminder-item { border:1px solid #34415b; border-radius:9px; background:#111827; color:var(--text); }
+#kanbanBoard .kanban-reminder-overdue .kanban-reminder-item { border-color:#8f3e50; background:#2a1822; }
+#kanbanBoard .kanban-reminder-today .kanban-reminder-item { border-color:#8a6a2e; background:#282414; }
 </style>
 </head>
 <body>
@@ -2025,6 +2037,6 @@ body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./app.js?v=253" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=266',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=267',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
