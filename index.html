@@ -1891,6 +1891,11 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacit
 body.view-mobile .floating-action-menu { width:min(260px,calc(100vw - 24px)) !important; max-height:72dvh !important; padding:7px !important; }
 body.view-mobile .floating-action-menu .menu-action { min-height:38px !important; padding:8px 10px !important; }
 body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
+#kanbanBoard .kanban-reminder-header { align-items:center !important; }
+#kanbanBoard .kanban-reminder-header-actions { display:flex; flex:none; align-items:center; gap:6px; }
+#kanbanBoard .kanban-reminders-month-toggle { min-height:30px; padding:4px 8px; border:1px solid #67589d; border-radius:8px; background:#25203a; color:#cfbfff; font-size:.61rem; font-weight:850; line-height:1.1; white-space:nowrap; }
+#kanbanBoard .kanban-reminders-month-toggle:hover { border-color:#a98bff; background:#302747; }
+@media(max-width:600px) { body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-month-toggle { min-height:34px !important; padding:5px 8px !important; font-size:.62rem !important; } body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-header-actions { gap:6px !important; } }
 </style>
 </head>
 <body>
@@ -2014,7 +2019,7 @@ body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=249" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=262',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script src="./app.js?v=250" defer></script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=263',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
