@@ -1324,21 +1324,24 @@
     for(const entry of candidates){ids.add(String(entry.id));items.push(entry);}
     return {items,ids};
   }
+  function financeMonthSummaryData(month) {
+    const entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
+    const today=todayKey(),planned=entries.filter(entry=>entry.kind==='income'&&entry.status==='planned'&&entry.date>=today),income=entries.filter(entry=>entry.kind==='income'),expense=entries.filter(entry=>entry.kind==='expense');
+    const sum=items=>Math.round(items.reduce((total,entry)=>total+Math.round(Number(entry.amount||0)*100),0))/100;
+    return {entries,planned,income,expense,plannedTotal:sum(planned),incomeTotal:sum(income),realizedIncome:sum(income.filter(entry=>entry.status==='realized')),expenseTotal:sum(expense),realizedExpense:sum(expense.filter(entry=>entry.status==='realized'))};
+  }
   function renderFinancePage() {
     const monthLabel=$('financeMonthLabel'),summary=$('financeSummary'),list=$('financeEntriesList'),upcomingList=$('financeUpcomingList');if(!monthLabel||!summary||!list||!upcomingList)return;
     ensureFinanceHorizon();renderFinanceBudget();renderHouseholdBuckets();renderPlannerUpcomingIncome();
     const monthDate=dateAtNoon(`${financeMonth}-01`)||new Date(),rawMonth=monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
     monthLabel.textContent=rawMonth.charAt(0).toLocaleUpperCase('pt-BR')+rawMonth.slice(1);
-    const entries=finances.filter(entry=>!entry.deletedAt&&entry.date.slice(0,7)===financeMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
-    const upcoming=collectUpcomingFinanceIncome(),monthListEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id))),totalsEntries=entries;
+    const monthData=financeMonthSummaryData(financeMonth),entries=monthData.entries;
+    const upcoming=collectUpcomingFinanceIncome(),monthListEntries=entries.filter(entry=>!upcoming.ids.has(String(entry.id)));
     upcomingList.innerHTML=upcoming.items.length?upcoming.items.map(entry=>{
       const date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):entry.date;
       const id=escapeHTML(entry.id);return `<button class="finance-upcoming-row" type="button" data-finance-open="${id}" aria-label="Ver detalhes de ${escapeHTML(entry.title)}"><time class="finance-upcoming-date" datetime="${escapeHTML(entry.date)}">${escapeHTML(dateLabel)}</time><strong class="finance-upcoming-title">${escapeHTML(entry.title)}</strong><span class="finance-upcoming-amount">+ ${escapeHTML(financeMoney(entry.amount))}</span></button>`;
     }).join(''):'<p class="finance-upcoming-empty">Nenhum recebimento previsto nos próximos 30 dias.</p>';
-    const income=totalsEntries.filter(entry=>entry.kind==='income'),expense=totalsEntries.filter(entry=>entry.kind==='expense');
-    const sumMoney=items=>Math.round(items.reduce((sum,entry)=>sum+Math.round(Number(entry.amount||0)*100),0))/100;
-    const totalIncome=sumMoney(income),realizedIncome=sumMoney(income.filter(item=>item.status==='realized')),totalExpense=sumMoney(expense),realizedExpense=sumMoney(expense.filter(item=>item.status==='realized')),plannedIncome=sumMoney(income.filter(item=>item.status==='planned'));
-    summary.innerHTML=`<button type="button" class="finance-summary-card balance" data-finance-summary-open="planned" aria-label="Abrir detalhes das entradas previstas em ${escapeHTML(monthLabel.textContent)}"><span>PREVISTO</span><strong>${financeMoney(plannedIncome)}</strong></button><button type="button" class="finance-summary-card income" data-finance-summary-open="income" aria-label="Abrir detalhes das entradas em ${escapeHTML(monthLabel.textContent)}"><span>ENTRADAS</span><strong>${financeMoney(totalIncome)}</strong><small>Recebido: ${financeMoney(realizedIncome)}</small></button><button type="button" class="finance-summary-card expense" data-finance-summary-open="expense" aria-label="Abrir detalhes das saídas em ${escapeHTML(monthLabel.textContent)}"><span>SAÍDAS</span><strong>${financeMoney(totalExpense)}</strong><small>Pago: ${financeMoney(realizedExpense)}</small></button>`;
+    summary.innerHTML=`<button type="button" class="finance-summary-card balance" data-finance-summary-open="planned" aria-label="Abrir detalhes das entradas previstas futuras em ${escapeHTML(monthLabel.textContent)}"><span>PREVISTO</span><strong>${financeMoney(monthData.plannedTotal)}</strong></button><button type="button" class="finance-summary-card income" data-finance-summary-open="income" aria-label="Abrir detalhes das entradas em ${escapeHTML(monthLabel.textContent)}"><span>ENTRADAS</span><strong>${financeMoney(monthData.incomeTotal)}</strong><small>Recebido: ${financeMoney(monthData.realizedIncome)}</small></button><button type="button" class="finance-summary-card expense" data-finance-summary-open="expense" aria-label="Abrir detalhes das saídas em ${escapeHTML(monthLabel.textContent)}"><span>SAÍDAS</span><strong>${financeMoney(monthData.expenseTotal)}</strong><small>Pago: ${financeMoney(monthData.realizedExpense)}</small></button>`;
     const visibleEntries=monthListEntries.filter(entry=>entry.status==='planned');
     list.innerHTML=visibleEntries.length?visibleEntries.map(entry=>{
       const id=escapeHTML(entry.id),date=dateAtNoon(entry.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'',amountLabel=`${entry.kind==='income'?'+':'−'} ${financeMoney(entry.amount)}`;
@@ -1350,9 +1353,9 @@
   }
   function renderFinanceSummaryDialog(month) {
     const planned=$('financeSummaryPlanned'),incomeBox=$('financeSummaryIncome'),expenseBox=$('financeSummaryExpense');if(!planned||!incomeBox||!expenseBox)return;
-    const relevant=finances.filter(item=>!item.deletedAt&&item.date.slice(0,7)===month).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
-    const renderEntry=item=>{const date=dateAtNoon(item.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):item.date,amountLabel=`${item.kind==='income'?'+':'−'} ${financeMoney(item.amount)}`,status=item.status==='planned'?'PREVISTO':'REALIZADO',id=escapeHTML(item.id);return `<article class="finance-bank-row ${item.kind}"><strong>${escapeHTML(item.title)}</strong><span class="finance-bank-amount">${escapeHTML(amountLabel)}</span><time>${escapeHTML(dateLabel)} · ${status}</time><small><button type="button" class="finance-detail-link" data-finance-open="${id}">Abrir lançamento</button></small></article>`;};
-    const plannedItems=relevant.filter(item=>item.kind==='income'&&item.status==='planned'),incomeItems=relevant.filter(item=>item.kind==='income'),expenseItems=relevant.filter(item=>item.kind==='expense');
+    const monthData=financeMonthSummaryData(month);
+    const renderEntry=item=>{const date=dateAtNoon(item.date),dateLabel=date?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):item.date,amountLabel=`${item.kind==='income'?'+':'−'} ${financeMoney(item.amount)}`,status=item.status==='planned'?'PREVISTO':'REALIZADO',id=escapeHTML(item.id);return `<article class="finance-bank-row ${item.kind}" role="button" tabindex="0" data-finance-open="${id}" aria-label="Abrir lançamento ${escapeHTML(item.title)}"><strong>${escapeHTML(item.title)}</strong><span class="finance-bank-amount">${escapeHTML(amountLabel)}</span><time>${escapeHTML(dateLabel)} · ${status}</time><small>Abrir lançamento ›</small></article>`;};
+    const plannedItems=monthData.planned,incomeItems=monthData.income,expenseItems=monthData.expense;
     planned.innerHTML=plannedItems.length?plannedItems.map(renderEntry).join(''):'<p class="finance-detail-empty">Nenhuma entrada prevista neste mês.</p>';
     incomeBox.innerHTML=incomeItems.length?incomeItems.map(renderEntry).join(''):'<p class="finance-detail-empty">Nenhuma entrada fixa ou manual neste mês.</p>';
     const expenseGroups=new Map();for(const item of expenseItems){if(!expenseGroups.has(item.date))expenseGroups.set(item.date,[]);expenseGroups.get(item.date).push(renderEntry(item));}
@@ -2874,6 +2877,7 @@
   $('financeEntriesList').addEventListener('click',handleFinanceClick);
   $('financeSummary').addEventListener('click',event=>{const card=event.target.closest('[data-finance-summary-open]');if(card)openFinanceSummaryDialog(card.dataset.financeSummaryOpen);});
   $('financeSummaryDialog').addEventListener('click',event=>{const rename=event.target.closest('[data-bank-rename]');if(rename){void renameBankTransaction(rename.dataset.bankRename);return;}handleFinanceClick(event);});
+  $('financeSummaryDialog').addEventListener('keydown',event=>{const row=event.target.closest('.finance-bank-row[data-finance-open]');if(row&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openFinanceDialog(row.dataset.financeOpen);}});
   $('closeFinanceSummaryDialog').addEventListener('click',()=>$('financeSummaryDialog').close());
   $('financeUpcomingList').addEventListener('click',handleFinanceClick);
   $('plannerUpcomingIncomeList').addEventListener('click',handleFinanceClick);
