@@ -827,7 +827,7 @@
     .task-actions .task-menu { align-self:center; }
     .task-card--compact .task-touch-handle,.task-card--tile .task-touch-handle { width:24px; height:26px; margin:0; border-radius:6px; }
     .task-card--compact .task-title-row .tag-dot,.task-card--tile .task-title-row .tag-dot { margin-top:0; }
-    .refresh-sync-btn { position:fixed; z-index:26; right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(148px + env(safe-area-inset-bottom,0px)); display:grid; place-items:center; width:48px; height:48px; padding:0; border:1px solid #8299c6; border-radius:50%; background:rgba(35,51,78,.96); color:#e7eeff; box-shadow:0 6px 20px #0008,inset 0 1px 0 #ffffff24; font-size:1.75rem; line-height:1; }
+    .refresh-sync-btn { position:fixed; z-index:26; right:calc(14px + env(safe-area-inset-right,0px)); bottom:calc(164px + env(safe-area-inset-bottom,0px)); display:grid; place-items:center; width:44px; height:44px; padding:0; border:1px solid #8299c6; border-radius:50%; background:rgba(35,51,78,.96); color:#e7eeff; box-shadow:0 6px 20px #0008,inset 0 1px 0 #ffffff24; font-size:1.65rem; line-height:1; }
     .refresh-sync-btn:disabled { opacity:.8; }
     .refresh-sync-btn span { display:block; }
     .refresh-sync-btn[aria-busy="true"] span { animation:refresh-rotate .8s linear infinite; }
@@ -2022,6 +2022,8 @@ body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
 
   <nav class="week-dock sub-dock notes-dock" id="notesDock" aria-label="Ações das notas"><button class="subdock-item subdock-add-note" id="notesDockAddBtn" type="button">＋ NOTA</button></nav>
 
+  <button id="refreshSyncBtn" class="refresh-sync-btn refresh-sync-action" type="button" aria-label="Atualizar o TNM" title="Atualizar o TNM"><span aria-hidden="true">↻</span></button>
+
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
     <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">KANBAN</span></button>
@@ -2052,7 +2054,11 @@ body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./app.js?v=257" defer></script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=270',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>
+    { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
+      const src='./app.js?v=258'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      document.write('<script src="'+src+'" defer><\/script>'); }
+  </script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=271',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

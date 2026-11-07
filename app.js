@@ -2667,12 +2667,21 @@
   }
   async function refreshAndSync(event) {
     const button=event?.currentTarget||$('refreshSyncBtn');if(!button||button.disabled)return;
+    if(taskDialogDirty||noteDialogDirty||financeDialogDirty||privateNoteDirty){showToast('Salve suas alterações antes de atualizar.');return;}
+    if(!navigator.onLine){showToast('Sem internet. Seus dados locais foram mantidos.');return;}
     button.disabled=true;button.setAttribute('aria-busy','true');
     try {
-      if(session?.user?.id)await syncNow();
-      else renderAll();
+      if(session?.user?.id && !await syncNow()){showToast('Sincronização pendente. Seus dados locais foram mantidos.');return;}
+      const url=new URL(window.location.href);url.searchParams.set('tnm_refresh',String(Date.now()));
+      const response=await fetch(url.href,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+      if(!response.ok||!String(response.headers.get('content-type')||'').includes('text/html'))throw new Error('Página indisponível');
+      const freshHTML=await response.text();
+      if(!freshHTML.includes('TNM!')||!freshHTML.includes('app.js'))throw new Error('Versão indisponível');
+      window.location.assign(url.href);
+    } catch(error) {
+      showToast('Não foi possível buscar a atualização. Seus dados locais foram mantidos.');
     } finally {
-      window.location.reload();
+      button.disabled=false;button.removeAttribute('aria-busy');
     }
   }
   async function initializeAuth() {
