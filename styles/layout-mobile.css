@@ -1,0 +1,802 @@
+body.view-mobile .wrap { padding:10px 10px calc(82px + env(safe-area-inset-bottom,0px)); }
+
+body.view-mobile .app-header { margin-bottom:15px; }
+
+body.view-mobile .filter-action { gap:5px; }
+
+body.view-mobile .filter-summary { max-width:72px; font-size:.66rem; }
+
+body.view-mobile .filter-action .btn { min-height:36px; padding:7px 8px; font-size:.78rem; }
+
+body.view-mobile .home-hero { padding:17px; }
+
+body.view-mobile .home-stats { gap:6px; }
+
+body.view-mobile .home-stat { padding:10px 8px; }
+
+body.view-mobile .home-stat span { font-size:.68rem; }
+
+body.view-mobile .home-stat strong { font-size:1.35rem; }
+
+body.view-mobile .week-grid { gap:6px; grid-auto-rows:minmax(128px,auto); }
+
+body.view-mobile[data-page="tasks"] .planner-kanban-view { min-height:0; }
+
+body.view-mobile .day-column { min-height:128px; padding:7px; }
+
+body.view-mobile .day-heading strong { font-size:.7rem; }
+
+body.view-mobile .day-heading time { font-size:.64rem; }
+
+body.view-mobile .task-card { grid-template-columns:minmax(0,1fr) 24px; gap:4px; padding:6px; }
+
+body.view-mobile .task-title { font-size:.74rem; }
+
+body.view-mobile .icon-btn { width:24px; height:24px; }
+
+body.view-mobile .note-list { grid-template-columns:1fr; }
+
+body.view-mobile .panel { padding:13px; }
+
+body.view-mobile[data-page="tasks"] .very-overdue-card { min-height:34px; padding:5px 7px; }
+
+body.view-mobile[data-page="tasks"] .very-overdue-card strong { font-size:.62rem; }
+
+body.view-mobile[data-page="tasks"] .very-overdue-card span { min-width:22px; height:22px; }
+
+body.view-mobile .note-list { columns:2 150px; }
+
+@media (max-width:370px)  {
+body.view-mobile .wrap { padding-right:8px; padding-left:8px; }
+body.view-mobile .brand { gap:6px; }
+body.view-mobile .brand-icon { width:36px; height:36px; }
+body.view-mobile h1 { font-size:1rem; }
+body.view-mobile .brand p { font-size:.68rem; }
+body.view-mobile .header-actions { gap:4px; }
+body.view-mobile .header-actions .btn { min-height:32px; padding:5px 6px; font-size:.7rem; }
+body.view-mobile #tasksPage .page-heading h2 { font-size:.82rem; }
+body.view-mobile .filter-summary { max-width:50px; }
+body.view-mobile .filter-open { padding:5px 6px; font-size:.68rem; }
+body.view-mobile .home-item-date { font-size:.58rem !important; }
+body.view-mobile .week-dock { gap:3px; }
+body.view-mobile .week-dock .btn { padding:4px 6px; }
+body.view-mobile .note-list { columns:2 140px; }
+}
+
+html:has(body.view-mobile) { font-size:20px; }
+
+body.view-mobile .wrap { padding-right:12px; padding-left:12px; }
+
+body.view-mobile .header-actions { gap:6px; }
+
+body.view-mobile .header-actions .btn { min-height:40px; padding:7px 9px; font-size:.78rem; }
+
+body.view-mobile .main-nav { width:calc(100% - 24px); }
+
+body.view-mobile .week-dock { width:calc(100% - 24px); gap:5px; }
+
+body.view-mobile .week-dock .btn { padding:5px 7px; }
+
+body.view-mobile .day-column { padding:7px 7px; }
+
+body.view-mobile .day-task-list .task-card--compact { grid-template-columns:minmax(0,1fr) auto; gap:3px; padding:5px; }
+
+body.view-mobile .task-card--compact .task-open { font-size:.67rem; }
+
+body.view-mobile .home-task-row { gap:6px; padding:6px 7px; }
+
+body.view-mobile .home-item-open { font-size:.76rem; }
+
+body.view-mobile .home-tag-pill { padding:3px 5px; font-size:.56rem; }
+
+@media  (max-width:380px)  {
+html:has(body.view-mobile) { font-size:19.5px; }
+body.view-mobile .wrap { padding-right:9px; padding-left:9px; }
+}
+
+body.view-mobile[data-page="tasks"] .planner-section-buttons { grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+body.view-mobile[data-page="tasks"] .planner-add-task { display:none !important; }
+
+body.view-mobile .home-day-columns { gap:6px; }
+
+body.view-mobile .home-task-section { padding:8px 7px; }
+
+body.view-mobile .home-task-row { padding:6px 6px; }
+
+body.view-mobile .home-item-open { font-size:.74rem; }
+
+body.view-mobile .home-tag-pill { font-size:.54rem; padding:3px 5px; }
+
+body.view-mobile .planner-section-buttons { gap:6px; }
+
+body.view-mobile .planner-section-buttons .planner-section-btn { padding:7px 8px; font-size:.76rem; }
+
+body.view-mobile .planner-income-row { grid-template-columns:42px minmax(0,1fr) auto; gap:6px; }
+
+body.view-mobile .planner-income-name,
+body.view-mobile .planner-income-row strong { font-size:.68rem; }
+
+body.view-mobile .household-bucket-toggle { min-height:32px; padding:4px; font-size:.61rem; }
+
+body.view-mobile .finance-entry-open { font-size:.82rem; }
+
+body.view-mobile .week-dock { width:calc(100% - 20px); min-height:50px; bottom:calc(82px + env(safe-area-inset-bottom,0px)); }
+
+body.view-mobile .week-dock #prevWeekBtn,
+body.view-mobile .week-dock #nextWeekBtn { flex:none; width:42px; min-width:42px; height:42px; padding:0; font-size:1.65rem; line-height:1; }
+
+body.view-mobile #noteContent { min-height:300px; }
+
+body.view-mobile #taskContent { min-height:170px; }
+
+body.view-mobile #noteTitle { margin-top:0; }
+
+body.view-mobile .app-dialog { padding:16px; }
+
+body.view-mobile .app-dialog .dialog-head { top:-16px; }
+
+body.view-mobile .link-input-row,
+body.view-mobile .note-new-tag-row { grid-template-columns:minmax(0,1fr) auto; gap:6px; }
+
+@media (max-width:380px)  {
+body.view-mobile .week-dock #prevWeekBtn,
+body.view-mobile .week-dock #nextWeekBtn { width:38px; min-width:38px; height:38px; }
+}
+
+@media (max-width:560px)  {
+body.view-mobile .settings-stack { grid-template-columns:1fr; }
+body.view-mobile .settings-stack > :last-child { grid-column:auto; }
+}
+
+body.view-mobile .log-form { grid-template-columns:minmax(0,1fr) auto; }
+
+body.view-mobile .log-form textarea { grid-column:1 / -1; }
+
+body.view-mobile .log-form select { grid-column:1; }
+
+body.view-mobile .logs-list::before { left:calc(42px + 6px + 7px); }
+
+body.view-mobile .log-entry { grid-template-columns:42px 14px minmax(0,1fr); gap:6px; padding-bottom:11px; }
+
+body.view-mobile .log-date { padding-top:7px; }
+
+body.view-mobile .log-date strong { font-size:.72rem; }
+
+body.view-mobile .log-date span { font-size:.58rem; }
+
+body.view-mobile .log-date small { font-size:.5rem; }
+
+body.view-mobile .log-dot { width:10px; height:10px; margin-top:10px; }
+
+body.view-mobile .log-card { padding:8px 9px; }
+
+body.view-mobile .log-card-header { margin-bottom:6px; }
+
+body.view-mobile .log-time-meta { font-size:.54rem; }
+
+body.view-mobile .log-content { font-size:.75rem; }
+
+body.view-mobile .log-entry-footer { align-items:flex-start; justify-content:flex-start; margin-top:8px; }
+
+body.view-mobile .log-entry-actions { justify-content:flex-start; }
+
+@media  (max-width:380px)  {
+body.view-mobile .header-actions { gap:4px; }
+body.view-mobile .header-actions .btn { padding-right:6px; padding-left:6px; font-size:.7rem; }
+body.view-mobile .tag-manager-add { grid-template-columns:minmax(0,1fr) 48px auto; gap:5px; }
+body.view-mobile .tag-manager-row { grid-template-columns:34px minmax(0,1fr) auto; gap:5px; }
+body.view-mobile .tag-manager-row input[type="color"] { width:34px; }
+body.view-mobile .tag-manager-row .btn { padding-right:6px; padding-left:6px; }
+}
+
+body.view-mobile .household-bucket-head { display:grid; grid-template-columns:minmax(0,1fr); gap:4px; }
+
+body.view-mobile .household-bucket-head > strong { display:none; }
+
+body.view-mobile .household-bucket-mobile-amount { display:block; margin:6px 0 0; color:#ff8b8b; font-size:.78rem; line-height:1.2; }
+
+body.view-mobile .household-bucket-head > div { grid-column:1; grid-row:1; min-width:0; }
+
+body.view-mobile .finance-topbar { grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+
+body.view-mobile .finance-month-title { grid-column:1; grid-row:1; gap:6px; font-size:.82rem; }
+
+body.view-mobile .finance-month-title>span { font-size:1rem; }
+
+body.view-mobile .finance-month-toolbar { grid-column:2; grid-row:1; justify-content:flex-end; gap:5px; padding:0; border:0; background:transparent; }
+
+body.view-mobile .finance-month-toolbar strong { min-width:0; font-size:.76rem; }
+
+body.view-mobile .finance-month-label-wide { display:none; }
+
+body.view-mobile .finance-month-toolbar button { width:36px; min-width:36px; height:36px; min-height:36px; padding:0; font-size:1.1rem; }
+
+body.view-mobile .finance-topbar .finance-new-entry { grid-column:1/-1; grid-row:2; width:100%; min-width:0; }
+
+body.view-mobile .finance-main-grid { grid-template-columns:minmax(0,1fr); gap:10px; }
+
+body.view-mobile .finance-main-grid .finance-summary { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+
+body.view-mobile .finance-main-grid .finance-summary-card { min-width:0; padding:8px 5px; }
+
+body.view-mobile .finance-main-grid .finance-summary-card span { font-size:.56rem; line-height:1.15; }
+
+body.view-mobile .finance-main-grid .finance-summary-card strong { margin:4px 0; font-size:.76rem; }
+
+body.view-mobile .finance-main-grid .finance-summary-card small { font-size:.54rem; line-height:1.15; }
+
+body.view-mobile .finance-detail-dialog { width:calc(100% - 20px); padding:14px; }
+
+body.view-mobile .finance-detail-sections { gap:9px; }
+
+body.view-mobile .finance-detail-section { padding:9px; }
+
+body.view-mobile .finance-main-grid .finance-upcoming { margin:0 0 10px; }
+
+body.view-mobile .finance-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+
+body.view-mobile .finance-budget-card.cashbox { grid-column:1/-1; }
+
+body.view-mobile .finance-budget-card { padding:10px 9px; }
+
+body.view-mobile .finance-budget-card > span,
+body.view-mobile .finance-budget-card > small,
+body.view-mobile .finance-budget-card > label { font-size:.63rem; }
+
+body.view-mobile .finance-budget-card > strong { font-size:.9rem; }
+
+body.view-mobile .finance-cashbox-form input { height:40px; font-size:.9rem; }
+
+body.view-mobile .finance-cashbox-form button { min-width:68px; min-height:40px; font-size:.76rem; }
+
+body.view-mobile .finance-formula-note { margin:0 0 12px; font-size:.68rem; line-height:1.35; }
+
+body.view-mobile .finance-entry { grid-template-columns:42px minmax(0,1fr); gap:6px 8px; padding:10px; }
+
+body.view-mobile .finance-entry-date { grid-column:1; grid-row:1/3; align-self:center; font-size:.64rem; }
+
+body.view-mobile .finance-entry-main { grid-column:2; grid-row:1; }
+
+body.view-mobile .finance-entry-actions { grid-column:2; grid-row:2; display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:5px; }
+
+body.view-mobile .finance-amount { grid-column:auto; flex:1 0 100%; text-align:left; font-size:.84rem; }
+
+body.view-mobile .finance-icon-button { width:30px; min-width:24px; height:24px; min-height:30px; }
+
+body.view-mobile .finance-status-pill { min-height:30px; padding:4px 7px; font-size:.59rem; }
+
+body.view-mobile .finance-list-heading { align-items:center; }
+
+body.view-mobile .finance-list-heading p { font-size:.67rem; line-height:1.3; }
+
+body.view-mobile #financeAddBtn { min-height:42px; padding:7px 10px; font-size:.78rem; }
+
+body.view-mobile .finance-form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 8px; }
+
+body.view-mobile .finance-form-grid .field input,
+body.view-mobile .finance-form-grid .field select { min-width:0; padding-right:7px; padding-left:7px; font-size:.8rem; }
+
+body.view-mobile #financeInstallmentWrap { grid-column:1/-1; }
+
+body.view-mobile .household-buckets-panel { padding:11px; }
+
+body.view-mobile .household-buckets-heading { grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:start; gap:8px; }
+
+body.view-mobile .household-buckets-title { grid-column:1; grid-row:1; }
+
+body.view-mobile .household-buckets-heading .household-buckets-summary { grid-column:1/-1; grid-row:2; }
+
+body.view-mobile .household-buckets-heading .finance-cashbox-section { grid-column:1/-1; grid-row:3; width:100%; }
+
+body.view-mobile .household-buckets-heading h3 { font-size:.74rem; }
+
+body.view-mobile .household-buckets-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+
+body.view-mobile .household-bucket { padding:8px; }
+
+body.view-mobile .household-bucket-head h4 { font-size:.74rem; }
+
+body.view-mobile .household-bucket-head span,
+body.view-mobile .household-bucket-until { font-size:.59rem; }
+
+body.view-mobile .household-bucket-head > strong { font-size:.7rem; }
+
+body.view-mobile .household-bucket-details { font-size:.58rem; }
+
+body.view-mobile .finance-upcoming { margin:8px 0 12px; padding:10px; }
+
+body.view-mobile .finance-upcoming-heading h3 { font-size:.74rem; }
+
+body.view-mobile .finance-upcoming-window { font-size:.6rem; }
+
+body.view-mobile .finance-upcoming-row { grid-template-columns:48px minmax(0,1fr); align-items:start; gap:4px 8px; padding:8px; }
+
+body.view-mobile .finance-upcoming-date { grid-column:1; grid-row:1/3; align-self:center; font-size:.64rem; }
+
+body.view-mobile .finance-upcoming-title,
+body.view-mobile .finance-upcoming-amount { grid-column:2; }
+
+body.view-mobile .finance-upcoming-title { font-size:.78rem; }
+
+body.view-mobile .finance-upcoming-amount { font-size:.76rem; }
+
+body.view-mobile .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)); }
+
+body.view-mobile .nav-indicator { width:calc((100% - 32px)/4); }
+
+body.view-mobile .planner-income-panel { display:none !important; }
+
+body.view-mobile[data-page="tasks"] .week-grid { grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-auto-rows:max-content; align-content:start; gap:8px; overflow-y:auto; overscroll-behavior:contain; }
+
+body.view-mobile[data-page="tasks"] .day-column { min-height:0; padding:9px 10px; overflow:visible; }
+
+body.view-mobile[data-page="tasks"] .day-task-list { flex:none; min-height:0; max-height:none; overflow:visible; gap:6px; }
+
+body.view-mobile[data-page="tasks"] #weekBoard { display:flex !important; flex-direction:column; grid-template-columns:none !important; grid-template-rows:none !important; }
+
+body.view-mobile[data-page="tasks"] #weekGrid { grid-column:auto; grid-row:auto; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; padding-bottom:calc(122px + env(safe-area-inset-bottom,0px)); scroll-padding-bottom:calc(122px + env(safe-area-inset-bottom,0px)); }
+
+body.view-mobile[data-page="tasks"] #weekDock { position:fixed !important; left:50% !important; right:auto !important; bottom:calc(70px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; display:grid !important; grid-template-columns:34px minmax(0,1fr) 34px !important; grid-template-rows:42px !important; gap:3px; align-items:center; justify-content:stretch; width:min(460px,calc(100vw - 32px)) !important; max-width:calc(100vw - 32px) !important; min-height:46px; height:auto !important; padding:3px 4px; grid-column:auto !important; grid-row:auto !important; margin:0 !important; }
+
+body.view-mobile[data-page="tasks"] #weekDock #prevWeekBtn { grid-column:1; grid-row:1; width:34px; min-width:34px; height:34px; min-height:34px; padding:0; }
+
+body.view-mobile[data-page="tasks"] #weekDock #weekLabel { grid-column:2; grid-row:1; width:100%; min-width:0; flex:none; font-size:.64rem; text-align:center; }
+
+body.view-mobile[data-page="tasks"] #weekDock #nextWeekBtn { grid-column:3; grid-row:1; width:34px; min-width:34px; height:34px; min-height:34px; padding:0; }
+
+body.view-mobile[data-page="tasks"].planner-expanded #weekGrid { flex:none; min-height:0; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; overflow:visible; padding-bottom:0; scroll-padding-bottom:0; }
+
+body.view-mobile[data-page="tasks"] { height:auto !important; min-height:100dvh; overflow-x:hidden !important; overflow-y:auto !important; }
+
+body.view-mobile[data-page="tasks"] .wrap { display:block !important; height:auto !important; min-height:100dvh; overflow:visible !important; padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)) !important; }
+
+body.view-mobile[data-page="tasks"] #tasksPage.active { display:block !important; flex:none !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .planner-section-buttons { position:sticky; top:calc(env(safe-area-inset-top,0px) + 4px); z-index:24; gap:6px; margin:0 0 8px; padding:4px; border:1px solid #394663; border-radius:12px; background:rgba(11,16,32,.94); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 6px 18px #0006; }
+
+body.view-mobile #dayDialog .day-dialog-actions { display:none !important; }
+
+body.view-mobile #dayDialog .day-dialog-mobile-add { display:block; width:100%; min-height:42px; margin:2px 0 4px; padding:8px 12px; border-radius:10px; font-size:.84rem; }
+
+body.view-mobile[data-page="tasks"] #planningList,
+body.view-mobile[data-page="tasks"] #completedList { grid-template-columns:minmax(0,1fr) !important; }
+
+body.view-mobile[data-page="tasks"] .planner-panel { max-height:none !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .week-board { flex:none !important; min-height:0 !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .week-grid { flex:none !important; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content; align-content:start; min-height:0 !important; max-height:none !important; overflow:visible !important; overscroll-behavior:auto; }
+
+body.view-mobile[data-page="tasks"] #weekGrid { padding-bottom:0 !important; scroll-padding-bottom:0; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .day-column { min-height:0; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .day-task-list { flex:none !important; min-height:0; max-height:none !important; height:auto !important; overflow:visible !important; overscroll-behavior:auto; }
+
+body.view-mobile[data-page="tasks"] .day-extra-count { display:block; width:100%; margin-top:2px; padding:0; border:0; border-radius:0; background:transparent; color:var(--muted); font:inherit; font-size:.68rem; line-height:1.2; text-align:left; }
+
+body.view-mobile[data-page="notes"] #notesPage,
+body.view-mobile #noteDialog { zoom:.85; }
+
+body.view-mobile[data-page="notes"] .note-card { max-height:260px !important; padding:10px !important; }
+
+body.view-mobile[data-page="notes"] .note-card-body { max-height:140px !important; }
+
+body.view-mobile[data-page="notes"] .wrap { padding-bottom:calc(132px + env(safe-area-inset-bottom,0px)) !important; }
+
+body.view-mobile #dayDialog[open] { display:flex; flex-direction:column; max-height:90dvh; }
+
+body.view-mobile #dayDialog .day-dialog-list { flex:1 1 auto; min-height:120px; max-height:none; overflow-y:auto; }
+
+body.view-mobile #dayDialog .day-dialog-head { order:5; flex:none; margin:12px 0 0; padding-top:9px; border-top:1px solid #394663; }
+
+body.view-mobile[data-page="tasks"] #weekDock,
+body.view-mobile[data-page="notes"] #notesDock { position:fixed !important; display:flex !important; left:50% !important; right:auto !important; bottom:calc(82px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; z-index:21 !important; width:min(680px,calc(100% - 24px)) !important; max-width:calc(100% - 24px) !important; min-height:50px !important; height:50px !important; padding:4px 6px !important; gap:5px !important; border:1px solid #394663 !important; border-radius:17px !important; background:rgba(17,24,39,.76) !important; box-shadow:0 10px 30px #0008 !important; -webkit-backdrop-filter:blur(14px) saturate(145%) !important; backdrop-filter:blur(14px) saturate(145%) !important; }
+
+body.view-mobile[data-page="tasks"] #weekDock { display:grid !important; grid-template-columns:38px minmax(0,1fr) 38px auto !important; grid-template-rows:40px !important; align-items:center !important; justify-content:stretch !important; }
+
+body.view-mobile[data-page="tasks"] #weekDock #weekDockAddTaskBtn { display:flex !important; grid-column:4; grid-row:1; align-items:center; justify-content:center; height:36px; min-height:36px; padding:0 10px; border-radius:10px; font-size:.64rem; }
+
+body.view-mobile #dayDialog.is-overdue .task-card.has-reprogram { grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:5px; padding:7px 6px; }
+
+body.view-mobile #dayDialog.is-overdue .task-card.has-reprogram .task-title-row { gap:4px; }
+
+body.view-mobile #dayDialog.is-overdue .task-card.has-reprogram .task-open { font-size:.76rem; line-height:1.2; }
+
+body.view-mobile #dayDialog.is-overdue .task-card.has-reprogram .task-actions { gap:3px; }
+
+body.view-mobile #dayDialog.is-overdue .task-card.has-reprogram .task-reprogram-btn { min-height:28px; padding:3px 6px; font-size:.57rem; }
+
+body.view-mobile #dayDialog.is-overdue .task-card.has-reprogram .task-menu > summary { width:24px; }
+
+body.view-mobile #dayDialog.is-overdue .task-card.has-reprogram .task-touch-handle { width:20px; height:26px; }
+
+body.view-mobile[data-page="tasks"] #weekDock #prevWeekBtn,
+body.view-mobile[data-page="tasks"] #weekDock #nextWeekBtn { width:36px !important; min-width:36px !important; height:36px !important; min-height:36px !important; border:0 !important; border-radius:10px !important; background:transparent !important; color:var(--muted) !important; }
+
+body.view-mobile[data-page="tasks"] #weekDock #weekLabel { font-size:.64rem !important; }
+
+body.view-mobile[data-page="notes"] #notesDock { justify-content:stretch !important; }
+
+body.view-mobile[data-page="notes"] #notesDock .subdock-add-note { display:flex !important; align-items:center !important; justify-content:center !important; flex:1 1 0 !important; width:100% !important; height:40px !important; min-height:40px !important; border:0 !important; border-radius:11px !important; background:transparent !important; color:var(--text) !important; font-size:.72rem !important; }
+
+body.view-mobile .main-nav,
+body.view-mobile .week-dock,
+body.view-mobile .planner-section-buttons,
+body.view-mobile #notesDock,
+body.view-mobile .floating-action-menu,
+body.view-mobile dialog::backdrop { -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+
+body.view-mobile .main-nav { background:#111827 !important; box-shadow:0 4px 12px #0006 !important; }
+
+body.view-mobile .week-dock,
+body.view-mobile #notesDock { background:#111827 !important; box-shadow:0 4px 12px #0006 !important; }
+
+body.view-mobile .planner-section-buttons { background:#0b1020 !important; box-shadow:0 3px 10px #0005 !important; }
+
+body.view-mobile .floating-action-menu { background:#101729 !important; box-shadow:0 6px 16px #0008 !important; animation:none !important; }
+
+body.view-mobile .header-actions { gap:4px; }
+
+body.view-mobile .header-actions .btn { min-height:30px; padding:4px 5px; font-size:.66rem; }
+
+body.view-mobile .brand-title-copy { display:none; }
+
+body.view-mobile .brand-mobile-title { display:block; margin:0; font-size:1.05rem; }
+
+body.view-mobile .brand p { font-size:calc(.62rem - 2pt); }
+
+body.view-mobile #financeAddBtn { min-height:44px; padding:7px 8px; font-size:.78rem; }
+
+body.view-mobile .finance-cashbox-section { margin:10px 0 14px; }
+
+body.view-mobile .finance-cashbox-section .finance-budget-card { width:100%; }
+
+body.view-mobile .household-buckets-summary-card { min-height:76px; padding:7px; }
+
+body.view-mobile .household-buckets-summary-card span { font-size:.6rem; }
+
+body.view-mobile .household-buckets-summary-card strong { font-size:.78rem; }
+
+body.view-mobile .household-bucket { min-height:188px; }
+
+body.view-mobile[data-page="tasks"] .kanban-board { height:auto !important; min-height:0 !important; max-height:none !important; }
+
+body.view-mobile[data-page="tasks"] #tasksPage.active { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .week-board { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #weekGrid { display:grid !important; height:auto !important; max-height:none !important; min-height:0 !important; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content !important; overflow:visible !important; padding-bottom:180px !important; scroll-padding-bottom:180px !important; }
+
+body.view-mobile[data-page="tasks"] .day-column { min-height:0 !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .day-task-list { min-height:0 !important; max-height:none !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .wrap { padding-bottom:240px !important; }
+
+body.view-mobile[data-page="tasks"] { height:auto !important; min-height:100dvh !important; overflow-x:hidden !important; overflow-y:auto !important; }
+
+body.view-mobile[data-page="tasks"] .wrap { display:block !important; height:auto !important; min-height:100dvh !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #tasksPage.active { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #weekGrid { display:grid !important; flex:none !important; height:auto !important; max-height:none !important; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none !important; grid-auto-rows:max-content !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .day-column { min-height:0 !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .day-task-list { min-height:0 !important; max-height:none !important; overflow:visible !important; }
+
+body.view-mobile .main-nav { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+
+body.view-mobile .nav-indicator { width:calc((100% - 32px)/4) !important; }
+
+body.view-mobile[data-page="tasks"] #planningList { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanMobileNav { position:fixed !important; left:50%; bottom:calc(80px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:21; display:grid !important; grid-template-columns:repeat(5,minmax(0,1fr)); gap:3px; width:min(720px,calc(100% - 20px)); margin:0; padding:4px; border:1px solid #394663; border-radius:11px; background:#111827; box-shadow:0 4px 12px #0008; }
+
+body.view-mobile[data-page="tasks"] #kanbanMobileNav button { min-width:0; min-height:40px; padding:4px 1px; border:1px solid #394663; border-radius:8px; background:#111827; color:var(--muted); font-size:clamp(.46rem,2.1vw,.66rem); font-weight:850; line-height:1.05; white-space:nowrap; }
+
+body.view-mobile[data-page="tasks"] #kanbanMobileNav button[aria-current="true"] { border-color:#789cf0; background:#263751; color:#fff; box-shadow:inset 0 0 0 1px #789cf055; }
+
+body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]) { display:block !important; width:100%; min-width:0; height:auto !important; min-height:0; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard { display:flex !important; flex-direction:column !important; gap:8px; width:100%; height:auto !important; min-height:0 !important; max-height:none !important; padding:0 0 10px; overflow:visible !important; scroll-snap-type:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column,
+body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-side-column { flex:none !important; width:100%; height:auto !important; min-width:0; min-height:0; max-height:none !important; scroll-margin-top:60px; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column { overflow:visible; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column-list { display:grid; flex:none; min-height:0; max-height:none; overflow:visible; gap:8px; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-side-column { display:flex !important; flex:0 0 auto !important; flex-direction:column !important; align-items:stretch !important; width:100%; min-width:0; gap:8px !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-tasks { display:flex !important; flex:0 0 auto !important; flex-direction:column !important; align-items:stretch !important; width:100%; min-width:0; min-height:0; gap:8px !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-reminders,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done { display:block !important; flex:none !important; align-self:stretch !important; width:100% !important; height:auto !important; min-width:0; min-height:0; max-height:none !important; margin:0 !important; overflow:visible !important; opacity:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-content,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-content { display:block !important; flex:none !important; width:100%; height:auto !important; min-height:0; max-height:none; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-group,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-group { display:block !important; flex:none !important; width:100%; height:auto !important; min-height:0; max-height:none; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-section,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-section { display:block !important; flex:none !important; width:100%; height:auto !important; min-height:0; max-height:none !important; margin:0 0 10px !important; overflow:visible !important; opacity:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-list,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-list,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list { display:grid !important; flex:none !important; width:100%; height:auto !important; min-height:0; max-height:none; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .wrap { padding-bottom:calc(180px + env(safe-area-inset-bottom,0px)) !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column-head { min-height:42px; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task { gap:7px; padding:9px; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task .task-touch-handle { display:grid !important; width:30px; height:34px; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-state-control select,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-complete-btn { min-height:38px; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-collapse-btn,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-add { width:36px; height:36px; min-height:36px; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed { flex:none !important; height:48px; min-height:48px !important; max-height:48px !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-subpanel.is-collapsed { flex:none !important; align-self:stretch !important; width:100%; height:48px !important; min-height:48px !important; max-height:48px !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-subpanel.is-collapsed { width:100%; }
+
+body.view-mobile[data-page="tasks"] #kanbanMobileNav { position:fixed !important; left:50% !important; bottom:calc(80px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%); z-index:21 !important; display:grid !important; grid-template-columns:repeat(5,minmax(0,1fr)) !important; width:min(720px,calc(100% - 20px)) !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard { display:flex !important; flex-direction:column !important; grid-template-columns:none !important; grid-auto-flow:row !important; gap:8px !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; scroll-snap-type:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column { display:flex !important; flex:none !important; flex-direction:column !important; align-self:stretch !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:hidden; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column-list { display:grid !important; flex:none !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] .wrap { padding-bottom:calc(180px + env(safe-area-inset-bottom,0px)) !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-column,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-tasks { display:contents !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-reminders,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; margin:0 0 8px !important; overflow:visible !important; opacity:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-group,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-group,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-section,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-section { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; margin:0 0 8px !important; overflow:visible !important; opacity:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-list,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-list,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list { display:grid !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard [data-kanban-body][hidden] { display:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed { display:flex !important; flex:none !important; flex-direction:column !important; align-self:stretch !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:70px !important; overflow:hidden !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed .kanban-column-head { flex:none !important; height:48px; min-height:48px; margin:0 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-column,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-tasks { display:contents !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-reminders,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; margin:0 0 8px !important; overflow:visible !important; opacity:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-content,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-content,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-group,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-group,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-section,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-section { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; margin:0 0 8px !important; overflow:visible !important; opacity:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-list,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-list { display:grid !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed { display:flex !important; flex:none !important; flex-direction:column !important; align-self:stretch !important; width:100% !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed .kanban-column-head { flex:none !important; min-height:40px !important; margin:0 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanMobileNav { bottom:calc(108px + env(safe-area-inset-bottom,0px)) !important; }
+
+body.view-mobile[data-page="tasks"] .wrap { padding-bottom:calc(164px + env(safe-area-inset-bottom,0px)) !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanMobileNav { position:fixed !important; left:50% !important; bottom:calc(88px + env(safe-area-inset-bottom,0px)) !important; transform:translateX(-50%) !important; z-index:22 !important; width:min(720px,calc(100% - 20px)) !important; grid-template-columns:repeat(5,minmax(0,1fr)) !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard { display:flex !important; flex-direction:column !important; grid-template-columns:none !important; grid-auto-flow:row !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; scroll-snap-type:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-column,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-side-tasks { display:contents !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard>.kanban-column,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-reminders,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done { display:block !important; flex:none !important; align-self:stretch !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; margin:0 0 8px !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-events-content,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-content,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-done-list { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-group,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-group,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-event-section,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-section { display:block !important; width:100% !important; height:auto !important; min-height:0 !important; max-height:none !important; margin:0 0 8px !important; overflow:visible !important; opacity:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard [data-kanban-body][hidden] { display:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed { display:flex !important; flex:none !important; flex-direction:column !important; align-self:stretch !important; width:100% !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed .kanban-column-head { flex:none !important; height:40px !important; min-height:40px !important; margin:0 !important; }
+
+body.view-mobile[data-page="tasks"] .wrap { padding-bottom:calc(148px + env(safe-area-inset-bottom,0px)) !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-events-reminders { order:0 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day { order:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { order:2 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-todo { order:3 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-blocked { order:4 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done { order:5 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done { flex:none !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower > .kanban-done .kanban-collapse-btn { display:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack { display:contents !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day,
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { display:flex !important; flex:none !important; width:100% !important; height:auto !important; min-width:0 !important; min-height:0 !important; max-height:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack .kanban-column-list { display:grid !important; flex:none !important; width:100% !important; min-height:0 !important; overflow:visible !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed { flex:none !important; align-self:stretch !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed [data-kanban-body] { display:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-my-day { order:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-doing-stack > .kanban-doing { order:2 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-todo { order:3 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower { display:contents !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-card { display:grid !important; grid-template-columns:minmax(0,1fr) auto !important; align-items:center !important; gap:6px !important; width:100% !important; min-width:0 !important; padding:6px !important; overflow:hidden !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-main { grid-column:1 !important; grid-row:1 !important; min-width:0 !important; width:100% !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-title-row { display:flex !important; align-items:flex-start !important; width:100% !important; min-width:0 !important; gap:6px !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-open { display:-webkit-box !important; flex:1 1 0 !important; width:auto !important; min-width:0 !important; max-height:2.6em !important; overflow:hidden !important; -webkit-box-orient:vertical !important; -webkit-line-clamp:2 !important; white-space:normal !important; overflow-wrap:anywhere !important; word-break:normal !important; text-overflow:ellipsis !important; font-size:.75rem !important; line-height:1.3 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-actions { grid-column:2 !important; grid-row:1 !important; display:flex !important; flex:none !important; align-items:center !important; justify-self:end !important; gap:4px !important; min-width:max-content !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .my-day-complete,
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .my-day-remove,
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-touch-handle { display:grid !important; flex:none !important; place-items:center !important; width:38px !important; height:38px !important; min-width:38px !important; min-height:38px !important; margin:0 !important; padding:0 !important; border-radius:8px !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .my-day-complete { border:1px solid #397653 !important; background:#183b2d !important; color:#8fe0b5 !important; font-size:1rem !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .my-day-remove { border:1px solid #465673 !important; background:#202b42 !important; color:var(--muted) !important; font-size:.9rem !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-touch-handle { border:1px solid #34415b !important; background:#111827 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-section h4 { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:8px !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-heading { display:inline-flex !important; align-items:center !important; gap:6px !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-add-reminder { display:grid !important; flex:none !important; place-items:center !important; width:32px !important; height:32px !important; min-width:32px !important; min-height:32px !important; padding:0 !important; border:1px solid #67589d !important; border-radius:8px !important; background:#25203a !important; color:#cfbfff !important; font-size:1.15rem !important; line-height:1 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-row { display:grid !important; grid-template-columns:minmax(0,1fr) 38px !important; align-items:stretch !important; gap:6px !important; min-width:0 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-item { display:flex !important; align-items:center !important; gap:6px !important; min-width:0 !important; min-height:44px !important; padding:5px 7px !important; overflow:hidden !important; border:1px solid #34415b !important; border-radius:9px !important; background:#111827 !important; color:var(--text) !important; text-align:left !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-item .kanban-reminder-badge { flex:none !important; margin:0 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-item .kanban-reminder-title { display:-webkit-box !important; flex:1 1 0 !important; min-width:0 !important; max-height:2.5em !important; overflow:hidden !important; -webkit-box-orient:vertical !important; -webkit-line-clamp:2 !important; overflow-wrap:anywhere !important; font-size:.76rem !important; line-height:1.25 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .reminder-complete { display:grid !important; place-items:center !important; width:38px !important; height:100% !important; min-height:44px !important; padding:0 !important; border-radius:9px !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-overdue .kanban-reminder-item { border-color:#8f3e50 !important; background:#2a1822 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-today .kanban-reminder-item { border-color:#8a6a2e !important; background:#282414 !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) {
+  display:grid !important; grid-template-columns:minmax(0,1fr) !important; gap:6px !important;
+  min-width:0 !important; padding:8px !important; border:1px solid #34415b !important;
+  border-radius:12px !important; background:#111827 !important; overflow:hidden !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) > .task-card {
+  display:grid !important; grid-template-columns:minmax(0,1fr) auto !important; align-items:center !important;
+  gap:6px !important; width:100% !important; min-width:0 !important; padding:2px !important;
+  border:0 !important; background:transparent !important; overflow:hidden !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) > .task-card > .task-main {
+  grid-column:1 !important; grid-row:1 !important; width:100% !important; min-width:0 !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) > .task-card .task-title-row {
+  display:flex !important; align-items:flex-start !important; width:100% !important; min-width:0 !important; gap:6px !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) > .task-card .task-open {
+  display:-webkit-box !important; flex:1 1 0 !important; width:auto !important; min-width:0 !important;
+  max-height:2.6em !important; overflow:hidden !important; -webkit-box-orient:vertical !important;
+  -webkit-line-clamp:2 !important; white-space:normal !important; overflow-wrap:anywhere !important;
+  word-break:normal !important; text-overflow:ellipsis !important; font-size:.75rem !important; line-height:1.3 !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) > .task-card > .task-actions {
+  grid-column:2 !important; grid-row:1 !important; display:flex !important; align-items:center !important;
+  justify-self:end !important; flex:none !important; min-width:max-content !important; gap:4px !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) > .task-card .task-menu,
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) > .task-card .task-touch-handle {
+  display:grid !important; flex:none !important; place-items:center !important; width:36px !important; height:36px !important;
+  min-width:36px !important; min-height:36px !important; margin:0 !important; padding:0 !important; border-radius:8px !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) > .kanban-card-controls {
+  display:grid !important; grid-template-columns:minmax(0,1fr) 38px !important; align-items:stretch !important;
+  gap:6px !important; width:100% !important; min-width:0 !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) .kanban-state-control { display:block !important; min-width:0 !important; width:100% !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) .kanban-state-control select {
+  display:block !important; width:100% !important; min-width:0 !important; height:38px !important; min-height:38px !important;
+  margin:0 !important; padding:5px 10px !important; overflow:hidden !important; text-overflow:ellipsis !important;
+  white-space:nowrap !important; font-size:.75rem !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) .kanban-card-controls .kanban-complete-btn {
+  display:grid !important; place-items:center !important; width:38px !important; min-width:38px !important;
+  height:38px !important; min-height:38px !important; margin:0 !important; padding:0 !important; border-radius:9px !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task) .kanban-blocker {
+  width:100% !important; min-width:0 !important; overflow-wrap:anywhere !important;
+}
+
+body.view-mobile[data-page="tasks"] #kanbanBoard [data-touch-drag-task] { touch-action:none !important; user-select:none !important; -webkit-user-select:none !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard [data-touch-drag-task].drag-armed { color:#f1c75b !important; transform:scale(1.08); }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .task-card.is-dragging { opacity:.42 !important; outline:2px dashed #f1c75b !important; outline-offset:2px !important; }
+
+body.view-mobile .floating-action-menu { width:min(260px,calc(100vw - 24px)) !important; max-height:72dvh !important; padding:7px !important; }
+
+body.view-mobile .floating-action-menu .menu-action { min-height:38px !important; padding:8px 10px !important; }
+
+body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminders-month-toggle { min-height:34px !important; padding:5px 8px !important; font-size:.62rem !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-header-actions { gap:6px !important; }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column:not(.is-collapsed) {
+        height:auto !important; min-height:0 !important; max-height:none !important; overflow:visible !important;
+      }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-column.is-collapsed {
+        flex:none !important; height:48px !important; min-height:48px !important; max-height:48px !important; overflow:hidden !important;
+      }
+
+body.view-mobile[data-page="tasks"] #kanbanBoard > .kanban-pc-lower { display:contents !important; }
