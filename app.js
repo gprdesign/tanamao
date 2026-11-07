@@ -2293,7 +2293,7 @@
     $('signupBtn').disabled=authBusy || !CLOUD_READY;
     $('syncNowBtn').disabled=authBusy || !connected;
     $('logoutBtn').disabled=authBusy || !connected;
-    document.querySelectorAll('.refresh-sync-action').forEach(button=>{button.disabled=authBusy;});
+
     if (!CLOUD_READY) setAuthMessage('Login indisponível: falta a configuração pública do Supabase.',true);
     else if (!authMessage && !connected) setAuthMessage('Entre para sincronizar entre dispositivos. Sem login, os dados ficam neste aparelho.');
   }
@@ -2666,23 +2666,23 @@
     finally { authBusy=false; updateAuthUI(); }
   }
   async function refreshAndSync(event) {
-    const button=event?.currentTarget||$('refreshSyncBtn');if(!button||button.disabled)return;
-    if(taskDialogDirty||noteDialogDirty||financeDialogDirty||privateNoteDirty){showToast('Salve suas alterações antes de atualizar.');return;}
-    if(!navigator.onLine){showToast('Sem internet. Seus dados locais foram mantidos.');return;}
-    button.disabled=true;button.setAttribute('aria-busy','true');
+    const button=event?.currentTarget||$('refreshSyncBtn');if(!button||button.getAttribute('aria-busy')==='true')return;
+    if(taskDialogDirty||noteDialogDirty||financeDialogDirty||privateNoteDirty||String($('financeCashboxInput')?.value||'').trim()){showToast('Salve suas alterações antes de atualizar.',5000);return;}
+    if(!navigator.onLine){showToast('Sem internet. Seus dados locais foram mantidos.',5000);return;}
+    button.disabled=true;button.setAttribute('aria-busy','true');showToast('Atualizando o TNM…',15000);
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
     try {
-      if(session?.user?.id && !await syncNow()){showToast('Sincronização pendente. Seus dados locais foram mantidos.');return;}
       const url=new URL(window.location.href);url.searchParams.set('tnm_refresh',String(Date.now()));
-      const response=await fetch(url.href,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+      const response=await fetch(url.href,{cache:'no-store',signal:controller.signal});
       if(!response.ok||!String(response.headers.get('content-type')||'').includes('text/html'))throw new Error('Página indisponível');
       const freshHTML=await response.text();
       if(!freshHTML.includes('TNM!')||!freshHTML.includes('app.js'))throw new Error('Versão indisponível');
+      try{sessionStorage.setItem('tnm.refresh.completed','1');}catch{}
       window.location.assign(url.href);
     } catch(error) {
-      showToast('Não foi possível buscar a atualização. Seus dados locais foram mantidos.');
-    } finally {
+      showToast('Não consegui atualizar. Confira a internet e tente novamente; seus dados locais foram mantidos.',6000);
       button.disabled=false;button.removeAttribute('aria-busy');
-    }
+    } finally {clearTimeout(timeout);}
   }
   async function initializeAuth() {
     updateAuthUI();
@@ -2965,4 +2965,5 @@
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false); });
 
   syncViewModeSwitch();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
+  try{if(sessionStorage.getItem('tnm.refresh.completed')==='1'){sessionStorage.removeItem('tnm.refresh.completed');showToast(session?.access_token?'TNM atualizado. Sincronização em andamento.':'TNM atualizado.',4000);}}catch{}
 })();
