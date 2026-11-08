@@ -1135,6 +1135,12 @@
     .household-bucket.complete .household-bucket-details b { color:#8fe0b5; }
     .household-bucket-toggle { width:100%; min-height:34px; margin-top:8px; padding:5px 8px; border:1px solid #52627e; border-radius:8px; background:#202b42; color:#ffd166; font-size:.67rem; font-weight:850; cursor:pointer; }
     .household-bucket-toggle.is-paid { border-color:#397653; background:#17332a; color:#9be7ba; }
+    .savings-goal { border-color:#67589d; background:linear-gradient(145deg,#211c38,#172238 70%); }
+    .savings-goal .household-bucket-track > span { background:linear-gradient(90deg,#a98bff,#8fe0b5); }
+    .savings-goal-deposit { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:6px; margin-top:8px; }
+    .savings-goal-deposit input { min-width:0; min-height:36px; height:36px; padding:5px 8px; font-size:.72rem; }
+    .savings-goal-deposit .household-bucket-toggle { width:auto; min-width:66px; margin:0; }
+    .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
     .finance-formula-note { margin:0 0 12px; color:var(--muted); font-size:.65rem; text-align:center; }
     .finance-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:12px; }
     .finance-summary-card { display:flex; flex-direction:column; align-items:flex-start; width:100%; min-width:0; padding:11px 10px; border:1px solid var(--line); border-radius:12px; background:#151e32; color:var(--text); font:inherit; text-align:left; cursor:pointer; }
@@ -2056,9 +2062,9 @@ body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=259'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=260'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=272',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=273',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
