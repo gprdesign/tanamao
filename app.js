@@ -422,10 +422,10 @@
       householdBillCycles[month]=normalized;
     }
     const calendarIds=Array.isArray(source.calendarIds)?Array.from(new Set(source.calendarIds.map(String))):[];
-    const rawSavingsGoals=Array.isArray(source.savingsGoals)?source.savingsGoals:[],savingsGoals=rawSavingsGoals.map(item=>{const id=String(item?.id||''),name=String(item?.name||'').trim().slice(0,100),targetNumber=Number(item?.targetAmount),savedNumber=Number(item?.savedAmount);return id&&name&&Number.isFinite(targetNumber)&&targetNumber>0?{id,name,targetAmount:Math.round(targetNumber*100)/100,savedAmount:Number.isFinite(savedNumber)?Math.max(0,Math.round(savedNumber*100)/100):0,createdAt:String(item?.createdAt||''),updatedAt:String(item?.updatedAt||'')}:null;}).filter(Boolean).slice(0,100);
+    const theme=source.theme==='light'?'light':'dark',rawSavingsGoals=Array.isArray(source.savingsGoals)?source.savingsGoals:[],savingsGoals=rawSavingsGoals.map(item=>{const id=String(item?.id||''),name=String(item?.name||'').trim().slice(0,100),targetNumber=Number(item?.targetAmount),savedNumber=Number(item?.savedAmount);return id&&name&&Number.isFinite(targetNumber)&&targetNumber>0?{id,name,targetAmount:Math.round(targetNumber*100)/100,savedAmount:Number.isFinite(savedNumber)?Math.max(0,Math.round(savedNumber*100)/100):0,createdAt:String(item?.createdAt||''),updatedAt:String(item?.updatedAt||'')}:null;}).filter(Boolean).slice(0,100);
     const rawHabits=Array.isArray(source.plannerHabits)?source.plannerHabits:[],plannerHabits=rawHabits.map(item=>({id:String(item?.id||''),name:String(item?.name||'').trim().slice(0,80),doneDates:Array.isArray(item?.doneDates)?Array.from(new Set(item.doneDates.map(String).filter(isDateKey))):[]})).filter(item=>item.id&&item.name).slice(0,100);
     const rawBasecamp=Array.isArray(source.basecampMessages)?source.basecampMessages:[],basecampMessages=rawBasecamp.map(item=>{const text=String(item?.text||'').trim().slice(0,5000),createdAt=String(item?.createdAt||''),id=String(item?.id||'');return text&&id?{id,text,tagId:String(item?.tagId||''),createdAt,updatedAt:String(item?.updatedAt||createdAt)}:null;}).filter(Boolean).slice(0,100);
-    return {summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,savingsGoals,plannerHabits,basecampMessages,taskKanbanStates:source.taskKanbanStates&&typeof source.taskKanbanStates==='object'&&!Array.isArray(source.taskKanbanStates)?source.taskKanbanStates:{},taskKanbanBlockers:source.taskKanbanBlockers&&typeof source.taskKanbanBlockers==='object'&&!Array.isArray(source.taskKanbanBlockers)?source.taskKanbanBlockers:{},myDayTaskIds:Array.isArray(source.myDayTaskIds)?Array.from(new Set(source.myDayTaskIds.map(String).filter(Boolean))).slice(0,500):[],kanbanCollapsedColumns:Array.isArray(source.kanbanCollapsedColumns)?Array.from(new Set(source.kanbanCollapsedColumns.map(String).filter(key=>['todo','doing','blocked','events','reminders','done'].includes(key)))):[],kanbanDoneMobileExpanded:Boolean(source.kanbanDoneMobileExpanded),plannerSubpage:'kanban',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    return {theme,summaryTimes:times.sort(),calendarIds,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,savingsGoals,plannerHabits,basecampMessages,taskKanbanStates:source.taskKanbanStates&&typeof source.taskKanbanStates==='object'&&!Array.isArray(source.taskKanbanStates)?source.taskKanbanStates:{},taskKanbanBlockers:source.taskKanbanBlockers&&typeof source.taskKanbanBlockers==='object'&&!Array.isArray(source.taskKanbanBlockers)?source.taskKanbanBlockers:{},myDayTaskIds:Array.isArray(source.myDayTaskIds)?Array.from(new Set(source.myDayTaskIds.map(String).filter(Boolean))).slice(0,500):[],kanbanCollapsedColumns:Array.isArray(source.kanbanCollapsedColumns)?Array.from(new Set(source.kanbanCollapsedColumns.map(String).filter(key=>['todo','doing','blocked','events','reminders','done'].includes(key)))):[],kanbanDoneMobileExpanded:Boolean(source.kanbanDoneMobileExpanded),plannerSubpage:'kanban',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -514,7 +514,7 @@
     if(schedule)scheduleSync();
   }
   function saveUserSettings(schedule=true) {
-    userSettings=normalizeUserSettings({...userSettings,updatedAt:nowISO()});
+    userSettings=normalizeUserSettings({...userSettings,updatedAt:nowISO()});applyTheme();
     localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));renderSummarySettings();renderHome();
     if(schedule)scheduleSync();
   }
@@ -559,7 +559,9 @@
   function removeSummaryTime(time) {
     userSettings.summaryTimes=userSettings.summaryTimes.filter(item=>item!==time);saveUserSettings();showToast(userSettings.summaryTimes.length?'Horário removido.':'Resumo diário desativado.');
   }
-  function renderSettings() { renderSummarySettings(); renderCalendarSyncUI(); }
+  function applyTheme(){document.body.dataset.theme=userSettings.theme==='light'?'light':'dark';const meta=document.querySelector('meta[name=theme-color]');if(meta)meta.content=userSettings.theme==='light'?'#f4f6fa':'#0b1020';}
+  function setTheme(theme){if(!['dark','light'].includes(theme)||userSettings.theme===theme)return;userSettings.theme=theme;saveUserSettings();applyTheme();renderSettings();}
+  function renderSettings() { renderSummarySettings(); renderCalendarSyncUI();document.querySelectorAll('[data-theme-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeChoice===(userSettings.theme||'dark')))); }
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }
@@ -2489,7 +2491,7 @@
       if(remoteState)financeState=normalizeFinanceState({accountBalance:remoteState.accountBalance??financeState.accountBalance,balanceUpdatedAt:remoteState.balanceUpdatedAt||financeState.balanceUpdatedAt,cashboxAmount:remoteCashboxAt>=localCashboxAt?remoteState.cashboxAmount:financeState.cashboxAmount,cashboxUpdatedAt:remoteCashboxAt>=localCashboxAt?remoteState.cashboxUpdatedAt:financeState.cashboxUpdatedAt,updatedAt:remoteState.updatedAt||financeState.updatedAt});
       bankTransactions=mergeBankTransactions(bankTransactions,bankRows);
       const pendingBankLabels=bankTransactions.some(item=>item.displayName&&item.updatedAt&&(!bankRows.some(row=>row.transaction_key===item.transactionKey&&row.display_name===item.displayName)&&(Date.parse(item.updatedAt)||0)>=(Date.now()-5*60*1000)));if(pendingBankLabels)await syncLocalBankDisplayNames(bankRows);
-      const remoteSettingsRow=settingRows.find(row=>row.owner_id===session.user.id),remoteSettings=remoteSettingsRow?rowToSettings(remoteSettingsRow):null;if(remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(userSettings.updatedAt||''))userSettings=remoteSettings;
+      const remoteSettingsRow=settingRows.find(row=>row.owner_id===session.user.id),remoteSettings=remoteSettingsRow?rowToSettings(remoteSettingsRow):null;if(remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(userSettings.updatedAt||'')){userSettings=remoteSettings;applyTheme();}
       const remoteVaultRow=vaultRows.find(row=>row.owner_id===session.user.id),remoteVault=remoteVaultRow?rowToPrivateVault(remoteVaultRow):null;if(remoteVault&&(!privateVault||remoteVault.ownerId===session.user.id&&Date.parse(remoteVault.updatedAt)>=Date.parse(privateVault.updatedAt||'')))privateVault=remoteVault;
       privateCipherRows=mergeById(privateCipherRows,privateRows.map(rowToPrivateNote).filter(Boolean)).map(normalizePrivateRow).filter(Boolean);
       localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(NOTES_KEY,JSON.stringify(notes));localStorage.setItem(LOGS_KEY,JSON.stringify(logs));localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));localStorage.setItem(TAGS_KEY,JSON.stringify(tags));localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));localStorage.setItem(PRIVATE_ROWS_KEY,JSON.stringify(privateCipherRows));if(privateVault)localStorage.setItem(PRIVATE_VAULT_KEY,JSON.stringify(privateVault));
@@ -2539,7 +2541,7 @@
     finances=mergeById(localFinances,remoteFinances).map(normalizeFinanceEntry).filter(Boolean);
     financeState=normalizeFinanceState({accountBalance:remoteFinanceState?.accountBalance??localFinanceState.accountBalance,balanceUpdatedAt:remoteFinanceState?.balanceUpdatedAt||localFinanceState.balanceUpdatedAt,cashboxAmount:localCashboxIsNewer?localFinanceState.cashboxAmount:(remoteFinanceState?remoteFinanceState.cashboxAmount:localFinanceState.cashboxAmount),cashboxUpdatedAt:localCashboxIsNewer?localFinanceState.cashboxUpdatedAt:(remoteFinanceState?remoteFinanceState.cashboxUpdatedAt:localFinanceState.cashboxUpdatedAt),updatedAt:remoteFinanceState?.updatedAt||localFinanceState.updatedAt});
     localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(NOTES_KEY,JSON.stringify(notes));localStorage.setItem(LOGS_KEY,JSON.stringify(logs));localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));
-    userSettings=remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(localSettings.updatedAt)?remoteSettings:normalizeUserSettings(localSettings);
+    userSettings=remoteSettings&&Date.parse(remoteSettings.updatedAt)>=Date.parse(localSettings.updatedAt)?remoteSettings:normalizeUserSettings(localSettings);applyTheme();
     localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));
     const foreignLocalVault=localVault?.ownerId&&localVault.ownerId!==session.user.id;
     privateVault=foreignLocalVault?localVault:(remoteVault&&(!localVault||Date.parse(remoteVault.updatedAt)>=Date.parse(localVault.updatedAt))?remoteVault:localVault);
@@ -2904,6 +2906,7 @@
   $('closeHouseholdPaymentDialog').addEventListener('click',()=>$('householdPaymentDialog').close());
   $('financeRecurrence').addEventListener('change',updateFinanceRecurrenceUI);
   $('closeFinanceDialog').addEventListener('click',()=>$('financeDialog').close());
+  document.querySelectorAll('[data-theme-choice]').forEach(button=>button.addEventListener('click',()=>setTheme(button.dataset.themeChoice)));
   $('viewModePcBtn').addEventListener('click',()=>setViewMode('pc'));
   $('viewModeMobileBtn').addEventListener('click',()=>setViewMode('mobile'));
   $('financeDeleteBtn').addEventListener('click',()=>deleteFinanceEntry($('financeId').value));
@@ -2968,6 +2971,6 @@
   window.addEventListener('resize',()=>updateNavIndicator());
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false); });
 
-  syncViewModeSwitch();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
+  applyTheme();syncViewModeSwitch();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
   try{if(sessionStorage.getItem('tnm.refresh.completed')==='1'){sessionStorage.removeItem('tnm.refresh.completed');showToast(session?.access_token?'TNM atualizado. Sincronização em andamento.':'TNM atualizado.',4000);}}catch{}
 })();
