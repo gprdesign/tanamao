@@ -2245,6 +2245,14 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
     .planner-calendar-event-row.is-completed .planner-calendar-event { opacity:.5; text-decoration:line-through; }
     .basecamp-event-copy { flex:1 1 auto; min-width:0; color:inherit; text-decoration:none; overflow-wrap:anywhere; }
     .basecamp-event-row.is-completed .basecamp-event-copy { opacity:.5; text-decoration:line-through; }
+    .basecamp-events-today { padding:7px; border:1px solid #7aa5ff66; border-radius:10px; background:#192942; }
+    .basecamp-events-today h4 { color:#b9d0ff !important; }
+    .basecamp-events-tomorrow { opacity:.52; }
+    .basecamp-events-tomorrow h4 { font-size:.56rem; }
+    .calendar-event-buttons { display:inline-flex; align-items:center; gap:4px; flex:none; }
+    .calendar-event-dismiss { flex:none; display:grid; place-items:center; width:30px; min-width:30px; height:30px; min-height:30px; padding:0; border:1px solid var(--line); border-radius:8px; background:var(--panel2); color:var(--text); font-size:.8rem; cursor:pointer; }
+    .calendar-event-dismiss:hover { border-color:#ff8b8b; }
+    body.view-mobile .calendar-event-dismiss { width:36px; min-width:36px; height:36px; min-height:36px; }
 
 </style>
 </head>
@@ -2259,7 +2267,7 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
     <section id="homePage" class="page" aria-label="BASECAMP">
       <div class="basecamp-header"><div><p class="eyebrow">BASECAMP</p><h2 id="basecampOrgTitle">GPR DESIGN</h2><p id="galleryDateLabel" class="gallery-date"></p><p id="basecampActivityLine" class="basecamp-activity-line"></p></div></div>
       <section class="basecamp-grid" aria-label="Quadros do Basecamp">
-        <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-open-basecamp-calendar><span class="basecamp-card-icon">▣</span><span>Calendário</span><span class="basecamp-card-arrow">↗</span></button><div class="basecamp-card-body"><section><h4>HOJE</h4><div id="basecampCalendarToday"></div></section><section><h4>AMANHÃ</h4><div id="basecampCalendarTomorrow"></div></section></div><button type="button" class="basecamp-calendar-connect" data-basecamp-connect-calendar>Conectar/sincronizar Google Calendar</button></article>
+        <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-open-basecamp-calendar><span class="basecamp-card-icon">▣</span><span>Calendário</span><span class="basecamp-card-arrow">↗</span></button><div class="basecamp-card-body"><section class="basecamp-events-today"><h4>HOJE</h4><div id="basecampCalendarToday"></div></section><section class="basecamp-events-tomorrow"><h4>AMANHÃ</h4><div id="basecampCalendarTomorrow"></div></section></div><button type="button" class="basecamp-calendar-connect" data-basecamp-connect-calendar>Conectar/sincronizar Google Calendar</button></article>
         <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-basecamp-clients><span class="basecamp-card-icon">♙</span><span>Clientes</span><span class="basecamp-card-arrow">↗</span></button><div id="basecampClients" class="basecamp-card-body"></div></article>
         <article class="basecamp-card"><div class="basecamp-card-title static"><span class="basecamp-card-icon">▧</span><span>Docs &amp; arqs</span></div><div id="basecampDocs" class="basecamp-card-body"></div><div class="basecamp-file-shortcuts"><a href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">Abrir Google Drive ↗</a><div class="basecamp-share"><strong>Servidor (Tailscale)</strong><span>100.79.254.18 · dados</span><span>100.79.254.18 · home-kr</span></div></div><small class="basecamp-hint">No app de arquivos, adicione um servidor SMB enquanto estiver conectado ao Tailscale.</small></article>
         <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-focus-message-board><span class="basecamp-card-icon">▤</span><span>Message Board</span><span class="basecamp-card-arrow">＋</span></button><div id="basecampMessagePreview" class="basecamp-card-body"></div></article>
@@ -2374,9 +2382,9 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=273'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=274'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=286',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=287',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
