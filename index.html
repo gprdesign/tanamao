@@ -1955,6 +1955,249 @@ body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
     .theme-choice-row { display:flex; gap:8px; margin-top:10px; }
     .theme-choice-row .btn { flex:1; }
     .theme-choice-row .btn[aria-pressed="true"] { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+
+    /* Light theme contrast normalization: neutralize legacy fixed dark surfaces across the full app. */
+    body[data-theme="light"] { --text:#192438; --muted:#536277; --line:#d4dce8; --panel:#ffffff; --panel2:#eef2f8; --accent:#315db7; color-scheme:light; }
+    body[data-theme="light"] :where(input,textarea,select) { background-color:#fff !important; color:#192438 !important; border-color:#b8c5d6 !important; color-scheme:light; }
+    body[data-theme="light"] :where(input,textarea,select)::placeholder { color:#66758a !important; opacity:1; }
+    body[data-theme="light"] :where(.kanban-event-section,.kanban-reminder-section,.kanban-event-item,.kanban-reminder-item,.kanban-add-reminder,.kanban-next-event,.kanban-reminders-month-toggle) { background:#f3f5fa !important; background-image:none !important; color:#192438 !important; border-color:#cbd5e1 !important; }
+    body[data-theme="light"] :where(.kanban-event-section h4,.kanban-reminder-section h4,.kanban-event-section h4 span,.kanban-reminder-section h4 span,.kanban-event-item,.kanban-event-day,.kanban-event-time) { color:#192438 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-overdue .kanban-reminder-item,.kanban-reminder-today .kanban-reminder-item) { background:#fff7ed !important; color:#7c2d12 !important; border-color:#fdba74 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-overdue .kanban-reminder-badge,.kanban-reminder-today .kanban-reminder-badge,.kanban-reminder-tomorrow .kanban-reminder-badge) { background:#ffedd5 !important; color:#7c2d12 !important; border-color:#fdba74 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-tomorrow .kanban-reminder-item) { background:#f1f5f9 !important; color:#334155 !important; }
+    body[data-theme="light"] :where(.kanban-event-section a,.kanban-reminder-section a,.kanban-event-item a,.kanban-reminder-item a) { color:#244f9b !important; }
+    body[data-theme="light"] :where(.kanban-complete-btn,.my-day-complete,.confirm-yes,.task-day-action--complete) { color:#14532d !important; background:#dcfce7 !important; border-color:#86c99c !important; }
+    body[data-theme="light"] :where(.finance-flow-tag.income,.finance-status-pill.realized,.task-card.has-tag-income) { color:#14532d !important; background:#dcfce7 !important; border-color:#86c99c !important; }
+    body[data-theme="light"] :where(.finance-flow-tag.expense,.finance-status-pill.overdue,.task-card.has-tag-expense) { color:#8a1c27 !important; background:#fee2e2 !important; border-color:#e9a0a7 !important; }
+    body[data-theme="light"] :where(.toast) { color:#192438 !important; background:#fff !important; border-color:#b8c5d6 !important; }
+    body[data-theme="light"] :where(.main-nav,.week-dock,#notesDock,#kanbanMobileNav,.planner-subdock,.floating-action-menu) { background:rgba(255,255,255,.98) !important; border-color:#cbd5e1 !important; }
+    body[data-theme="light"] :where(.nav-btn[aria-current="page"],.planner-subdock-tab[aria-pressed="true"],#kanbanMobileNav button[aria-current="true"]) { background:#dbe7fb !important; color:#192438 !important; }
+    body[data-theme="light"] :where(.btn.primary,.view-mode-switch button[aria-pressed="true"]) { background:#315db7 !important; border-color:#315db7 !important; color:#fff !important; }
+    body[data-theme="light"] :where(.subdock-add-note,.subdock-add-task) { color:#192438 !important; }
+
+    body[data-theme="light"] .home-hero,body[data-theme="light"] .home-stat,body[data-theme="light"] .filter-tag-option,body[data-theme="light"] .filter-tag-option[aria-pressed="true"],body[data-theme="light"] .kanban-add,body[data-theme="light"] .kanban-task,body[data-theme="light"] .my-day-task,body[data-theme="light"] .my-day-remove,body[data-theme="light"] .my-day-remove:hover,body[data-theme="light"] .kanban-event-item,body[data-theme="light"] .kanban-next-event,body[data-theme="light"] .kanban-quotes-list .kanban-quote-task { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] .kanban-reminder-item,body[data-theme="light"] .kanban-collapse-btn,body[data-theme="light"] .day-column[data-kind="overdue"],body[data-theme="light"] .very-overdue-card,body[data-theme="light"] .task-card,body[data-theme="light"] .task-card:hover,body[data-theme="light"] .day-completion-confirm,body[data-theme="light"] .task-reprogram-btn,body[data-theme="light"] .task-reprogram-btn:hover,body[data-theme="light"] .icon-btn:hover,body[data-theme="light"] .drop-active,body[data-theme="light"] .main-nav { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] .nav-btn[aria-current="page"],body[data-theme="light"] dialog,body[data-theme="light"] dialog::backdrop,body[data-theme="light"] .toast,body[data-theme="light"] .planner-section-btn,body[data-theme="light"] #planningBtn,body[data-theme="light"] #completedBtn,body[data-theme="light"] .week-dock,body[data-theme="light"] .task-divider::before,body[data-theme="light"] .task-divider::after,body[data-theme="light"] .task-menu[open] > summary,body[data-theme="light"] .note-menu[open] > summary { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] .task-menu-popover,body[data-theme="light"] .note-menu-popover,body[data-theme="light"] .menu-action:hover,body[data-theme="light"] .note-card:hover,body[data-theme="light"] .note-tag-choice,body[data-theme="light"] .quick-note,body[data-theme="light"] .quick-task,body[data-theme="light"] .home-task-row,body[data-theme="light"] .nav-indicator,body[data-theme="light"] .home-event-row,body[data-theme="light"] .planner-section-buttons .completed-box,body[data-theme="light"] .note-card .note-card-controls .note-touch-handle { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] .btn.danger:hover,body[data-theme="light"] #financeStopSeriesBtn,body[data-theme="light"] #financeStopSeriesBtn:hover,body[data-theme="light"] .log-ranges button,body[data-theme="light"] .log-ranges button[aria-pressed="true"],body[data-theme="light"] .logs-list::before,body[data-theme="light"] .log-action,body[data-theme="light"] .summary-time-chip,body[data-theme="light"] .summary-time-chip button,body[data-theme="light"] .notes-mode-tabs button,body[data-theme="light"] .notes-mode-tabs button[aria-selected="true"],body[data-theme="light"] .private-note-actions button { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] #headerFilterBtn[aria-pressed="true"],body[data-theme="light"] .tag-manager-row,body[data-theme="light"] .note-format-toolbar button,body[data-theme="light"] .recurrence-weekdays label,body[data-theme="light"] .household-buckets-summary-card,body[data-theme="light"] .household-buckets-summary-card.saved,body[data-theme="light"] .household-buckets-summary-card.missing,body[data-theme="light"] .finance-bank-rename,body[data-theme="light"] .finance-bank-row,body[data-theme="light"] .finance-budget-card,body[data-theme="light"] .household-buckets-panel,body[data-theme="light"] .household-bucket { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] .household-bucket.complete,body[data-theme="light"] .household-bucket-track,body[data-theme="light"] .household-bucket-toggle,body[data-theme="light"] .household-bucket-toggle.is-paid,body[data-theme="light"] .savings-goal,body[data-theme="light"] .finance-summary-card,body[data-theme="light"] .finance-entry,body[data-theme="light"] .finance-icon-button,body[data-theme="light"] .calendar-filter-row,body[data-theme="light"] .planner-calendar-task-divider,body[data-theme="light"] .planner-subdock,body[data-theme="light"] .planner-subdock-tab[aria-pressed="true"] { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] body.view-mobile .main-nav,body[data-theme="light"] body.view-mobile .week-dock,body[data-theme="light"] body.view-mobile #notesDock,body[data-theme="light"] body.view-mobile .planner-section-buttons,body[data-theme="light"] body.view-mobile .floating-action-menu,body[data-theme="light"] .basecamp-card-icon,body[data-theme="light"] .basecamp-quick-form textarea,body[data-theme="light"] .basecamp-quick-controls select,body[data-theme="light"] .basecamp-board-filters select,body[data-theme="light"] .basecamp-board-filters input,body[data-theme="light"] .basecamp-message-edit:hover,body[data-theme="light"] /* MOBILE Kanban: natural vertical flow { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] sticky lane shortcuts and no nested horizontal rail. */
+    body.view-mobile[data-page="tasks"] #kanbanMobileNav,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanMobileNav button,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanMobileNav button[aria-current="true"],body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-section,body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-section,body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-item,body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-item,body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-overdue,body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-today,body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-tomorrow,body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-tomorrow .kanban-reminder-badge,body[data-theme="light"] body[data-view-mode="pc"] #taskForm .task-checklist-row { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] #taskForm .task-checklist-comment,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .my-day-remove,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-touch-handle,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-add-reminder,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-item,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-overdue .kanban-reminder-item,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-today .kanban-reminder-item,body[data-theme="light"] /* Shared mobile Kanban task-card pattern: title/actions above,body[data-theme="light"] workflow controls below. */
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),body[data-theme="light"] .kanban-reminder-future .kanban-reminder-badge,body[data-theme="light"] .kanban-reminder-undated .kanban-reminder-badge,body[data-theme="light"] .kanban-reminder-reopen { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] .task-menu-divider,body[data-theme="light"] .menu-action.menu-reminder:hover,body[data-theme="light"] #kanbanBoard .kanban-reminders-month-toggle,body[data-theme="light"] #kanbanBoard .kanban-reminders-month-toggle:hover,body[data-theme="light"] #kanbanBoard .kanban-task:not(.my-day-task),body[data-theme="light"] #kanbanBoard .my-day-task,body[data-theme="light"] #kanbanBoard .my-day-task .my-day-remove,body[data-theme="light"] #kanbanBoard .my-day-task .task-touch-handle,body[data-theme="light"] #kanbanBoard .kanban-add-reminder,body[data-theme="light"] #kanbanBoard .kanban-reminder-item,body[data-theme="light"] #kanbanBoard .kanban-reminder-overdue .kanban-reminder-item,body[data-theme="light"] #kanbanBoard .kanban-reminder-today .kanban-reminder-item { background:#f2f5fa !important; background-image:none !important; border-color:var(--line) !important; color:var(--text) !important; }
+
+    body[data-theme="light"] .very-overdue-card,body[data-theme="light"] .task-reprogram-btn,body[data-theme="light"] #planningBtn,body[data-theme="light"] #completedBtn,body[data-theme="light"] .quick-note,body[data-theme="light"] .quick-task,body[data-theme="light"] .planner-section-buttons .completed-box,body[data-theme="light"] .note-card .note-card-controls .note-touch-handle,body[data-theme="light"] #financeStopSeriesBtn,body[data-theme="light"] .summary-time-chip button { color:#192438 !important; }
+
+    body[data-theme="light"] #headerFilterBtn[aria-pressed="true"],body[data-theme="light"] .filter-tag-option[aria-pressed="true"],body[data-theme="light"] .finance-bank-rename,body[data-theme="light"] .household-bucket-toggle,body[data-theme="light"] .household-bucket-toggle.is-paid,body[data-theme="light"] .basecamp-message-edit:hover,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanMobileNav button[aria-current="true"],body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-item,body[data-theme="light"] body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-tomorrow .kanban-reminder-badge,body[data-theme="light"] body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-add-reminder { color:#192438 !important; }
+
+    body[data-theme="light"] .kanban-reminder-future .kanban-reminder-badge,body[data-theme="light"] .kanban-reminder-undated .kanban-reminder-badge,body[data-theme="light"] .kanban-reminder-reopen,body[data-theme="light"] #kanbanBoard .kanban-reminders-month-toggle,body[data-theme="light"] #kanbanBoard .kanban-add-reminder { color:#192438 !important; }
+
+
+    /* Light-theme contrast normalization: overrides legacy fixed dark surfaces in every section and layout. */
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(
+      .btn,
+      .home-hero,
+      .home-stat,
+      .filter-tag-option,
+      .filter-tag-option[aria-pressed="true"],
+      .kanban-add,
+      .kanban-task,
+      .my-day-task,
+      .my-day-remove,
+      .my-day-remove:hover,
+      .kanban-event-item,
+      .kanban-next-event,
+      .kanban-quotes-list .kanban-quote-task,
+      .kanban-reminder-item,
+      .kanban-collapse-btn,
+      .day-column[data-kind="overdue"],
+      .very-overdue-card,
+      .task-card,
+      .task-card:hover,
+      .task-day-action,
+      .task-day-action:hover,
+      .task-day-action--tomorrow,
+      .task-day-action--tomorrow:hover,
+      .task-day-action--next-week,
+      .task-day-action--next-week:hover,
+      .day-completion-confirm,
+      .task-reprogram-btn,
+      .task-reprogram-btn:hover,
+      .icon-btn:hover,
+      .drop-active,
+      input,
+      textarea,
+      select,
+      .main-nav,
+      .nav-btn[aria-current="page"],
+      dialog,
+      .toast,
+      .planner-section-btn,
+      #planningBtn,
+      #completedBtn,
+      .week-dock,
+      .task-menu[open] > summary,
+      .note-menu[open] > summary,
+      .task-menu-popover,
+      .note-menu-popover,
+      .menu-action:hover,
+      .note-card:hover,
+      .note-tag-choice,
+      .quick-note,
+      .quick-task,
+      .home-task-row,
+      .home-event-row,
+      .note-card .note-card-controls .note-touch-handle,
+      .btn.danger:hover,
+      #financeStopSeriesBtn,
+      #financeStopSeriesBtn:hover,
+      .log-ranges button,
+      .log-ranges button[aria-pressed="true"],
+      .log-action,
+      .summary-time-chip,
+      .summary-time-chip button,
+      .notes-mode-tabs button,
+      .notes-mode-tabs button[aria-selected="true"],
+      .private-note-actions button,
+      #headerFilterBtn[aria-pressed="true"],
+      .tag-manager-row,
+      .note-format-toolbar button,
+      .recurrence-weekdays label,
+      .household-buckets-summary-card,
+      .household-buckets-summary-card.saved,
+      .household-buckets-summary-card.missing,
+      .finance-bank-rename,
+      .finance-bank-row,
+      .finance-budget-card,
+      .household-buckets-panel,
+      .household-bucket,
+      .household-bucket.complete,
+      .household-bucket-track,
+      .household-bucket-toggle,
+      .household-bucket-toggle.is-paid,
+      .savings-goal,
+      .finance-summary-card,
+      .finance-entry,
+      .finance-flow-tag.expense,
+      .finance-status-pill,
+      .finance-icon-button,
+      .calendar-filter-row,
+      .planner-calendar-task-divider,
+      .planner-subdock,
+      .planner-subdock-tab[aria-pressed="true"],
+      body.view-mobile .main-nav,
+      body.view-mobile .week-dock,
+      body.view-mobile #notesDock,
+      body.view-mobile .planner-section-buttons,
+      body.view-mobile .floating-action-menu,
+      .basecamp-card-icon,
+      .basecamp-quick-form textarea,
+      .basecamp-quick-controls select,
+      .basecamp-board-filters select,
+      .basecamp-board-filters input,
+      .basecamp-message-edit:hover,
+      /* MOBILE Kanban: natural vertical flow,
+      sticky lane shortcuts and no nested horizontal rail. */
+    body.view-mobile[data-page="tasks"] #kanbanMobileNav,
+      body.view-mobile[data-page="tasks"] #kanbanMobileNav button,
+      body.view-mobile[data-page="tasks"] #kanbanMobileNav button[aria-current="true"],
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-section,
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-section,
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-item,
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-item,
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-overdue,
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-today,
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-tomorrow,
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-tomorrow .kanban-reminder-badge,
+      body[data-view-mode="pc"] #taskForm .task-checklist-row,
+      #taskForm .task-checklist-comment,
+      body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .my-day-remove,
+      body.view-mobile[data-page="tasks"] #kanbanBoard .my-day-task .task-touch-handle,
+      body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-add-reminder,
+      body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-item,
+      body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-overdue .kanban-reminder-item,
+      body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-reminder-today .kanban-reminder-item,
+      /* Shared mobile Kanban task-card pattern: title/actions above,
+      workflow controls below. */
+body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
+      .kanban-reminder-future .kanban-reminder-badge,
+      .kanban-reminder-undated .kanban-reminder-badge,
+      .kanban-reminder-reopen,
+      .task-menu-divider,
+      .menu-action.menu-reminder:hover,
+      #kanbanBoard .kanban-reminders-month-toggle,
+      #kanbanBoard .kanban-reminders-month-toggle:hover,
+      #kanbanBoard .kanban-task:not(.my-day-task),
+      #kanbanBoard .my-day-task,
+      #kanbanBoard .my-day-task .my-day-remove,
+      #kanbanBoard .my-day-task .task-touch-handle,
+      #kanbanBoard .kanban-add-reminder,
+      #kanbanBoard .kanban-reminder-item,
+      #kanbanBoard .kanban-reminder-overdue .kanban-reminder-item,
+      #kanbanBoard .kanban-reminder-today .kanban-reminder-item
+    ) { background:#f2f5fa !important; background-image:none !important; border-color:#cbd5e1 !important; color:#192438 !important; }
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(
+      .very-overdue-card,
+      .task-day-action,
+      .task-day-action--tomorrow,
+      .task-day-action--next-week,
+      .task-reprogram-btn,
+      #planningBtn,
+      #completedBtn,
+      .quick-note,
+      .quick-task,
+      .note-card .note-card-controls .note-touch-handle,
+      #financeStopSeriesBtn,
+      .summary-time-chip button,
+      #headerFilterBtn[aria-pressed="true"],
+      .filter-tag-option[aria-pressed="true"],
+      .finance-bank-rename,
+      .household-bucket-toggle,
+      .household-bucket-toggle.is-paid,
+      .finance-flow-tag.expense,
+      .finance-status-pill,
+      .basecamp-message-edit:hover,
+      body.view-mobile[data-page="tasks"] #kanbanMobileNav button[aria-current="true"],
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-event-item,
+      body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .kanban-reminder-tomorrow .kanban-reminder-badge,
+      body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-add-reminder,
+      .kanban-reminder-future .kanban-reminder-badge,
+      .kanban-reminder-undated .kanban-reminder-badge,
+      .kanban-reminder-reopen,
+      #kanbanBoard .kanban-reminders-month-toggle,
+      #kanbanBoard .kanban-add-reminder
+    ) { color:#192438 !important; }
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(input,textarea,select) { background:#fff !important; color:#192438 !important; border-color:#b8c5d6 !important; color-scheme:light; }
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(input,textarea,select)::placeholder { color:#536277 !important; opacity:1; }
+    body[data-theme="light"] :where(.kanban-event-section,.kanban-reminder-section,.kanban-event-item,.kanban-reminder-item,.kanban-add-reminder,.kanban-next-event,.kanban-reminders-month-toggle) { background:#f2f5fa !important; background-image:none !important; color:#192438 !important; border-color:#cbd5e1 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-overdue .kanban-reminder-item) { background:#fee2e2 !important; color:#7f1d1d !important; border-color:#e9a0a7 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-today .kanban-reminder-item) { background:#fff7ed !important; color:#7c2d12 !important; border-color:#fdba74 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-tomorrow .kanban-reminder-item) { background:#f1f5f9 !important; color:#334155 !important; border-color:#cbd5e1 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-overdue .kanban-reminder-badge) { background:#fee2e2 !important; color:#7f1d1d !important; border-color:#e9a0a7 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-today .kanban-reminder-badge) { background:#ffedd5 !important; color:#7c2d12 !important; border-color:#fdba74 !important; }
+    body[data-theme="light"] :where(.kanban-reminder-tomorrow .kanban-reminder-badge) { background:#e2e8f0 !important; color:#334155 !important; border-color:#cbd5e1 !important; }
+    body[data-theme="light"] :where(.kanban-event-section a,.kanban-reminder-section a,.kanban-event-item a,.kanban-reminder-item a) { color:#244f9b !important; }
+    body[data-theme="light"] :where(.kanban-complete-btn,.my-day-complete,.confirm-yes,.task-day-action--complete) { color:#14532d !important; background:#dcfce7 !important; border-color:#86c99c !important; }
+    body[data-theme="light"] :where(.finance-flow-tag.income,.finance-status-pill.realized,.task-card.has-tag-income) { color:#14532d !important; background:#dcfce7 !important; border-color:#86c99c !important; }
+    body[data-theme="light"] :where(.finance-flow-tag.expense,.finance-status-pill.overdue,.task-card.has-tag-expense) { color:#8a1c27 !important; background:#fee2e2 !important; border-color:#e9a0a7 !important; }
+    body[data-theme="light"] :where(.toast) { color:#192438 !important; background:#fff !important; border-color:#b8c5d6 !important; }
+    body[data-theme="light"] :where(.main-nav,.week-dock,#notesDock,#kanbanMobileNav,.planner-subdock,.floating-action-menu) { background:rgba(255,255,255,.98) !important; border-color:#cbd5e1 !important; }
+    body[data-theme="light"] :where(.nav-btn[aria-current="page"],.planner-subdock-tab[aria-pressed="true"],#kanbanMobileNav button[aria-current="true"]) { background:#dbe7fb !important; color:#192438 !important; }
+    body[data-theme="light"] :where(.btn.primary,.view-mode-switch button[aria-pressed="true"]) { background:#315db7 !important; border-color:#315db7 !important; color:#fff !important; }
+
 </style>
 </head>
 <body>
@@ -2083,9 +2326,9 @@ body.view-mobile .floating-action-menu .task-menu-divider { margin:5px; }
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=266'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=267'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=279',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=280',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
