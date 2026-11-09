@@ -1303,6 +1303,15 @@
     if(session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast(`${financeMoney(deposit)} adicionados. Total da Caixinha: ${financeMoney(total)}.`);}catch{showToast(`Depósito salvo neste aparelho; sincronização pendente. Total: ${financeMoney(total)}.`);}}
     else showToast(`${financeMoney(deposit)} adicionados. Total da Caixinha: ${financeMoney(total)}.`);
   }
+  async function withdrawFinanceCashbox() {
+    const input=$('financeCashboxWithdrawInput'),raw=input.value.trim();if(raw===''){showToast('Digite quanto quer retirar da Caixinha.');return;}
+    const amount=Math.round(Number(raw)*100)/100,current=Math.round(Math.max(0,Number(financeState.cashboxAmount)||0)*100)/100;
+    if(!Number.isFinite(amount)||amount<=0){showToast('Informe um valor maior que zero para retirar.');return;}
+    if(amount>current){showToast(`A retirada não pode passar do saldo da Caixinha (${financeMoney(current)}).`);return;}
+    const total=Math.round((current-amount)*100)/100;setHouseholdCashboxAmount(total);input.value='';renderFinanceBudget();renderHouseholdBuckets();
+    if(session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast(`${financeMoney(amount)} retirados da Caixinha. Saldo: ${financeMoney(total)}.`);}catch{showToast(`Retirada salva neste aparelho; sincronização pendente. Saldo: ${financeMoney(total)}.`);}}
+    else showToast(`${financeMoney(amount)} retirados da Caixinha. Saldo: ${financeMoney(total)}.`);
+  }
   function financeDateForOccurrence(anchorDate,occurrenceNumber) {
     const anchor=dateAtNoon(anchorDate);if(!anchor)return anchorDate;
     return recurrenceDateInMonth(anchor.getFullYear()*12+anchor.getMonth()+Math.max(0,Number(occurrenceNumber||1)-1),anchor.getDate());
@@ -2887,6 +2896,8 @@
   $('financeForm').addEventListener('input',()=>{financeDialogDirty=true;});
   $('financeForm').addEventListener('change',()=>{financeDialogDirty=true;});
   $('financeCashboxSaveBtn').addEventListener('click',()=>{void saveFinanceCashbox();});
+  $('financeCashboxWithdrawBtn').addEventListener('click',()=>{void withdrawFinanceCashbox();});
+  $('financeCashboxWithdrawInput').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();void withdrawFinanceCashbox();}});
   $('calendarConnectBtn').addEventListener('click',()=>{void connectGoogleCalendar();});
   $('calendarSyncBtn').addEventListener('click',()=>{void syncGoogleCalendar(true);});
   $('calendarFilters').addEventListener('change',handleCalendarFilterChange);
