@@ -1225,7 +1225,7 @@
     const target=new Date(today.getFullYear(),today.getMonth(),5,12);if(today.getDate()>5)target.setMonth(target.getMonth()+1);
     return dateKey(target);
   }
-  const HOUSEHOLD_BILLS=[{id:'fut-terca',title:'Fut terça',day:7,amount:110},{id:'s24',title:'Parcela S24 — pai',day:10,amount:207,knownUntil:'2027-07-10'},{id:'mei',title:'MEI',day:20,amount:87}];
+  const HOUSEHOLD_BILLS=[{id:'fut-terca',title:'Fut terça',day:7,amount:105.70},{id:'s24',title:'Parcela S24 — pai',day:10,amount:207,knownUntil:'2027-07-10'},{id:'mei',title:'MEI',day:20,amount:87}];
   function householdBillCycleKey() { return todayKey().slice(0,7); }
   function currentHouseholdBillStates() { return userSettings.householdBillCycles?.[householdBillCycleKey()]||{}; }
   function saveHouseholdBillState(billId,state) {
@@ -1241,7 +1241,9 @@
     const today=todayKey(),month=householdBillCycleKey(),monthDate=dateAtNoon(`${month}-01`),states=currentHouseholdBillStates(),s24Task=tasks.find(task=>!task.deletedAt&&String(task.title||'').toLocaleLowerCase('pt-BR').includes('s24')&&task.recurrence?.frequency==='monthly'),fallback=HOUSEHOLD_BILLS.find(bill=>bill.id==='s24').knownUntil,s24Until=isDateKey(s24Task?.recurrence?.until)?s24Task.recurrence.until:fallback;
     monthNode.textContent=(monthDate?monthDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}):month).toLocaleUpperCase('pt-BR');
     const bills=HOUSEHOLD_BILLS.filter(bill=>bill.id!=='s24'||today<=s24Until).map(bill=>({...bill,until:bill.id==='s24'?s24Until:null})).sort((a,b)=>a.day-b.day),cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),goals=userSettings.savingsGoals||[],goalSavings=goals.reduce((sum,goal)=>sum+Math.max(0,Number(goal.savedAmount)||0),0);
-    $('householdBucketsSaved').textContent=financeMoney(cashbox+goalSavings);$('householdBucketsMissing').textContent=financeMoney(Math.max(0,bills.filter(bill=>!states[bill.id]?.paid).reduce((sum,bill)=>sum+bill.amount,0)-cashbox));
+    const fixedBillsMissing=Math.max(0,bills.filter(bill=>!states[bill.id]?.paid).reduce((sum,bill)=>sum+bill.amount,0)-cashbox),goalMissing=goals.reduce((sum,goal)=>sum+Math.max(0,(Number(goal.targetAmount)||0)-(Number(goal.savedAmount)||0)),0);
+    $('householdBucketsSavedBills').textContent=financeMoney(cashbox);$('householdBucketsSavedGoals').textContent=financeMoney(goalSavings);$('householdBucketsSaved').textContent=financeMoney(cashbox+goalSavings);
+    $('householdBucketsMissingBills').textContent=financeMoney(fixedBillsMissing);$('householdBucketsMissingGoals').textContent=financeMoney(goalMissing);$('householdBucketsMissing').textContent=financeMoney(fixedBillsMissing+goalMissing);
     let available=cashbox;
     grid.innerHTML=bills.map(bill=>{
       const state=states[bill.id]||{},paid=Boolean(state.paid),deducted=Math.max(0,Number(state.deductedAmount)||0),funded=paid?bill.amount:Math.min(bill.amount,available);

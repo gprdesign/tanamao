@@ -2211,6 +2211,18 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
     html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-reminder-section h4 span,
     html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-events-reminders .kanban-month-toggle { color:#192438 !important; }
 
+
+    .household-buckets-summary-card { align-items:stretch; justify-content:flex-start; min-height:118px; text-align:left; }
+    .household-buckets-summary-card h4 { margin:0 0 8px; color:var(--text); font-size:.76rem; }
+    .household-buckets-summary-lines { display:grid; gap:4px; }
+    .household-buckets-summary-lines > div,.household-buckets-summary-total { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .household-buckets-summary-lines span,.household-buckets-summary-total span { color:var(--muted); font-size:.68rem; }
+    .household-buckets-summary-lines strong { margin:0; font-size:.72rem; font-variant-numeric:tabular-nums; }
+    .household-buckets-summary-total { margin-top:auto; padding-top:7px; border-top:1px solid var(--line); }
+    .household-buckets-summary-total span { color:var(--text); font-weight:850; }
+    .household-buckets-summary-total strong { margin:0; font-size:.82rem; font-variant-numeric:tabular-nums; }
+    body[data-theme="light"] .household-buckets-summary-card.missing strong { color:#8a1c27; }
+
 </style>
 </head>
 <body>
@@ -2264,7 +2276,7 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
       <p class="finance-formula-note">A Caixinha não é descontada do cálculo diário.</p>
       <div class="finance-main-grid"><div class="finance-summary" id="financeSummary"></div>
       <section class="finance-upcoming" aria-label="Próximos recebimentos nos próximos 30 dias"><div class="finance-upcoming-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span class="finance-upcoming-window">30 DIAS</span></div><div class="finance-upcoming-list" id="financeUpcomingList" aria-live="polite"></div></section></div>
-      <section class="household-buckets-panel" aria-label="Caixinhas de contas"><div class="household-buckets-heading"><div class="household-buckets-title"><h3>CAIXINHAS DE CONTAS</h3><small id="householdBucketsMonth" class="household-buckets-month"></small></div><section class="finance-cashbox-section" aria-label="Movimentar Caixinha"><article class="finance-budget-card cashbox"><label for="financeCashboxInput">ADICIONAR À CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor a adicionar à Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Adicionar</button></div><label for="financeCashboxWithdrawInput">RETIRAR DA CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxWithdrawInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Valor para retirar" aria-label="Valor a retirar da Caixinha de Contas"><button class="btn small" id="financeCashboxWithdrawBtn" type="button">Retirar</button></div><small id="financeCashboxValue">Ainda não informado</small></article></section><div class="household-buckets-summary" id="householdBucketsSummary" aria-label="Resumo das Caixinhas"><article class="household-buckets-summary-card saved"><span>Total guardado:</span><strong id="householdBucketsSaved">R$ 0,00</strong></article><article class="household-buckets-summary-card missing"><span>Faltando:</span><strong id="householdBucketsMissing">R$ 0,00</strong></article></div></div><div class="household-buckets-grid" id="householdBucketsGrid"></div></section>
+      <section class="household-buckets-panel" aria-label="Caixinhas de contas"><div class="household-buckets-heading"><div class="household-buckets-title"><h3>CAIXINHAS DE CONTAS</h3><small id="householdBucketsMonth" class="household-buckets-month"></small></div><section class="finance-cashbox-section" aria-label="Movimentar Caixinha"><article class="finance-budget-card cashbox"><label for="financeCashboxInput">ADICIONAR À CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Valor a adicionar à Caixinha de Contas"><button class="btn small" id="financeCashboxSaveBtn" type="button">Adicionar</button></div><label for="financeCashboxWithdrawInput">RETIRAR DA CAIXINHA</label><div class="finance-cashbox-form"><input id="financeCashboxWithdrawInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Valor para retirar" aria-label="Valor a retirar da Caixinha de Contas"><button class="btn small" id="financeCashboxWithdrawBtn" type="button">Retirar</button></div><small id="financeCashboxValue">Ainda não informado</small></article></section><div class="household-buckets-summary" id="householdBucketsSummary" aria-label="Resumo das Caixinhas"><article class="household-buckets-summary-card saved"><h4>Guardado:</h4><div class="household-buckets-summary-lines"><div><span>Contas fixas</span><strong id="householdBucketsSavedBills">R$ 0,00</strong></div><div><span>Metas</span><strong id="householdBucketsSavedGoals">R$ 0,00</strong></div></div><div class="household-buckets-summary-total"><span>Total guardado</span><strong id="householdBucketsSaved">R$ 0,00</strong></div></article><article class="household-buckets-summary-card missing"><h4>Faltando:</h4><div class="household-buckets-summary-lines"><div><span>Contas fixas</span><strong id="householdBucketsMissingBills">R$ 0,00</strong></div><div><span>Metas</span><strong id="householdBucketsMissingGoals">R$ 0,00</strong></div></div><div class="household-buckets-summary-total"><span>Total faltando</span><strong id="householdBucketsMissing">R$ 0,00</strong></div></article></div></div><div class="household-buckets-grid" id="householdBucketsGrid"></div></section>
       <div class="finance-entry-list" id="financeEntriesList" aria-live="polite" hidden></div>
     </section>
 
@@ -2339,9 +2351,9 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=268'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=269'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=281',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=282',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
