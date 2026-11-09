@@ -2198,6 +2198,19 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
     body[data-theme="light"] :where(.nav-btn[aria-current="page"],.planner-subdock-tab[aria-pressed="true"],#kanbanMobileNav button[aria-current="true"]) { background:#dbe7fb !important; color:#192438 !important; }
     body[data-theme="light"] :where(.btn.primary,.view-mode-switch button[aria-pressed="true"]) { background:#315db7 !important; border-color:#315db7 !important; color:#fff !important; }
 
+
+    /* Specific PC/mobile agenda shell uses RGB gradients and hardcoded lilac labels. */
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard > .kanban-events-reminders,
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-events-reminders,
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-reminders,
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-done { background:#fff !important; background-image:none !important; border-color:#cbd5e1 !important; color:#192438 !important; }
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-events-reminders h3,
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-event-section h4,
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-reminder-section h4,
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-event-section h4 span,
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-reminder-section h4 span,
+    html body[data-theme="light"][data-theme="light"][data-theme="light"] #kanbanBoard .kanban-events-reminders .kanban-month-toggle { color:#192438 !important; }
+
 </style>
 </head>
 <body>
@@ -2326,9 +2339,9 @@ body.view-mobile[data-page="tasks"] #kanbanBoard .kanban-task:not(.my-day-task),
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=267'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=268'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=280',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=281',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
