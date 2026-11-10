@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=2">
+  <link rel="stylesheet" href="./styles/app.css?v=3">
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -52,6 +52,23 @@
       </div>
       <dialog id="kanbanColumnDialog" class="app-dialog kanban-fullscreen-dialog" aria-label="Coluna do Kanban"></dialog>
       <div id="kanbanCompletionConfirm" class="day-completion-confirm" role="alertdialog" aria-modal="true" aria-labelledby="kanbanCompletionText" hidden><span id="kanbanCompletionText" class="day-completion-confirm-text">Concluir esta tarefa?</span><div id="kanbanCompletionChecklistWarning" class="day-completion-checklist-warning" hidden><strong>Checklist ainda em aberto:</strong><ul id="kanbanCompletionChecklistItems"></ul></div><div class="day-completion-confirm-actions"><button class="btn ghost small" id="kanbanCompletionCancelBtn" type="button">CANCELAR</button><button class="btn small confirm-yes" id="kanbanCompletionConfirmBtn" type="button">CONCLUIR</button></div></div>
+    </section>
+
+    <section id="dashboardPage" class="page dashboard-page" aria-label="Dashboard">
+      <header class="dashboard-heading"><div><p class="eyebrow">PANORAMA GERAL</p><h2>Visão geral</h2><p class="dashboard-date" id="dashboardDate"></p></div></header>
+      <div class="dashboard-summary" aria-label="Resumo do TNM">
+        <button class="dashboard-stat" type="button" data-dashboard-go="tasks"><span>EM ABERTO</span><strong id="dashboardOpenCount">—</strong><small id="dashboardOverdueCount">Carregando tarefas</small></button>
+        <button class="dashboard-stat" type="button" data-dashboard-go="notes"><span>NOTAS</span><strong id="dashboardNotesCount">—</strong><small id="dashboardNotesHint">Notas abertas</small></button>
+        <button class="dashboard-stat" type="button" data-dashboard-go="finance"><span>SALDO EM CONTA</span><strong id="dashboardBalance">—</strong><small id="dashboardBalanceHint">Saldo informado no TNM</small></button>
+        <button class="dashboard-stat" type="button" data-dashboard-go="finance"><span>MÊS ATÉ AGORA</span><strong id="dashboardMonthNet">—</strong><small id="dashboardMonthFlow">Entradas e saídas realizadas</small></button>
+      </div>
+      <div class="dashboard-panels">
+        <section class="dashboard-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">PLANNER</p><h3>Hoje</h3></div><button type="button" class="dashboard-more" data-dashboard-go="tasks">Abrir Planner <span aria-hidden="true">↗</span></button></header><p class="dashboard-section-meta" id="dashboardTasksMeta"></p><div class="dashboard-list" id="dashboardTasksList"></div></section>
+        <section class="dashboard-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">LEMBRETES</p><h3>Hoje e amanhã</h3></div></header><div class="dashboard-list" id="dashboardRemindersList"></div></section>
+        <section class="dashboard-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">AGENDA</p><h3>Próximos eventos</h3></div><button type="button" class="dashboard-more" data-dashboard-go="tasks">Ver agenda <span aria-hidden="true">↗</span></button></header><div class="dashboard-list" id="dashboardCalendarList"></div></section>
+        <section class="dashboard-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">FINANÇAS</p><h3>Próximos recebimentos</h3></div><button type="button" class="dashboard-more" data-dashboard-go="finance">Ver finanças <span aria-hidden="true">↗</span></button></header><div class="dashboard-list" id="dashboardIncomeList"></div></section>
+        <section class="dashboard-panel dashboard-recent-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">ESPAÇO PESSOAL</p><h3>Notas e registros recentes</h3></div><button type="button" class="dashboard-more" data-dashboard-go="notes">Ver notas <span aria-hidden="true">↗</span></button></header><div class="dashboard-list" id="dashboardRecentList"></div></section>
+      </div>
     </section>
 
     <section id="financePage" class="page" aria-label="Finanças">
@@ -111,6 +128,7 @@
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
     <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">KANBAN</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
+    <button class="nav-btn" type="button" data-page="dashboard" aria-label="Dashboard"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg></span><span>DASHBOARD</span></button>
     <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
     <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>CONFIGS</span></button>
   </nav>
@@ -139,9 +157,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=274'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=276'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=288',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=290',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

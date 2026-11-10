@@ -24,7 +24,7 @@
   const TAGS_KEY = 'tnm.weekly.tags.v1';
   const TAG_FILTER_KEY = 'tnm.weekly.filterTag.v1';
   const PAGE_FILTERS_KEY = 'tnm.weekly.filterTagsByPage.v1';
-  const FILTER_PAGES = ['home','tasks','notes','finance'];
+  const FILTER_PAGES = ['home','tasks','notes','dashboard','finance'];
   const LAST_TAG_KEY = 'tnm.weekly.lastTag.v1';
   const AUTO_BACKUP_KEY = 'tnm.weekly.autobackup.v1';
   const CALENDAR_EVENTS_KEY = 'tnm.weekly.calendarEvents.v1';
@@ -101,7 +101,7 @@
   const storedPage = localStorage.getItem(PAGE_KEY);
   const pageUrl=new URL(window.location.href),routeView=pageUrl.searchParams.get('view');
   if(routeView==='basecamp'){pageUrl.searchParams.delete('view');history.replaceState(null,'',pageUrl.pathname+pageUrl.search+pageUrl.hash);}
-  let currentPage = storedPage==='log'?'finance':['tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
+  let currentPage = storedPage==='log'?'finance':['tasks','notes','dashboard','finance','settings','home'].includes(storedPage)?storedPage:'tasks';
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let weekStart = (()=>{const current=startOfWeek(todayKey()),saved=localStorage.getItem(WEEK_KEY),selected=saved?startOfWeek(saved):current;return selected<current?current:selected;})();
@@ -154,7 +154,7 @@
   function loadPageFilters() {
     const saved=readStored(PAGE_FILTERS_KEY,null);
     if(saved&&typeof saved==='object'&&!Array.isArray(saved))return Object.fromEntries(FILTER_PAGES.map(page=>[page,Array.isArray(saved[page])?Array.from(new Set(saved[page].map(String))):[]]));
-    const migrated={home:[],tasks:[],notes:readFilterTags(),finance:[]};
+    const migrated={home:[],tasks:[],notes:readFilterTags(),dashboard:[],finance:[]};
     localStorage.setItem(PAGE_FILTERS_KEY,JSON.stringify(migrated));return migrated;
   }
   function persistPageFilters() {
@@ -229,9 +229,9 @@
   function calendarEventIsDismissed(event){return Boolean(userSettings.calendarEventDismissals?.[String(event?.id||'')]?.dismissed);}
   function calendarEventCompleteButton(event,{dismiss=false}={}){const id=String(event?.id||''),completed=calendarEventIsCompleted(event),complete=`<button class="calendar-event-complete${completed?' is-completed':''}" type="button" data-calendar-event-complete="${escapeHTML(id)}" aria-pressed="${completed}" aria-label="${completed?'Reabrir':'Concluir'} evento ${escapeHTML(event.title)}" title="${completed?'Reabrir evento':'Concluir evento'}">✅</button>`;return dismiss?`<span class="calendar-event-buttons"><button class="calendar-event-dismiss" type="button" data-calendar-event-dismiss="${escapeHTML(id)}" aria-label="Remover ${escapeHTML(event.title)} da visão de eventos" title="Remover da visão">❌</button>${complete}</span>`:complete;}
   function plannerCalendarEventRow(event,date){const time=calendarEventTimeLabel(event),completed=calendarEventIsCompleted(event),past=calendarEventClass(event,date);return `<div class="planner-calendar-event-row${completed?' is-completed':''}"><div class="planner-calendar-event${past}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>${calendarEventCompleteButton(event)}</div>`;}
-  function toggleCalendarEventCompletion(eventId){const id=String(eventId||'');if(!id)return;const current=userSettings.calendarEventCompletions?.[id],completed=!Boolean(current?.completed),updatedAt=new Date(Math.max(Date.now(),(Date.parse(current?.updatedAt||'')||0)+1)).toISOString();userSettings.calendarEventCompletions={...userSettings.calendarEventCompletions,[id]:{completed,updatedAt}};saveUserSettings(false);renderTasks();renderHome();if(session?.user?.id){void syncCloudAndWait().then(ok=>showToast(ok?`Evento ${completed?'concluído':'reaberto'} e sincronizado.`:`Estado salvo neste aparelho; sincronização pendente.`));}else showToast(`Evento ${completed?'concluído':'reaberto'} salvo neste aparelho. Entre na sua conta para sincronizar entre aparelhos.`);}
-  function dismissCalendarEvent(eventId){const id=String(eventId||'');if(!id||calendarEventIsDismissed({id}))return;const current=userSettings.calendarEventDismissals?.[id],updatedAt=new Date(Math.max(Date.now(),(Date.parse(current?.updatedAt||'')||0)+1)).toISOString();userSettings.calendarEventDismissals={...userSettings.calendarEventDismissals,[id]:{dismissed:true,updatedAt}};saveUserSettings(false);renderTasks();renderHome();if(session?.user?.id){void syncCloudAndWait().then(ok=>showToast(ok?'Evento removido da visão e sincronizado.':'Evento removido neste aparelho; sincronização pendente.'));}else showToast('Evento removido da visão neste aparelho. Entre na sua conta para sincronizar entre aparelhos.');}
-  function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderHomeEvents();if(currentPage==='home')renderHome();if(currentPage==='tasks')renderTasks();}
+  function toggleCalendarEventCompletion(eventId){const id=String(eventId||'');if(!id)return;const current=userSettings.calendarEventCompletions?.[id],completed=!Boolean(current?.completed),updatedAt=new Date(Math.max(Date.now(),(Date.parse(current?.updatedAt||'')||0)+1)).toISOString();userSettings.calendarEventCompletions={...userSettings.calendarEventCompletions,[id]:{completed,updatedAt}};saveUserSettings(false);renderTasks();renderHome();renderDashboard();if(session?.user?.id){void syncCloudAndWait().then(ok=>showToast(ok?`Evento ${completed?'concluído':'reaberto'} e sincronizado.`:`Estado salvo neste aparelho; sincronização pendente.`));}else showToast(`Evento ${completed?'concluído':'reaberto'} salvo neste aparelho. Entre na sua conta para sincronizar entre aparelhos.`);}
+  function dismissCalendarEvent(eventId){const id=String(eventId||'');if(!id||calendarEventIsDismissed({id}))return;const current=userSettings.calendarEventDismissals?.[id],updatedAt=new Date(Math.max(Date.now(),(Date.parse(current?.updatedAt||'')||0)+1)).toISOString();userSettings.calendarEventDismissals={...userSettings.calendarEventDismissals,[id]:{dismissed:true,updatedAt}};saveUserSettings(false);renderTasks();renderHome();renderDashboard();if(session?.user?.id){void syncCloudAndWait().then(ok=>showToast(ok?'Evento removido da visão e sincronizado.':'Evento removido neste aparelho; sincronização pendente.'));}else showToast('Evento removido da visão neste aparelho. Entre na sua conta para sincronizar entre aparelhos.');}
+  function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderHomeEvents();if(currentPage==='home')renderHome();if(currentPage==='tasks')renderTasks();renderDashboard();}
   window.TNMCalendarBridge=Object.freeze({replaceEvents:setCalendarEvents});
   function persistGoogleCalendarToken(){try{if(googleCalendarAccessToken&&googleCalendarAccessTokenExpiresAt>Date.now()+60000)sessionStorage.setItem(GOOGLE_CALENDAR_TOKEN_KEY,JSON.stringify({accessToken:googleCalendarAccessToken,expiresAt:googleCalendarAccessTokenExpiresAt}));else sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_KEY);}catch{}}
   function clearGoogleCalendarToken(){googleCalendarAccessToken='';googleCalendarAccessTokenExpiresAt=0;try{sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_KEY);}catch{}}
@@ -343,7 +343,7 @@
   function saveTags(schedule=true) {
     tags=ensureDefaultTags(tags);prunePageFilters();
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
-    renderTasks(); renderHome(); renderNotes(); renderFilterButton(); renderLogs();
+    renderTasks(); renderHome(); renderDashboard(); renderNotes(); renderFilterButton(); renderLogs();
     if (schedule) scheduleSync();
   }
   function loadLocalData() {
@@ -505,27 +505,27 @@
   function saveTasks(schedule=true) {
     localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));
     renderTasks();
-    renderHome();
+    renderHome();renderDashboard();
     if (schedule) scheduleSync();
   }
   function saveNotes(schedule=true) {
     localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
-    renderNotes();renderHome();
+    renderNotes();renderHome();renderDashboard();
     if (schedule) scheduleSync();
   }
   function saveLogs(schedule=true) {
     localStorage.setItem(LOGS_KEY,JSON.stringify(logs));
-    renderLogs();renderHome();
+    renderLogs();renderHome();renderDashboard();
     if(schedule)scheduleSync();
   }
   function saveFinanceEntries(schedule=true) {
     finances=finances.map(normalizeFinanceEntry).filter(Boolean);
-    localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);renderFinancePage();renderHome();
+    localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);renderFinancePage();renderHome();renderDashboard();
     if(schedule)scheduleSync();
   }
   function saveUserSettings(schedule=true) {
     userSettings=normalizeUserSettings({...userSettings,updatedAt:nowISO()});applyTheme();
-    localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));renderSummarySettings();renderHome();
+    localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));renderSummarySettings();renderHome();renderDashboard();
     if(schedule)scheduleSync();
   }
   function persistPrivateVault(schedule=true) {
@@ -694,8 +694,8 @@
   }
   function setPage(page) {
     if(page==='home')page='tasks';
-    if(!['tasks','finance','notes','settings'].includes(page))return;
-    const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
+    if(!['tasks','notes','dashboard','finance','settings'].includes(page))return;
+    const pageOrder=['tasks','home','notes','dashboard','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
     pendingLogLockId='';pendingLogUnlockId='';
     if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
@@ -711,6 +711,7 @@
     updateNavIndicator(page);renderFilterButton();
     if(page==='home'){renderHome();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
     if(page==='tasks'){renderTasks();setPlannerSubpage('kanban',false);}
+    if(page==='dashboard'){renderDashboard();}
     if(page==='finance'){renderFinancePage();void refreshFinanceCloudData();}
     if(page==='notes'){renderNotes();renderNotesMode();}
     if(page==='settings'){updateAuthUI();renderSettings();}
@@ -1154,7 +1155,40 @@
   }
   function openGlobalSearch(){const dialog=$('globalSearchDialog');if(!dialog.open)showAppDialog(dialog);requestAnimationFrame(()=>{$('globalSearchInput').focus();$('globalSearchInput').select();});}
   function handleGlobalSearchOpen(event){const button=event.target.closest('[data-global-open]');if(!button)return;const kind=button.dataset.globalOpen,id=button.dataset.id,date=button.dataset.date;$('globalSearchDialog').close();if(kind==='task'){setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(id);return;}if(kind==='note'){setPage('notes');setNotesMode('public');openNoteDialog(id);return;}if(kind==='private-note'){if(!privateNotesUnlocked){showToast('Desbloqueie o cofre para abrir esta nota.');return;}setPage('notes');setNotesMode('private');openPrivateNoteEditor(id);return;}if(kind==='finance'){setPage('finance');openFinanceDialog(id);return;}if(kind==='calendar'&&isDateKey(date)){setPage('tasks');setPlannerSubpage('kanban',false);setWeek(date);openDayDialog(date);return;}const results=globalSearchRun($('globalSearchInput').value),row=results.get(button.dataset.group)?.[Number(button.dataset.index)];if(row){$('globalSearchDetailTitle').textContent=row.label||button.dataset.group;$('globalSearchDetailBody').textContent=[row.title,row.meta,row.summary].filter(Boolean).join('\n\n');showAppDialog($('globalSearchDetailDialog'));}}
-  function renderAll() { renderTasks(); renderHome(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
+  function renderAll() { renderTasks(); renderHome(); renderDashboard(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
+  function renderDashboard(){
+    if(!$('dashboardDate'))return;
+    const today=todayKey(),tomorrow=addDays(today,1);
+    $('dashboardDate').textContent=formatDate(today,{weekday:'long',day:'2-digit',month:'long'});
+    const all=tasks.filter(task=>!task.deletedAt),todayTasks=all.filter(task=>!task.completedAt&&!isReminderTask(task)&&task.executionDate===today).sort(taskOrder);
+    const open=all.filter(task=>!task.completedAt&&!isReminderTask(task)),overdue=open.filter(task=>task.executionDate&&task.executionDate<today);
+    $('dashboardOpenCount').textContent=String(open.length);$('dashboardOverdueCount').textContent=`${overdue.length} atrasada${overdue.length===1?'':'s'}`;
+    $('dashboardNotesCount').textContent=String(notes.filter(note=>note&&!note.deletedAt).length);
+    const month=financeMonthSummaryData(today.slice(0,7)),balance=financeState.accountBalance;
+    $('dashboardBalance').textContent=balance===null?'—':financeMoney(balance);$('dashboardBalanceHint').textContent=balance===null?'Saldo ainda não informado':'Saldo informado no TNM';
+    const net=Math.round((month.realizedIncome-month.realizedExpense)*100)/100;
+    $('dashboardMonthNet').textContent=`${net<0?'−':'+'}${financeMoney(Math.abs(net))}`;
+    $('dashboardMonthFlow').textContent=`${financeMoney(month.realizedIncome)} recebidos · ${financeMoney(month.realizedExpense)} pagos`;
+    $('dashboardTasksMeta').textContent=`${todayTasks.length} tarefa${todayTasks.length===1?'':'s'} em aberto hoje`;
+    $('dashboardTasksList').innerHTML=todayTasks.length?todayTasks.slice(0,4).map(task=>`<button class="dashboard-row" type="button" data-dashboard-task="${escapeHTML(task.id)}"><span class="dashboard-row-main"><strong>${escapeHTML(task.title)}</strong><small>${escapeHTML(getTag(task.tagId).name)}</small></span><span class="dashboard-row-arrow" aria-hidden="true">›</span></button>`).join(''):'<p class="dashboard-empty">Sem tarefas agendadas para hoje.</p>';
+    const reminders=all.filter(task=>!task.completedAt&&isReminderTask(task)&&[today,tomorrow].includes(task.executionDate||task.recurrence?.anchorDate)).sort(taskOrder);
+    $('dashboardRemindersList').innerHTML=reminders.length?reminders.slice(0,4).map(task=>{const date=task.executionDate||task.recurrence?.anchorDate,day=date===today?'HOJE':'AMANHÃ';return `<button class="dashboard-row" type="button" data-dashboard-task="${escapeHTML(task.id)}"><span class="dashboard-row-day">${day}</span><span class="dashboard-row-main"><strong>${escapeHTML(task.title)}</strong><small>${date===today?'Hoje':'Amanhã'}</small></span><span class="dashboard-row-arrow" aria-hidden="true">›</span></button>`;}).join(''):'<p class="dashboard-empty">Sem lembretes para hoje ou amanhã.</p>';
+    const events=getUpcomingCalendarEvents().slice(0,4);
+    $('dashboardCalendarList').innerHTML=events.length?events.map(event=>{const day=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt)),d=dateAtNoon(day),when=event.allDay?'Dia todo':calendarEventTimeLabel(event),label=day===today?'HOJE':day===tomorrow?'AMANHÃ':d?d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}):'';return `<button class="dashboard-row" type="button" data-dashboard-event-date="${escapeHTML(day)}"><span class="dashboard-row-day">${escapeHTML(label)}</span><span class="dashboard-row-main"><strong>${escapeHTML(event.title)}</strong><small>${escapeHTML([when,event.location].filter(Boolean).join(' · '))}</small></span><span class="dashboard-row-arrow" aria-hidden="true">›</span></button>`;}).join(''):'<p class="dashboard-empty">Nenhum evento futuro sincronizado.</p>';
+    const {items:income}=collectUpcomingFinanceIncome();
+    $('dashboardIncomeList').innerHTML=income.length?income.slice(0,4).map(item=>{const d=dateAtNoon(item.date),date=d?d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):item.date;return `<button class="dashboard-row" type="button" data-dashboard-finance="${escapeHTML(item.id)}"><span class="dashboard-row-day">${escapeHTML(date)}</span><span class="dashboard-row-main"><strong>${escapeHTML(item.title)}</strong><small>Previsto</small></span><strong class="dashboard-income-amount">+ ${escapeHTML(financeMoney(item.amount))}</strong></button>`;}).join(''):'<p class="dashboard-empty">Sem recebimentos previstos nos próximos 30 dias.</p>';
+    const recentNotes=notes.filter(note=>note&&!note.deletedAt).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||''))).slice(0,2).map(note=>({kind:'NOTA',title:note.title||String(note.content||'').slice(0,70)||'Nota sem título',meta:note.isPinned?'Fixada':'Nota aberta',date:note.updatedAt||note.createdAt,id:note.id}));
+    const recentLogs=logs.filter(log=>log&&!log.deletedAt).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,2).map(log=>{const unlocked=Boolean(log.isLocked&&unlockedLogIds.has(String(log.id))),privateLog=log.isLocked?(unlocked?getDecryptedPrivateLog(log.id)?.content:'🔒 Registro privado trancado'):String(log.content||'');return {kind:'LOG',title:String(privateLog||'Registro sem texto').slice(0,90),meta:log.isLocked?'Registro privado':'Registro',date:log.createdAt,id:log.id};});
+    const recent=[...recentNotes,...recentLogs].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,4);
+    $('dashboardRecentList').innerHTML=recent.length?recent.map(item=>{const d=item.date?new Date(item.date):null,date=d&&Number.isFinite(d.getTime())?d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';return `<div class="dashboard-row dashboard-recent-row"><span class="dashboard-row-day">${escapeHTML(item.kind)}${date?` · ${escapeHTML(date)}`:''}</span><span class="dashboard-row-main"><strong>${escapeHTML(item.title)}</strong><small>${escapeHTML(item.meta)}</small></span></div>`;}).join(''):'<p class="dashboard-empty">Ainda não há notas ou registros recentes.</p>';
+
+  }
+  function handleDashboardClick(event){
+    const task=event.target.closest('[data-dashboard-task]');if(task){setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(task.dataset.dashboardTask);return;}
+    const eventRow=event.target.closest('[data-dashboard-event-date]');if(eventRow){const day=eventRow.dataset.dashboardEventDate;setPage('tasks');setPlannerSubpage('kanban',false);setWeek(day);openDayDialog(day);return;}
+    const financeRow=event.target.closest('[data-dashboard-finance]');if(financeRow){setPage('finance');openFinanceDialog(financeRow.dataset.dashboardFinance);return;}
+    const page=event.target.closest('[data-dashboard-go]')?.dataset.dashboardGo;if(page)setPage(page);
+  }
   function homeDateLabel(date) {
     const text=formatDate(date).replace(/\./g,'');
     const title=text.charAt(0).toLocaleUpperCase('pt-BR')+text.slice(1);
@@ -2531,7 +2565,7 @@
       financeState=normalizeFinanceState({accountBalance:remoteState?.accountBalance??localState.accountBalance,balanceUpdatedAt:remoteState?.balanceUpdatedAt||localState.balanceUpdatedAt,cashboxAmount:localCashboxIsNewer?localState.cashboxAmount:(remoteState?remoteState.cashboxAmount:localState.cashboxAmount),cashboxUpdatedAt:localCashboxIsNewer?localState.cashboxUpdatedAt:(remoteState?remoteState.cashboxUpdatedAt:localState.cashboxUpdatedAt),updatedAt:remoteState?.updatedAt||localState.updatedAt});
       localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));
       if(localCashboxIsNewer)await syncFinanceCashboxState();
-      renderFinancePage();return true;
+      renderFinancePage();renderDashboard();return true;
     }catch{return false;}
   }
   async function loadCloudData() {
@@ -2677,7 +2711,7 @@
     taskPullInFlight=true;
     try{
       const remoteRows=await fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),remoteTasks=remoteRows.map(rowToTask).filter(Boolean),merged=mergeById(tasks,remoteTasks).map(normalizeTask).filter(Boolean);
-      if(JSON.stringify(merged)!==JSON.stringify(tasks)){tasks=merged;localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));renderTasks();renderHome();}
+      if(JSON.stringify(merged)!==JSON.stringify(tasks)){tasks=merged;localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));renderTasks();renderHome();renderDashboard();}
       return true;
     }catch{return false;}
     finally{taskPullInFlight=false;}
@@ -2796,8 +2830,9 @@
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
-        setPage(button.dataset.page);
+    setPage(button.dataset.page);
   });
+  $('dashboardPage').addEventListener('click',handleDashboardClick);
   function handleKanbanChange(event){
     const control=event.target.closest('[data-kanban-state]');if(!control)return;
     const taskId=control.dataset.kanbanState,choice=control.value;
