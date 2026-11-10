@@ -33,6 +33,7 @@
   const AUTO_BACKUP_EVERY = 5*60*1000;
   const WEEK_KEY = 'tnm.weekly.week.v1';
   const PAGE_KEY = 'tnm.weekly.page.v1';
+  const HOME_GALLERY_KEY = 'tnm.weekly.homeGallery.v2';
   const RESET_CUTOFF = '2026-10-18T14:27:00.000Z';
   const DEFAULT_TAGS = [
     {id:'vida',name:'VIDA',color:'#73d6a2',createdAt:'2026-10-18T00:00:00.000Z',updatedAt:'2026-10-18T00:00:00.000Z'},
@@ -99,15 +100,15 @@
   let viewMode=storedViewMode==='pc'||storedViewMode==='mobile'?storedViewMode:(isAndroidDevice||(window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc');
   const storedPage = localStorage.getItem(PAGE_KEY);
   const pageUrl=new URL(window.location.href),routeView=pageUrl.searchParams.get('view');
-  if(routeView){pageUrl.searchParams.delete('view');history.replaceState(null,'',pageUrl.pathname+pageUrl.search+pageUrl.hash);}
-  let currentPage = 'home';
+  if(routeView==='basecamp'){pageUrl.searchParams.delete('view');history.replaceState(null,'',pageUrl.pathname+pageUrl.search+pageUrl.hash);}
+  let currentPage = storedPage==='log'?'finance':['tasks','finance','notes','settings'].includes(storedPage)?storedPage:'tasks';
   let pageTagFilters = loadPageFilters();
   let filterTagIds = [...(pageTagFilters[filterPageKey(currentPage)]||[])];
   let weekStart = (()=>{const current=startOfWeek(todayKey()),saved=localStorage.getItem(WEEK_KEY),selected=saved?startOfWeek(saved):current;return selected<current?current:selected;})();
   let observedToday=todayKey();
   let observedCurrentWeek=startOfWeek(observedToday);
   let dragTaskId = '';
-  
+  let dragTaskFromMyDay = false;
   let noteDragId = '';
   let checklistDragId = '';
   let checklistDragGroup = '';
@@ -120,6 +121,7 @@
   let activeDayKind = 'day';
   let activeDayDate = '';
   let pendingDayTaskCompletionId = '';
+  let pendingKanbanCompletionId='';
   let showAllMonthlyReminders=false;
   let dayDialogTouchStart = null;
   let authBusy = false;
@@ -227,9 +229,9 @@
   function calendarEventIsDismissed(event){return Boolean(userSettings.calendarEventDismissals?.[String(event?.id||'')]?.dismissed);}
   function calendarEventCompleteButton(event,{dismiss=false}={}){const id=String(event?.id||''),completed=calendarEventIsCompleted(event),complete=`<button class="calendar-event-complete${completed?' is-completed':''}" type="button" data-calendar-event-complete="${escapeHTML(id)}" aria-pressed="${completed}" aria-label="${completed?'Reabrir':'Concluir'} evento ${escapeHTML(event.title)}" title="${completed?'Reabrir evento':'Concluir evento'}">✅</button>`;return dismiss?`<span class="calendar-event-buttons"><button class="calendar-event-dismiss" type="button" data-calendar-event-dismiss="${escapeHTML(id)}" aria-label="Remover ${escapeHTML(event.title)} da visão de eventos" title="Remover da visão">❌</button>${complete}</span>`:complete;}
   function plannerCalendarEventRow(event,date){const time=calendarEventTimeLabel(event),completed=calendarEventIsCompleted(event),past=calendarEventClass(event,date);return `<div class="planner-calendar-event-row${completed?' is-completed':''}"><div class="planner-calendar-event${past}">📅${time?` ${escapeHTML(time)} ·`:''} ${escapeHTML(event.title)}</div>${calendarEventCompleteButton(event)}</div>`;}
-  function toggleCalendarEventCompletion(eventId){const id=String(eventId||'');if(!id)return;const current=userSettings.calendarEventCompletions?.[id],completed=!Boolean(current?.completed),updatedAt=new Date(Math.max(Date.now(),(Date.parse(current?.updatedAt||'')||0)+1)).toISOString();userSettings.calendarEventCompletions={...userSettings.calendarEventCompletions,[id]:{completed,updatedAt}};saveUserSettings(false);renderTasks();renderHome();renderDashboard();renderDashboard();if(session?.user?.id){void syncCloudAndWait().then(ok=>showToast(ok?`Evento ${completed?'concluído':'reaberto'} e sincronizado.`:`Estado salvo neste aparelho; sincronização pendente.`));}else showToast(`Evento ${completed?'concluído':'reaberto'} salvo neste aparelho. Entre na sua conta para sincronizar entre aparelhos.`);}
-  function dismissCalendarEvent(eventId){const id=String(eventId||'');if(!id||calendarEventIsDismissed({id}))return;const current=userSettings.calendarEventDismissals?.[id],updatedAt=new Date(Math.max(Date.now(),(Date.parse(current?.updatedAt||'')||0)+1)).toISOString();userSettings.calendarEventDismissals={...userSettings.calendarEventDismissals,[id]:{dismissed:true,updatedAt}};saveUserSettings(false);renderTasks();renderHome();renderDashboard();renderDashboard();if(session?.user?.id){void syncCloudAndWait().then(ok=>showToast(ok?'Evento removido da visão e sincronizado.':'Evento removido neste aparelho; sincronização pendente.'));}else showToast('Evento removido da visão neste aparelho. Entre na sua conta para sincronizar entre aparelhos.');}
-  function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderDashboard();if(currentPage==='tasks')renderTasks();}
+  function toggleCalendarEventCompletion(eventId){const id=String(eventId||'');if(!id)return;const current=userSettings.calendarEventCompletions?.[id],completed=!Boolean(current?.completed),updatedAt=new Date(Math.max(Date.now(),(Date.parse(current?.updatedAt||'')||0)+1)).toISOString();userSettings.calendarEventCompletions={...userSettings.calendarEventCompletions,[id]:{completed,updatedAt}};saveUserSettings(false);renderTasks();renderHome();if(session?.user?.id){void syncCloudAndWait().then(ok=>showToast(ok?`Evento ${completed?'concluído':'reaberto'} e sincronizado.`:`Estado salvo neste aparelho; sincronização pendente.`));}else showToast(`Evento ${completed?'concluído':'reaberto'} salvo neste aparelho. Entre na sua conta para sincronizar entre aparelhos.`);}
+  function dismissCalendarEvent(eventId){const id=String(eventId||'');if(!id||calendarEventIsDismissed({id}))return;const current=userSettings.calendarEventDismissals?.[id],updatedAt=new Date(Math.max(Date.now(),(Date.parse(current?.updatedAt||'')||0)+1)).toISOString();userSettings.calendarEventDismissals={...userSettings.calendarEventDismissals,[id]:{dismissed:true,updatedAt}};saveUserSettings(false);renderTasks();renderHome();if(session?.user?.id){void syncCloudAndWait().then(ok=>showToast(ok?'Evento removido da visão e sincronizado.':'Evento removido neste aparelho; sincronização pendente.'));}else showToast('Evento removido da visão neste aparelho. Entre na sua conta para sincronizar entre aparelhos.');}
+  function setCalendarEvents(values){calendarEvents=(Array.isArray(values)?values:[]).map(normalizeCalendarEvent).filter(Boolean);localStorage.setItem(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents));renderHomeEvents();if(currentPage==='home')renderHome();if(currentPage==='tasks')renderTasks();}
   window.TNMCalendarBridge=Object.freeze({replaceEvents:setCalendarEvents});
   function persistGoogleCalendarToken(){try{if(googleCalendarAccessToken&&googleCalendarAccessTokenExpiresAt>Date.now()+60000)sessionStorage.setItem(GOOGLE_CALENDAR_TOKEN_KEY,JSON.stringify({accessToken:googleCalendarAccessToken,expiresAt:googleCalendarAccessTokenExpiresAt}));else sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_KEY);}catch{}}
   function clearGoogleCalendarToken(){googleCalendarAccessToken='';googleCalendarAccessTokenExpiresAt=0;try{sessionStorage.removeItem(GOOGLE_CALENDAR_TOKEN_KEY);}catch{}}
@@ -341,7 +343,7 @@
   function saveTags(schedule=true) {
     tags=ensureDefaultTags(tags);prunePageFilters();
     localStorage.setItem(TAGS_KEY,JSON.stringify(tags));
-    renderTasks(); renderHome(); renderDashboard(); renderNotes(); renderFilterButton(); renderLogs();
+    renderTasks(); renderHome(); renderNotes(); renderFilterButton(); renderLogs();
     if (schedule) scheduleSync();
   }
   function loadLocalData() {
@@ -433,7 +435,7 @@
     const theme=source.theme==='light'?'light':'dark',rawSavingsGoals=Array.isArray(source.savingsGoals)?source.savingsGoals:[],savingsGoals=rawSavingsGoals.map(item=>{const id=String(item?.id||''),name=String(item?.name||'').trim().slice(0,100),targetNumber=Number(item?.targetAmount),savedNumber=Number(item?.savedAmount);return id&&name&&Number.isFinite(targetNumber)&&targetNumber>0?{id,name,targetAmount:Math.round(targetNumber*100)/100,savedAmount:Number.isFinite(savedNumber)?Math.max(0,Math.round(savedNumber*100)/100):0,createdAt:String(item?.createdAt||''),updatedAt:String(item?.updatedAt||'')}:null;}).filter(Boolean).slice(0,100);
     const rawHabits=Array.isArray(source.plannerHabits)?source.plannerHabits:[],plannerHabits=rawHabits.map(item=>({id:String(item?.id||''),name:String(item?.name||'').trim().slice(0,80),doneDates:Array.isArray(item?.doneDates)?Array.from(new Set(item.doneDates.map(String).filter(isDateKey))):[]})).filter(item=>item.id&&item.name).slice(0,100);
     const rawBasecamp=Array.isArray(source.basecampMessages)?source.basecampMessages:[],basecampMessages=rawBasecamp.map(item=>{const text=String(item?.text||'').trim().slice(0,5000),createdAt=String(item?.createdAt||''),id=String(item?.id||'');return text&&id?{id,text,tagId:String(item?.tagId||''),createdAt,updatedAt:String(item?.updatedAt||createdAt)}:null;}).filter(Boolean).slice(0,100);
-    return {theme,summaryTimes:times.sort(),calendarIds,calendarEventCompletions,calendarEventDismissals,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,savingsGoals,plannerHabits,basecampMessages,nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    return {theme,summaryTimes:times.sort(),calendarIds,calendarEventCompletions,calendarEventDismissals,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,savingsGoals,plannerHabits,basecampMessages,taskKanbanStates:source.taskKanbanStates&&typeof source.taskKanbanStates==='object'&&!Array.isArray(source.taskKanbanStates)?source.taskKanbanStates:{},taskKanbanBlockers:source.taskKanbanBlockers&&typeof source.taskKanbanBlockers==='object'&&!Array.isArray(source.taskKanbanBlockers)?source.taskKanbanBlockers:{},myDayTaskIds:Array.isArray(source.myDayTaskIds)?Array.from(new Set(source.myDayTaskIds.map(String).filter(Boolean))).slice(0,500):[],kanbanCollapsedColumns:Array.isArray(source.kanbanCollapsedColumns)?Array.from(new Set(source.kanbanCollapsedColumns.map(String).filter(key=>['todo','doing','blocked','events','reminders','done'].includes(key)))):[],kanbanDoneMobileExpanded:Boolean(source.kanbanDoneMobileExpanded),plannerSubpage:'kanban',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -508,7 +510,7 @@
   }
   function saveNotes(schedule=true) {
     localStorage.setItem(NOTES_KEY,JSON.stringify(notes));
-    renderNotes();renderHome();renderDashboard();
+    renderNotes();renderHome();
     if (schedule) scheduleSync();
   }
   function saveLogs(schedule=true) {
@@ -518,7 +520,7 @@
   }
   function saveFinanceEntries(schedule=true) {
     finances=finances.map(normalizeFinanceEntry).filter(Boolean);
-    localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);renderFinancePage();renderHome();renderDashboard();
+    localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));createAutomaticBackup(false);renderFinancePage();renderHome();
     if(schedule)scheduleSync();
   }
   function saveUserSettings(schedule=true) {
@@ -680,7 +682,7 @@
   }
   function plannerDockButton(){return $('plannerBasecampSwitch')||$('plannerNavLabel')?.closest('.nav-btn')||null;}
   function isDockButtonSelected(button,page=currentPage){
-    if(button===plannerDockButton())return page==='home';
+    if(button===plannerDockButton())return page==='home'||page==='tasks';
     return button.dataset.page===page;
   }
   function updateNavIndicator(page=currentPage) {
@@ -691,8 +693,9 @@
     indicator.hidden=false;indicator.style.left=`${target.offsetLeft}px`;indicator.style.width=`${target.offsetWidth}px`;indicator.style.transform='none';
   }
   function setPage(page) {
-    if(!['home','tasks','finance','notes','settings'].includes(page))return;
-    const pageOrder=['home','tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
+    if(page==='home')page='tasks';
+    if(!['tasks','finance','notes','settings'].includes(page))return;
+    const pageOrder=['tasks','notes','finance','settings'],previous=currentPage,oldIndex=pageOrder.indexOf(previous),newIndex=pageOrder.indexOf(page);
     if(page!=='notes'&&pendingPrivateMoveId)pendingPrivateMoveId='';
     pendingLogLockId='';pendingLogUnlockId='';
     if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
@@ -704,10 +707,10 @@
       if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
     });
     document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(isDockButtonSelected(button,page))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
-    const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent='DASHBOARD';
+    const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent=page==='home'?'BASECAMP':'KANBAN';
     updateNavIndicator(page);renderFilterButton();
     if(page==='home'){renderHome();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
-    if(page==='tasks'){renderTasks();}
+    if(page==='tasks'){renderTasks();setPlannerSubpage('kanban',false);}
     if(page==='finance'){renderFinancePage();void refreshFinanceCloudData();}
     if(page==='notes'){renderNotes();renderNotesMode();}
     if(page==='settings'){updateAuthUI();renderSettings();}
@@ -787,9 +790,9 @@
     if(tagTone)classes.push(tagTone);const className=classes.filter(Boolean).join(' ');
     const reprogram=options.reprogram&&!complete?`<button class="task-reprogram-btn" type="button" data-reprogram-task="${escapeHTML(task.id)}">REPROGRAMAR</button>`:'';
     const dayActions=options.dayActions&&!complete?`<div class="task-day-actions"><button class="task-day-action task-day-action--planning" type="button" data-day-task-action="planning" data-day-task-id="${escapeHTML(task.id)}">PLANEJAR</button><button class="task-day-action task-day-action--tomorrow" type="button" data-day-task-action="tomorrow" data-day-task-id="${escapeHTML(task.id)}">AMANHÃ</button><button class="task-day-action task-day-action--next-week" type="button" data-day-task-action="next-monday" data-day-task-id="${escapeHTML(task.id)}">SEG</button><button class="task-day-action task-day-action--complete" type="button" data-day-task-action="complete" data-day-task-id="${escapeHTML(task.id)}" aria-label="Concluir tarefa: ${escapeHTML(task.title)}" title="Concluir">✅</button></div>`:'';
-    const myDayComplete='';
+    const myDayComplete=options.myDay?`<button class="kanban-complete-btn my-day-complete" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button>`:'';
     const myDayRemove=options.myDay?`<button class="my-day-remove" type="button" data-my-day-remove="${escapeHTML(task.id)}" aria-label="Tirar ${escapeHTML(task.title)} do Meu Dia" title="Tirar do Meu Dia">×</button>`:'';
-    const quoteLink=options.quote&&task.link?`<a class="task-quote-link" href="${escapeHTML(task.link)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir proposta em uma nova aba">↗ ABRIR PROPOSTA</a>`:'';
+    const quoteLink=options.quote&&task.link?`<a class="kanban-quote-link" href="${escapeHTML(task.link)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir proposta em uma nova aba">↗ ABRIR PROPOSTA</a>`:'';
     return `<article class="${className}" draggable="${draggable?'true':'false'}" data-task-id="${escapeHTML(task.id)}" aria-label="${escapeHTML(task.title)}${task.recurrence?' · Tarefa recorrente':''}">
       <div class="task-main"><div class="task-title-row">${taskTag}${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span>':''}<button class="task-open task-title ${linked}" type="button" data-edit-task="${escapeHTML(task.id)}">${escapeHTML(task.title)}</button></div>${quoteLink}${complete?`<span class="task-completion-meta">${escapeHTML(completionLabel(task))}</span>`:''}</div>
       <div class="task-actions">${myDayComplete}${myDayRemove}${options.myDay?'':taskMenu(task,options.canMove!==false,options.quickReminder)}${taskHandle}</div>${dayActions}
@@ -853,7 +856,8 @@
   function setViewMode(mode) {
     if(!['pc','mobile'].includes(mode)||mode===viewMode)return;
     viewMode=mode;localStorage.setItem(VIEW_MODE_KEY,viewMode);syncViewModeSwitch();
-    if(currentPage==='tasks')renderTasks();
+    if(currentPage==='home'){setPage('tasks');return;}
+    updateNavIndicator(currentPage);if(currentPage==='tasks')renderTasks();
   }
   function openFilterDialog() {
     $('tagMessage').textContent=''; $('newTagName').value='';
@@ -909,6 +913,8 @@
     if(duplicate){$('tagManagerStatus').textContent='Já existe outra tag com esse nome.';return;}
     tag.name=name;if(validTagColor(color))tag.color=color;tag.updatedAt=nowISO();saveTags();renderTagManager();$('tagManagerStatus').textContent=`Tag ${tag.name} atualizada.`;
   }
+  const KANBAN_STATES=[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO']];
+  function getKanbanState(task){return task.completedAt?'done':(['todo','doing','blocked'].includes(userSettings.taskKanbanStates?.[task.id])?userSettings.taskKanbanStates[task.id]:'todo');}
   function normalizedTaskTagName(task){return String(getTag(task?.tagId)?.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleUpperCase('pt-BR');}
   function isReminderTask(task){return Boolean(task&&(task.recurrence||['LEMBRETE','LEMBRETES'].includes(normalizedTaskTagName(task))));}
   function getReminderTag(){const active=tags.filter(tag=>!tag.deletedAt),name=tag=>tag.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleUpperCase('pt-BR');return active.find(tag=>name(tag)==='LEMBRETES')||active.find(tag=>name(tag)==='LEMBRETE')||null;}
@@ -947,7 +953,116 @@
     if(option)$('taskTag').value=tag.id;
     $('taskDialogTitle').textContent='Novo lembrete';$('taskTitle').focus();taskDialogDirty=true;
   }
+  function renderKanbanSideColumn(all){
+    const today=todayKey(),tomorrow=addDays(today,1),collapsed=userSettings.kanbanCollapsedColumns||[],month=today.slice(0,7);
+    const allReminderTasks=tasks.filter(task=>!task.deletedAt&&isReminderTask(task)).sort((a,b)=>Number(Boolean(a.completedAt))-Number(Boolean(b.completedAt))||String(a.executionDate||a.recurrence?.anchorDate||'9999-12-31').localeCompare(String(b.executionDate||b.recurrence?.anchorDate||'9999-12-31'))||taskOrder(a,b));
+    const reminderTasks=allReminderTasks.filter(task=>{const date=task.executionDate||task.recurrence?.anchorDate||'';return showAllMonthlyReminders?date.startsWith(month):!task.completedAt&&(date===today||date===tomorrow);});
+    const reminderItem=task=>{
+      const date=task.executionDate||task.recurrence?.anchorDate||'',kind=task.completedAt?'done':!date?'undated':date<today?'overdue':date===today?'today':date===tomorrow?'tomorrow':'future',label=task.completedAt?'FEITO':kind==='overdue'?'ATRASADO':kind==='today'?'HOJE':kind==='tomorrow'?'AMANHÃ':date?formatDate(date,{day:'2-digit',month:'2-digit'}):'SEM DATA';
+      const repeat=task.recurrence?'<span class=\"kanban-reminder-repeat\" aria-label=\"Recorrente\">↻</span>':'';
+      const action=task.completedAt?`<button class=\"kanban-reminder-reopen\" type=\"button\" data-toggle-complete-task=\"${escapeHTML(task.id)}\" data-complete=\"false\" aria-label=\"Reabrir ${escapeHTML(task.title)}\" title=\"Reabrir lembrete\">↶</button>`:`<button class=\"kanban-complete-btn reminder-complete\" type=\"button\" data-kanban-complete=\"${escapeHTML(task.id)}\" aria-label=\"Concluir ${escapeHTML(task.title)}\" title=\"Concluir lembrete\">✓</button>`;
+      return `<div class=\"kanban-reminder-row kanban-reminder-${kind}${task.completedAt?' is-completed':''}\"><button class=\"kanban-reminder-item\" type=\"button\" data-edit-task=\"${escapeHTML(task.id)}\" aria-label=\"Abrir lembrete: ${escapeHTML(task.title)}\"><span class=\"kanban-reminder-badge\">${label}</span>${repeat}<span class=\"kanban-reminder-title\">${escapeHTML(task.title)}</span></button>${action}</div>`;
+    };
+    const eventItems=[['HOJE',today],['AMANHÃ',tomorrow]].flatMap(([label,date])=>getCalendarEventsForDate(date).map(item=>{const time=calendarEventTimeLabel(item),url=googleCalendarDayUrl(date),completed=calendarEventIsCompleted(item);return `<div class="kanban-event-row${completed?' is-completed':''}"><a class="kanban-event-item" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${escapeHTML(item.title)} no Google Calendar em ${escapeHTML(formatDate(date,{weekday:'long',day:'2-digit',month:'long',year:'numeric'}))}"><span class="kanban-event-day">${label}</span><span class="kanban-event-time">${time?escapeHTML(time):'DIA TODO'}</span><span class="kanban-event-title">${escapeHTML(item.title)}</span></a>${calendarEventCompleteButton(item)}</div>`;}));
+    if(!eventItems.length){const nextEvent=getUpcomingCalendarEvents()[0];if(nextEvent){const eventDate=nextEvent.allDay?String(nextEvent.startAt).slice(0,10):dateKey(new Date(nextEvent.startAt)),daysAway=Math.max(0,Math.round((dateAtNoon(eventDate)-dateAtNoon(today))/86400000)),dayLabel=dateAtNoon(eventDate).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}),time=calendarEventTimeLabel(nextEvent),url=googleCalendarDayUrl(eventDate),completed=calendarEventIsCompleted(nextEvent);eventItems.push(`<div class="kanban-event-row kanban-next-event-row${completed?' is-completed':''}"><a class="kanban-event-item kanban-next-event" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" aria-label="Próximo evento: ${escapeHTML(nextEvent.title)}, ${escapeHTML(dayLabel)}, ${time?escapeHTML(time):'dia todo'}, daqui a ${daysAway} dias"><span class="kanban-event-day">${escapeHTML(dayLabel)}</span><span class="kanban-event-time">${time?escapeHTML(time):'DIA TODO'}</span><span class="kanban-event-title">${escapeHTML(nextEvent.title)}</span><span class="kanban-next-event-countdown">DAQUI A ${daysAway} ${daysAway===1?'DIA':'DIAS'}</span></a>${calendarEventCompleteButton(nextEvent)}</div>`);}}
+    const reminderItems=reminderTasks.map(reminderItem);
+    const quoteTag=tags.find(tag=>!tag.deletedAt&&String(tag.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleUpperCase('pt-BR')==='ORCAMENTOS');
+    const quoteTasks=tasks.filter(task=>!task.deletedAt&&!task.completedAt&&quoteTag&&task.tagId===quoteTag.id).sort(taskOrder);
+    const quoteCards=quoteTasks.map(task=>`<div class="kanban-task kanban-quote-task">${taskCard(task,{canMove:false,late:false,draggable:false,quote:true})}</div>`);
+    const eventsCollapsed=document.body.classList.contains('view-mobile')&&collapsed.includes('events');
+    const events=`<section class="kanban-column kanban-events-reminders kanban-subpanel${eventsCollapsed?' is-collapsed':''}" data-kanban-column="events"><header class="kanban-column-head"><h3>EVENTOS E LEMBRETES</h3></header><div class="kanban-column-list kanban-events-content" data-kanban-body="events"${eventsCollapsed?' hidden':''}><section class="kanban-event-section"><h4>EVENTOS<span>${eventItems.length}</span></h4><div class="kanban-event-list">${eventItems.length?eventItems.join(''):'<p class="kanban-empty">Sem eventos hoje ou amanhã.</p>'}</div></section><section class="kanban-reminder-section"><h4 class="kanban-reminder-header"><span class="kanban-reminder-heading">LEMBRETES<span>${reminderItems.length}</span></span><span class="kanban-reminder-header-actions"><button class="kanban-reminders-month-toggle" type="button" data-kanban-reminders-month aria-expanded="${showAllMonthlyReminders}">${showAllMonthlyReminders?'HOJE E AMANHÃ':'TODOS DO MÊS'}</button><button class="kanban-add-reminder" type="button" data-kanban-add-reminder aria-label="Adicionar lembrete" title="Adicionar lembrete">＋</button></span></h4><div class="kanban-reminder-list">${reminderItems.length?reminderItems.join(''):`<p class="kanban-empty">Nenhum lembrete para ${showAllMonthlyReminders?'este mês':'hoje ou amanhã'}.</p>`}</div></section><section class="kanban-reminder-section kanban-quotes-section"><h4>ORÇAMENTOS<span>${quoteTasks.length}</span></h4><div class="kanban-reminder-list kanban-quotes-list">${quoteCards.length?quoteCards.join(''):'<p class="kanban-empty">Nenhum orçamento.</p>'}</div></section></div></section>`;
+    return {events};
+  }
+  function setMyDayTask(taskId,beforeTaskId=''){
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt&&!isReminderTask(item));if(!task||String(beforeTaskId)===task.id)return;
+    const ordered=(userSettings.myDayTaskIds||[]).filter(id=>id!==task.id&&tasks.some(item=>item.id===id&&!item.deletedAt&&!item.completedAt&&!isReminderTask(item)));
+    const index=beforeTaskId?ordered.indexOf(String(beforeTaskId)):-1;
+    if(index>=0)ordered.splice(index,0,task.id);else ordered.push(task.id);
+    userSettings.myDayTaskIds=ordered;saveUserSettings();renderKanban();
+  }
+  function removeMyDayTask(taskId){userSettings.myDayTaskIds=(userSettings.myDayTaskIds||[]).filter(id=>id!==String(taskId));saveUserSettings();renderKanban();}
+  function renderMyDayColumn(all){
+    const items=(userSettings.myDayTaskIds||[]).map(id=>all.find(task=>task.id===id&&!task.completedAt&&!isReminderTask(task))).filter(Boolean),cards=items.map(task=>`<div class="kanban-task my-day-task">${taskCard(task,{canMove:false,late:false,draggable:true,myDay:true})}</div>`).join('');
+    return `<section class="kanban-column kanban-my-day" data-my-day-drop aria-label="Meu Dia"><header class="kanban-column-head"><h3>MEU DIA</h3><span>${items.length}</span></header><div class="kanban-column-list kanban-my-day-list" data-my-day-list>${cards||'<p class="kanban-empty my-day-empty">Arraste para cá as tarefas que você escolheu fazer hoje.</p>'}</div></section>`;
+  }
+  function renderKanbanDoneColumn(all){
+    const collapsed=document.body.classList.contains('view-mobile')?!userSettings.kanbanDoneMobileExpanded:!userSettings.kanbanDoneDialogOpen||(userSettings.kanbanCollapsedColumns||[]).includes('done'),done=all.filter(task=>!isReminderTask(task)&&task.completedAt).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt))),cards=done.map(task=>`<div class="kanban-task">${taskCard(task,{canMove:false,late:false,draggable:true})}</div>`).join('');
+    const collapseButton=document.body.classList.contains('view-mobile')?'':`<button class="kanban-collapse-btn" type="button" data-kanban-collapse="done" aria-expanded="${!collapsed}" aria-label="${collapsed?'Expandir':'Recolher'} feito">⌄</button>`;
+    return `<section class="kanban-column kanban-done${collapsed?' is-collapsed':''}" data-kanban-column="done"><header class="kanban-column-head"><h3><button class="kanban-title-button" type="button" data-kanban-title="done">FEITO</button></h3><span>${done.length}</span>${collapseButton}</header><div class="kanban-column-list kanban-done-list" data-kanban-body="done"${collapsed?' hidden':''}>${cards||'<p class="kanban-empty">Nada concluído ainda.</p>'}</div></section>`;
+  }
+
+  function setKanbanState(taskId,state){
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task||!['todo','doing','blocked','done'].includes(state))return;
+    if(state==='done'){openKanbanTaskCompletionConfirm(task.id);return;}
+    const previousState=getKanbanState(task),previousBlocker=userSettings.taskKanbanBlockers?.[task.id]||'';
+    if(task.completedAt){toggleComplete(task.id,false);}
+    userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:state};
+    if(state==='blocked'){
+      const note=window.prompt('O que está travando esta tarefa?',previousBlocker);
+      if(note===null){userSettings.taskKanbanStates[task.id]=previousState;saveUserSettings();renderKanban();return;}
+      userSettings.taskKanbanBlockers={...(userSettings.taskKanbanBlockers||{}),[task.id]:note.trim().slice(0,240)};
+    }else if(userSettings.taskKanbanBlockers?.[task.id]){const blockers={...userSettings.taskKanbanBlockers};delete blockers[task.id];userSettings.taskKanbanBlockers=blockers;}
+    saveUserSettings();renderKanban();
+  }
+  function openKanbanTaskCompletionConfirm(taskId,returnDialog=''){
+    const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);if(!task)return;
+    pendingKanbanCompletionId=task.id;const open=normalizeTaskSubtasks(task.subtasks).filter(item=>!item.completed),confirm=$('kanbanCompletionConfirm');
+    $('kanbanCompletionText').textContent=`Concluir “${task.title}”?`;
+    $('kanbanCompletionChecklistWarning').hidden=!open.length;
+    $('kanbanCompletionChecklistItems').innerHTML=open.map(item=>`<li>${escapeHTML(item.text)}</li>`).join('');
+    confirm.classList.toggle('has-open-subtasks',Boolean(open.length));
+    if(returnDialog==='task-dialog'){$('taskDialog').append(confirm);confirm.dataset.kanbanReturnDialog=returnDialog;}
+    confirm.hidden=false;$('kanbanCompletionConfirmBtn').focus();
+  }
+  function closeKanbanTaskCompletionConfirm(){const confirm=$('kanbanCompletionConfirm');pendingKanbanCompletionId='';confirm.hidden=true;if(confirm.dataset.kanbanReturnDialog==='task-dialog'){$('tasksPage').append(confirm);delete confirm.dataset.kanbanReturnDialog;}}
+  function confirmKanbanTaskCompletion(){
+    const task=tasks.find(item=>item.id===pendingKanbanCompletionId&&!item.deletedAt&&!item.completedAt);if(!task){closeKanbanTaskCompletionConfirm();return;}
+    const returnDialog=$('kanbanCompletionConfirm').dataset.kanbanReturnDialog||$('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog||'';delete $('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog;const nextDate=toggleComplete(task.id,true);closeKanbanTaskCompletionConfirm();if(returnDialog==='task-dialog')closeTaskDialog();showTaskCompletionToast(nextDate);renderKanban();if(returnDialog&&returnDialog!=='task-dialog'&&$('kanbanColumnDialog').open)openKanbanColumnDialog(returnDialog);
+  }
+  function completeTaskFromDialog(){
+    const id=$('taskId').value,task=tasks.find(item=>item.id===id&&!item.deletedAt&&!item.completedAt);if(!task)return;
+    if(taskDialogDirty&&!saveTaskFromForm({preventDefault(){}},false))return;
+    openKanbanTaskCompletionConfirm(task.id,'task-dialog');
+  }
+  function finishKanbanDrop(taskId,state){const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task||!['todo','doing','blocked','done'].includes(state))return;if(state==='done'){openKanbanTaskCompletionConfirm(task.id);return;}if(task.completedAt)toggleComplete(task.id,false);userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:state};if(state!=='blocked'&&userSettings.taskKanbanBlockers?.[task.id]){const next={...userSettings.taskKanbanBlockers};delete next[task.id];userSettings.taskKanbanBlockers=next;}saveUserSettings();renderKanban();}
+  function toggleKanbanCollapsed(key){
+    if(key==='done'&&document.body.classList.contains('view-mobile')){userSettings.kanbanDoneMobileExpanded=!userSettings.kanbanDoneMobileExpanded;saveUserSettings();renderKanban();return;}
+    const keys=new Set(userSettings.kanbanCollapsedColumns||[]),wasCollapsed=keys.has(key);wasCollapsed?keys.delete(key):keys.add(key);userSettings.kanbanCollapsedColumns=[...keys];saveUserSettings();
+    const selector=`[data-kanban-column="${key}"]`,collapsed=!wasCollapsed;
+    document.querySelectorAll(`#kanbanBoard ${selector},#kanbanColumnDialog ${selector}`).forEach(lane=>{
+      const body=lane.querySelector(`[data-kanban-body="${key}"]`),button=lane.querySelector(`[data-kanban-collapse="${key}"]`);
+      lane.classList.toggle('is-collapsed',collapsed);if(body)body.hidden=collapsed;
+      if(button){button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',`${collapsed?'Expandir':'Recolher'} ${key==='todo'?'a fazer':key==='doing'?'fazendo':key==='blocked'?'travado':key==='events'?'eventos':key==='reminders'?'lembretes':'feito'}`);}
+    });
+  }
+  let kanbanTitleClickTimer=0;
+  function openKanbanColumnDialog(key){const source=document.querySelector(`#kanbanBoard [data-kanban-column="${key}"]`),dialog=$('kanbanColumnDialog');if(!source||!dialog)return;clearTimeout(kanbanTitleClickTimer);dialog.dataset.columnKey=key;if(key==='done')userSettings.kanbanDoneDialogOpen=true;const clone=source.cloneNode(true);clone.classList.remove('is-collapsed');clone.querySelectorAll('.kanban-collapse-btn').forEach(button=>button.remove());clone.querySelectorAll('[data-kanban-body]').forEach(body=>body.hidden=false);dialog.innerHTML=`<div class="kanban-fullscreen-head"><h2>${escapeHTML(source.querySelector('[data-kanban-title]')?.textContent||key)}</h2><button class="btn ghost small" type="button" data-close-kanban-dialog aria-label="Fechar">✕</button></div><div class="kanban-fullscreen-content">${clone.outerHTML}</div>`;if(!dialog.open)showAppDialog(dialog);}
+  function handleKanbanTitleClick(event){const title=event.target.closest('[data-kanban-title]');if(!title)return;const key=title.dataset.kanbanTitle;if(document.body.classList.contains('view-mobile')&&key==='done'){clearTimeout(kanbanTitleClickTimer);toggleKanbanCollapsed('done');return;}clearTimeout(kanbanTitleClickTimer);if(event.detail>=2){openKanbanColumnDialog(key);return;}if(!document.body.classList.contains('view-mobile'))return;kanbanTitleClickTimer=setTimeout(()=>toggleKanbanCollapsed(key),500);}
+
+  function renderKanban(){
+    const all=visibleTasks('tasks').filter(task=>!task.deletedAt),board=$('kanbanBoard');if(!board)return;
+    const eligibleMyDayIds=(userSettings.myDayTaskIds||[]).filter(id=>{const task=all.find(item=>item.id===id);return task&&!isReminderTask(task)&&!task.completedAt;});if(eligibleMyDayIds.length!==(userSettings.myDayTaskIds||[]).length){userSettings.myDayTaskIds=eligibleMyDayIds;saveUserSettings();}const myDayIds=new Set(userSettings.myDayTaskIds||[]),active=all.filter(task=>!isReminderTask(task)&&!task.completedAt&&!myDayIds.has(task.id)),lanes={};
+    for(const [state,label] of [['doing','FAZENDO'],['todo','A FAZER'],['blocked','TRAVADO']]){
+      const items=active.filter(task=>getKanbanState(task)===state).sort(taskOrder),cards=items.map(task=>{
+        const card=taskCard(task,{canMove:false,late:false,draggable:true});
+        const controls=`<div class="kanban-card-controls"><label class="kanban-state-control"><select data-kanban-state="${escapeHTML(task.id)}" aria-label="Etapa de ${escapeHTML(task.title)}"><option value="reminder-today">01 🎗️ HOJE</option><option value="reminder-tomorrow">02 🎗️ AMANHÃ</option><option value="reminder-other">03 🎗️ DEPOIS</option><option value="my-day">MEU DIA</option><option disabled>──────────</option>${[['todo','A FAZER'],['doing','FAZENDO'],['blocked','TRAVADO']].map(([key,text])=>`<option value="${key}"${key===state?' selected':''}>${text}</option>`).join('')}</select></label><button class="kanban-complete-btn" type="button" data-kanban-complete="${escapeHTML(task.id)}" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir">✓</button></div>`;
+        const blocker=state==='blocked'&&userSettings.taskKanbanBlockers?.[task.id]?`<small class="kanban-blocker">${escapeHTML(userSettings.taskKanbanBlockers[task.id])}</small>`:'';
+        return `<div class="kanban-task">${card}${blocker}${controls}</div>`;
+      }).join(''),collapsed=Boolean(userSettings.kanbanCollapsedColumns?.includes(state));
+      lanes[state]=`<section class="kanban-column kanban-${state}${collapsed?' is-collapsed':''}" data-kanban-column="${state}"><header class="kanban-column-head"><h3><button class="kanban-title-button" type="button" data-kanban-title="${state}">${label}</button></h3><span>${items.length}</span>${state==='todo'?'<button class="kanban-add" type="button" data-kanban-add aria-label="Adicionar tarefa">＋</button>':''}<button class="kanban-collapse-btn" type="button" data-kanban-collapse="${state}" aria-expanded="${!collapsed}" aria-label="${collapsed?'Expandir':'Recolher'} ${label.toLocaleLowerCase('pt-BR')}">⌄</button></header><div class="kanban-column-list" data-kanban-body="${state}"${collapsed?' hidden':''}>${cards||`<p class="kanban-empty">${state==='blocked'?'Nada travado.':'Nenhuma tarefa.'}</p>`}</div></section>`;
+    }
+    const panels=renderKanbanSideColumn(all);board.innerHTML=`${panels.events}<div class="kanban-doing-stack">${renderMyDayColumn(all)}${lanes.doing}</div>${lanes.todo}<div class="kanban-pc-lower">${lanes.blocked}${renderKanbanDoneColumn(all)}</div>`;
+  }
+
+  function setPlannerSubpage(page,save=true) {
+    userSettings.plannerSubpage='kanban';
+    $('plannerWeekView').hidden=true;$('plannerKanbanView').hidden=false;
+    renderKanban();
+    if(save)saveUserSettings();
+    if(currentPage==='tasks'){document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(isDockButtonSelected(button,'tasks'))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});updateNavIndicator('tasks');}
+  }
   function renderTasks() {
+    renderKanban();
     const all=visibleTasks('tasks'), open=all.filter(task=>!task.completedAt&&!isReminderTask(task)), currentWeek=startOfWeek(todayKey());
     const allOverdue=weekStart>=currentWeek?sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<currentWeek)):[];
     const veryOverdue=allOverdue.filter(task=>task.executionDate<addDays(todayKey(),-7));
@@ -974,7 +1089,7 @@
     }).join('');
     const unplanned=open.filter(task=>!task.executionDate).sort(taskOrder), completed=all.filter(task=>!isReminderTask(task)&&Boolean(task.completedAt)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
     $('unplannedCount').textContent=String(unplanned.length); $('completedCount').textContent=String(completed.length);
-    renderPlannerPanels(); renderPlannerUpcomingIncome(); renderFilterButton(); renderDialogLists();renderDashboard();
+    renderPlannerPanels(); renderPlannerUpcomingIncome(); renderFilterButton(); renderDialogLists();
   }
   function renderPlannerPanels() {
     const planning=visibleTasks('tasks').filter(task=>!isReminderTask(task)&&!task.completedAt&&!task.executionDate).sort(taskOrder);
@@ -1038,38 +1153,41 @@
     container.innerHTML=[...groups].map(([kind,rows])=>`<details class="global-search-group" open><summary>${escapeHTML(kind)} <span>${rows.length}</span></summary><div class="global-search-group-items">${rows.map((row,index)=>`<article class="global-search-result"><button class="global-search-open" type="button" data-global-open="${escapeHTML(row.openKind||'detail')}" data-id="${escapeHTML(row.openId)}" data-date="${escapeHTML(row.openId)}" data-group="${escapeHTML(kind)}" data-index="${index}"><strong>${escapeHTML(row.title)}</strong><span aria-hidden="true">↗</span></button><small>${escapeHTML(row.meta)}</small>${row.summary?`<p>${escapeHTML(row.summary)}</p>`:''}</article>`).join('')}</div></details>`).join('');
   }
   function openGlobalSearch(){const dialog=$('globalSearchDialog');if(!dialog.open)showAppDialog(dialog);requestAnimationFrame(()=>{$('globalSearchInput').focus();$('globalSearchInput').select();});}
-  function handleGlobalSearchOpen(event){const button=event.target.closest('[data-global-open]');if(!button)return;const kind=button.dataset.globalOpen,id=button.dataset.id,date=button.dataset.date;$('globalSearchDialog').close();if(kind==='task'){setPage('tasks');openTaskDialog(id);return;}if(kind==='note'){setPage('notes');setNotesMode('public');openNoteDialog(id);return;}if(kind==='private-note'){if(!privateNotesUnlocked){showToast('Desbloqueie o cofre para abrir esta nota.');return;}setPage('notes');setNotesMode('private');openPrivateNoteEditor(id);return;}if(kind==='finance'){setPage('finance');openFinanceDialog(id);return;}if(kind==='calendar'&&isDateKey(date)){setPage('tasks');setWeek(date);openDayDialog(date);return;}const results=globalSearchRun($('globalSearchInput').value),row=results.get(button.dataset.group)?.[Number(button.dataset.index)];if(row){$('globalSearchDetailTitle').textContent=row.label||button.dataset.group;$('globalSearchDetailBody').textContent=[row.title,row.meta,row.summary].filter(Boolean).join('\n\n');showAppDialog($('globalSearchDetailDialog'));}}
-  function renderAll() { renderTasks(); renderHome(); renderDashboard(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
-  function renderDashboard(){
-    const dateNode=$('dashboardDate');if(!dateNode)return;
-    const today=todayKey();dateNode.textContent=formatDate(today,{weekday:'long',day:'2-digit',month:'long'});
-    const todayTasks=tasks.filter(task=>!task.deletedAt&&!task.completedAt&&!isReminderTask(task)&&task.executionDate===today).sort(taskOrder);
-    const taskCount=$('dashboardTaskCount'),taskPreview=$('dashboardTaskPreview');
-    if(taskCount)taskCount.textContent=`${todayTasks.length} tarefa${todayTasks.length===1?'':'s'}`;
-    if(taskPreview)taskPreview.textContent=todayTasks.length?todayTasks.slice(0,2).map(task=>task.title).join(' · ')+(todayTasks.length>2?` · +${todayTasks.length-2}`:''):'Sem tarefas agendadas para hoje';
-    const activeNotes=notes.filter(note=>note&&!note.deletedAt),noteCount=$('dashboardNoteCount');if(noteCount)noteCount.textContent=`${activeNotes.length} nota${activeNotes.length===1?'':'s'}`;
-    const finance=financeMonthSummaryData(financeMonth),balance=$('dashboardFinanceBalance'),financeSummary=$('dashboardFinanceSummary');
-    if(balance)balance.textContent=financeState.accountBalance===null?financeMoney(finance.realizedIncome-finance.realizedExpense):financeMoney(financeState.accountBalance);
-    if(financeSummary)financeSummary.textContent=financeState.accountBalance===null?`Mês: +${financeMoney(finance.realizedIncome)} recebido · −${financeMoney(finance.realizedExpense)} pago`:`Saldo em conta · ${finance.realizedIncome?`recebido ${financeMoney(finance.realizedIncome)}`:'sem entradas realizadas'}`;
-    const next=getUpcomingCalendarEvents()[0],eventTitle=$('dashboardNextEvent'),eventWhen=$('dashboardNextEventWhen');
-    if(eventTitle)eventTitle.textContent=next?next.title:(userSettings.calendarIds.length?'Sem evento próximo':'Agenda não sincronizada');
-    if(eventWhen)eventWhen.textContent=next?`${next.allDay?'Dia todo':calendarEventTimeLabel(next)} · ${formatDate(next.allDay?next.startAt.slice(0,10):dateKey(new Date(next.startAt)),{weekday:'short',day:'2-digit',month:'2-digit'})}${next.location?` · ${next.location}`:''}`:userSettings.calendarIds.length?'Não há próximos eventos sincronizados':'Conecte ou sincronize o Google Calendar';
+  function handleGlobalSearchOpen(event){const button=event.target.closest('[data-global-open]');if(!button)return;const kind=button.dataset.globalOpen,id=button.dataset.id,date=button.dataset.date;$('globalSearchDialog').close();if(kind==='task'){setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(id);return;}if(kind==='note'){setPage('notes');setNotesMode('public');openNoteDialog(id);return;}if(kind==='private-note'){if(!privateNotesUnlocked){showToast('Desbloqueie o cofre para abrir esta nota.');return;}setPage('notes');setNotesMode('private');openPrivateNoteEditor(id);return;}if(kind==='finance'){setPage('finance');openFinanceDialog(id);return;}if(kind==='calendar'&&isDateKey(date)){setPage('tasks');setPlannerSubpage('kanban',false);setWeek(date);openDayDialog(date);return;}const results=globalSearchRun($('globalSearchInput').value),row=results.get(button.dataset.group)?.[Number(button.dataset.index)];if(row){$('globalSearchDetailTitle').textContent=row.label||button.dataset.group;$('globalSearchDetailBody').textContent=[row.title,row.meta,row.summary].filter(Boolean).join('\n\n');showAppDialog($('globalSearchDetailDialog'));}}
+  function renderAll() { renderTasks(); renderHome(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
+  function homeDateLabel(date) {
+    const text=formatDate(date).replace(/\./g,'');
+    const title=text.charAt(0).toLocaleUpperCase('pt-BR')+text.slice(1);
+    if(date===todayKey())return `HOJE - ${title}`;
+    if(date===addDays(todayKey(),1))return `AMANHÃ - ${title}`;
+    return title;
   }
-  let dashboardModalPage=null,dashboardModalOrigin=null,dashboardModalNextSibling=null;
-  const dashboardPageTitles={tasks:'Planner',notes:'Notas',finance:'Finanças',calendar:'Agenda'};
-  function openDashboardPage(kind){
-    const page=kind==='calendar'?'tasks':kind;if(!['tasks','notes','finance'].includes(page))return;
-    if(dashboardModalPage)closeDashboardPage();setPage(page);if(kind==='calendar')setWeek(todayKey());
-    const section=$(`${page}Page`),host=$('dashboardModalHost'),overlay=$('dashboardModalOverlay');if(!section||!host||!overlay)return;
-    dashboardModalPage=section;dashboardModalOrigin=section.parentNode;dashboardModalNextSibling=section.nextSibling;host.replaceChildren(section);section.classList.add('dashboard-modal-page');
-    $('dashboardModalTitle').textContent=dashboardPageTitles[kind]||dashboardPageTitles[page];overlay.hidden=false;overlay.setAttribute('aria-hidden','false');document.body.classList.add('dashboard-modal-open');requestAnimationFrame(()=>$('dashboardModalClose')?.focus());
+  function renderHomeTaskList(id,list) {
+    const node=$(id);
+    node.innerHTML=list.length?list.map(task=>{const tag=getTag(task.tagId),late=task.executionDate<todayKey();return `<article class="home-task-row${late?' is-late':''}"><div class="home-task-main"><span class="home-item-date">${escapeHTML(homeDateLabel(task.executionDate))}</span><button class="home-item-open" type="button" data-edit-task="${escapeHTML(task.id)}">${task.recurrence?'<span class="task-recurrence-icon" aria-label="Tarefa recorrente" title="Recorrente">↻</span> ':''}${escapeHTML(task.title)}</button><span class="home-tag-pill" style="--tag-color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span></div></article>`;}).join(''):'<div class="empty">Sem tarefas.</div>';
   }
-  function closeDashboardPage(){
-    if(!dashboardModalPage)return;const section=dashboardModalPage,origin=dashboardModalOrigin,next=dashboardModalNextSibling,host=$('dashboardModalHost'),overlay=$('dashboardModalOverlay');
-    section.classList.remove('dashboard-modal-page');if(origin)origin.insertBefore(section,next?.parentNode===origin?next:null);host?.replaceChildren();dashboardModalPage=null;dashboardModalOrigin=null;dashboardModalNextSibling=null;overlay.hidden=true;overlay.setAttribute('aria-hidden','true');document.body.classList.remove('dashboard-modal-open');setPage('home');
+  function renderHomeEvents() {
+    const node=$('homeUpcomingEventsList');if(!node)return;
+    const events=getUpcomingCalendarEvents();
+    node.innerHTML=events.length?events.map(event=>{
+      const date=event.allDay?dateAtNoon(event.startAt):new Date(event.startAt);
+      const day=date?.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace(/\./g,'')||'';
+      const when=event.allDay?'Dia todo':date?.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})||'';
+      const completed=calendarEventIsCompleted(event);return `<article class="home-event-row${completed?' is-completed':''}"><div class="home-event-main"><span class="home-item-date">${escapeHTML(day)}${when?` · ${escapeHTML(when)}`:''}</span><div class="home-event-title">${escapeHTML(event.title)}</div>${event.location?`<span class="home-event-location">${escapeHTML(event.location)}</span>`:''}</div><div class="home-event-actions">${event.url?`<a class="home-event-link" href="${escapeHTML(event.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir evento">↗</a>`:''}${calendarEventCompleteButton(event)}</div></article>`;
+    }).join(''):'<div class="empty">Nenhum evento próximo.</div>';
   }
-  function handleDashboardClick(event){const card=event.target.closest('[data-dashboard-open]');if(card)openDashboardPage(card.dataset.dashboardOpen);}
-  function renderHome(){renderDashboard();}
+  function galleryEscape(value){return escapeHTML(String(value??''));}
+  function galleryRelative(value){const time=Date.parse(value||'');if(!Number.isFinite(time))return '';const mins=Math.max(0,Math.floor((Date.now()-time)/60000));if(mins<1)return 'agora';if(mins<60)return `há ${mins} min`;const hours=Math.floor(mins/60);if(hours<24)return `há ${hours} h`;const days=Math.floor(hours/24);if(days<7)return `há ${days} d`;return new Date(time).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});}
+  function basecampRow(text,{color='',action='',href='',meta=''}={}){const label=galleryEscape(text),dot=`<span class="basecamp-dot" style="--tag-color:${galleryEscape(color)}"></span>`,body=href?`<a href="${galleryEscape(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`:action?`<button type="button" ${action}>${label}</button>`:`<span>${label}</span>`;return `<div class="basecamp-row">${dot}${body}${meta?`<small class="basecamp-row-meta">${galleryEscape(meta)}</small>`:''}</div>`;}
+  function renderBasecampCalendar(){const today=todayKey(),tomorrow=addDays(today,1);for(const [id,date] of [['basecampCalendarToday',today],['basecampCalendarTomorrow',tomorrow]]){const node=$(id);if(!node)continue;const events=getCalendarEventsForDate(date),dayTasks=date===today?tasks.filter(task=>!task.deletedAt&&!task.completedAt&&!isReminderTask(task)&&task.executionDate===today).sort(taskOrder):[],rows=[...events.map(event=>({time:calendarEventTimeLabel(event),title:event.title,color:'#91c6ff',url:event.url,kind:'event',event})),...dayTasks.map(task=>({time:'',title:task.title,color:getTag(task.tagId).color,task,kind:'task'}))];node.innerHTML=rows.length?rows.slice(0,8).map(item=>item.kind==='event'?`<div class="basecamp-row basecamp-event-row${calendarEventIsCompleted(item.event)?' is-completed':''}"><span class="basecamp-dot" style="--tag-color:${galleryEscape(item.color)}"></span><a class="basecamp-event-copy" href="${galleryEscape(item.url||'')}" target="_blank" rel="noopener noreferrer">${galleryEscape(`${item.time?`${item.time} · `:''}${item.title}`)}</a>${calendarEventCompleteButton(item.event,{dismiss:true})}</div>`:basecampRow(`${item.time?`${item.time} · `:''}${item.title}`,{color:item.color,action:`data-basecamp-task="${galleryEscape(item.task.id)}"`})).join(''):`<div class="basecamp-empty">${date===today?'Sem eventos ou tarefas para hoje.':'Sem eventos para amanhã.'}</div>`;if(rows.length>8)node.insertAdjacentHTML('beforeend',`<small class="basecamp-status">+ ${rows.length-8} itens</small>`);}}
+  function renderBasecampClients(){const node=$('basecampClients');if(!node)return;const ignored=new Set(['vida','trabalho','outro','flow-entry','flow-exit','90b02530-de33-45dd-9309-0e4ab56aa099','7e1b689e-a2e1-4420-a634-432c1ede0eca','e6028b46-e0c4-4d2d-a759-475cc91f147b','0bfd45d1-e43e-4104-a36d-f9a40606d201','1b150c07-f741-4d4f-9b36-3532ee3e9d36','3d68363b-e81b-4df1-afac-8b366df39f20','2f27a228-efbc-444f-b449-8c54fbd3ff2b','7609816a-b559-4937-bee3-d3631fe77666','f6b470ed-5dfb-454b-83ce-b4ffe0436fba','0bfd45d1-e43e-4104-a36d-f9a40606d201']);const grouped=new Map();for(const task of tasks.filter(item=>!item.deletedAt&&!item.completedAt&&!isReminderTask(item))){const tag=getTag(task.tagId);if(ignored.has(tag.id)||!(/^@/.test(tag.name)||/cliente/i.test(tag.name)))continue;if(!grouped.has(tag.id))grouped.set(tag.id,{tag,tasks:[]});grouped.get(tag.id).tasks.push(task);}const clients=[...grouped.values()].sort((a,b)=>b.tasks.length-a.tasks.length||a.tag.name.localeCompare(b.tag.name,'pt-BR'));node.innerHTML=clients.length?clients.slice(0,5).map(({tag, tasks:rows})=>{const list=rows.sort(taskOrder).slice(0,3);return `<div class="basecamp-client-group"><button class="basecamp-client-name" type="button" data-basecamp-client-filter="${galleryEscape(tag.id)}"><span class="basecamp-dot" style="--tag-color:${galleryEscape(tag.color)}"></span> ${galleryEscape(tag.name)}</button>${list.map(task=>{const checklist=normalizeTaskSubtasks(task.subtasks),status=checklist.some(item=>item.completed)&&checklist.some(item=>!item.completed)?'FAZENDO':'A FAZER';return `<div class="basecamp-row"><span class="basecamp-dot" style="--tag-color:${galleryEscape(tag.color)}"></span><button type="button" data-edit-task="${galleryEscape(task.id)}">${galleryEscape(task.title)} <small class="basecamp-status">${status}</small></button></div>`;}).join('')}<small class="basecamp-status">${rows.length} trabalho${rows.length===1?'':'s'} em aberto</small></div>`;}).join(''):'<div class="basecamp-empty">Nenhum trabalho aberto com tag de cliente. Use uma tag de cliente, como @GEP ou @SMOL.</div>';}
+  function renderBasecampDocs(){const node=$('basecampDocs');if(!node)return;const rows=[];for(const task of tasks.filter(item=>!item.deletedAt&&item.link)){const tag=getTag(task.tagId);rows.push({title:task.title,url:task.link,kind:tag.name,at:task.updatedAt||task.createdAt});}for(const note of notes.filter(item=>!item.deletedAt)){for(const url of noteLinks(note))rows.push({title:note.title||'Nota sem título',url,kind:'Nota',at:note.updatedAt||note.createdAt});}rows.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));const seen=new Set(),unique=rows.filter(row=>!seen.has(row.url)&&seen.add(row.url));node.innerHTML=unique.length?unique.slice(0,3).map(row=>`<a class="basecamp-doc-link" href="${galleryEscape(row.url)}" target="_blank" rel="noopener noreferrer"><span>↗</span><span>${galleryEscape(row.title)}</span></a>`).join(''):'<div class="basecamp-empty">Links de tarefas/notas aparecem aqui.</div>';}
+  function boardNotes(){return [...(normalizeUserSettings(userSettings).basecampMessages||[])].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));}
+  function renderBasecampBoard(){const timeline=$('basecampBoardTimeline'),preview=$('basecampMessagePreview');if(!timeline)return;const quickTag=$('basecampQuickTag'),selectedQuick=quickTag?.value||'';if(quickTag){const quickOptions=`<option value="">Sem tag</option>${tags.filter(tag=>!tag.deletedAt).map(tag=>`<option value="${galleryEscape(tag.id)}">${galleryEscape(tag.name)}</option>`).join('')}`;if(quickTag.innerHTML!==quickOptions)quickTag.innerHTML=quickOptions;if(selectedQuick&&tags.some(tag=>tag.id===selectedQuick&&!tag.deletedAt))quickTag.value=selectedQuick;}const search=String($('basecampBoardSearch')?.value||'').trim().toLocaleLowerCase('pt-BR'),selected=$('basecampBoardTagFilter')?.value||'';const all=boardNotes().slice().sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))),filtered=all.filter(item=>{const tag=tags.find(t=>t.id===item.tagId&&!t.deletedAt),text=`${item.text} ${tag?.name||''}`.toLocaleLowerCase('pt-BR');return(!selected||item.tagId===selected)&&(!search||text.includes(search));});const count=$('basecampBoardCount');if(count)count.textContent=`${filtered.length} registro${filtered.length===1?'':'s'}`;const options=`<option value="">Todas as tags</option>${tags.filter(tag=>!tag.deletedAt).map(tag=>`<option value="${galleryEscape(tag.id)}" ${tag.id===selected?'selected':''}>${galleryEscape(tag.name)}</option>`).join('')}`;const filter=$('basecampBoardTagFilter');if(filter){const old=filter.value;if(filter.innerHTML!==options)filter.innerHTML=options;if(old&&tags.some(tag=>tag.id===old&&!tag.deletedAt))filter.value=old;}
+    timeline.innerHTML=filtered.length?filtered.map(item=>{const tag=tags.find(t=>t.id===item.tagId&&!t.deletedAt);return `<article class="basecamp-message"><span class="basecamp-message-avatar">G</span><div class="basecamp-message-main"><div class="basecamp-message-text">${galleryEscape(item.text)}</div><div class="basecamp-message-meta"><time>${galleryEscape(formatDate(dateKey(new Date(item.createdAt)),{weekday:'short',day:'2-digit',month:'2-digit'}))} · ${galleryEscape(new Date(item.createdAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))}</time>${tag?`<span class="basecamp-message-tag" style="--tag-color:${galleryEscape(tag.color)}">#${galleryEscape(tag.name.replace(/^@/,''))}</span>`:'<span>sem tag</span>'}</div></div><button type="button" class="basecamp-message-edit" data-basecamp-edit-message="${galleryEscape(item.id)}" aria-label="Editar mensagem">✎</button><button type="button" class="basecamp-message-edit" data-basecamp-delete-message="${galleryEscape(item.id)}" aria-label="Excluir mensagem">×</button></article>`;}).join(''):'<div class="basecamp-empty">Nenhum registro combina com essa busca/tag.</div>';
+    if(preview){preview.innerHTML=all.length?all.slice(0,2).map(item=>`<div class="basecamp-row"><span class="basecamp-dot" style="--tag-color:${galleryEscape(getTag(item.tagId).color)}"></span><span>${galleryEscape(String(item.text).slice(0,64))}</span></div>`).join(''):`<div class="basecamp-empty">Seu mural começa com uma nota rápida.</div>`;}}
+  function renderBasecampCalendarWeek(){setPage('tasks');setPlannerSubpage('kanban',false);}
+  function renderHome(){const today=todayKey(),dateNode=$('galleryDateLabel');if(dateNode)dateNode.textContent=formatDate(today,{weekday:'long',day:'2-digit',month:'long'});const latest=[...tasks.filter(x=>!x.deletedAt),...notes.filter(x=>!x.deletedAt),...logs.filter(x=>!x.deletedAt),...finances.filter(x=>!x.deletedAt),...(userSettings.basecampMessages||[])].map(x=>x.updatedAt||x.createdAt).filter(Boolean).sort().at(-1),activity=$('basecampActivityLine');if(activity)activity.textContent=latest?`Atividade recente · atualizado ${galleryRelative(latest)}`:'Ainda sem atividade recente';renderBasecampCalendar();renderBasecampClients();renderBasecampDocs();renderBasecampBoard();}
   function logTimestampLabel(createdAt,content='') {
     const date=new Date(createdAt);if(!Number.isFinite(date.getTime()))return '';
     const minutes=Math.max(0,Math.floor((Date.now()-date.getTime())/60000)),days=Math.floor(minutes/1440),hours=Math.floor(minutes%1440/60),mins=minutes%60;
@@ -1262,7 +1380,7 @@
       const flowTag=tags.find(tag=>tag.id===entry.tagId&&!tag.deletedAt),flowLabel=flowTag?.name||(entry.kind==='income'?'ENTRADA':'SAÍDA');
       return `<article class="finance-entry ${entry.kind} ${entry.status}" data-finance-id="${id}"><div class="finance-entry-date">${escapeHTML(dateLabel)}</div><div class="finance-entry-main"><button class="finance-entry-open" type="button" data-finance-open="${id}" aria-label="Ver detalhes de ${escapeHTML(entry.title)}">${escapeHTML(entry.title)} <span aria-hidden="true">›</span></button><span><b class="finance-flow-tag ${entry.kind}">${escapeHTML(flowLabel)}</b>${occurrenceLabel?` · ${escapeHTML(occurrenceLabel)}`:''}</span></div><div class="finance-entry-actions"><strong class="finance-amount ${entry.kind}">${escapeHTML(amountLabel)}</strong><button class="finance-status-pill ${entry.status}" type="button" data-finance-toggle-status="${id}" aria-label="${entry.status==='planned'?'Marcar como realizado':'Voltar para previsto'}">${entry.status==='planned'?'PREVISTO':'REALIZADO'}</button><button class="finance-icon-button" type="button" data-finance-edit="${id}" aria-label="Editar ${escapeHTML(entry.title)}" title="Editar">✎</button><button class="finance-icon-button danger" type="button" data-finance-delete="${id}" aria-label="Excluir ${escapeHTML(entry.title)}" title="Excluir">×</button></div></article>`;
     }).join(''):'<p class="empty finance-empty">Nenhuma movimentação prevista neste mês.</p>';
-    if($('financeSummaryDialog')?.open)renderFinanceSummaryDialog(financeSummaryDialogMonth);renderDashboard();
+    if($('financeSummaryDialog')?.open)renderFinanceSummaryDialog(financeSummaryDialogMonth);
   }
   function renderFinanceSummaryDialog(month) {
     const planned=$('financeSummaryPlanned'),incomeBox=$('financeSummaryIncome'),expenseBox=$('financeSummaryExpense');if(!planned||!incomeBox||!expenseBox)return;
@@ -1533,7 +1651,7 @@
       const pinLabel=note.isPinned?'Desafixar nota':'Fixar nota',linkHtml=linksPreview(noteLinks(note)),footer=linkHtml||tagsHtml?`<footer class="note-card-footer">${linkHtml?`<div class="note-links-preview">${linkHtml}</div>`:''}${tagsHtml?`<div class="note-tags-preview">${tagsHtml}</div>`:''}</footer>`:'';
       return `<article class="note-card${note.isPinned?' is-pinned':''}" data-note-card="${id}" data-note-id="${id}" draggable="true" tabindex="0"><header class="note-card-header">${title}<div class="note-card-controls"><button class="note-touch-handle" type="button" data-touch-drag-note="${id}" aria-label="Arrastar nota" title="Arrastar nota">⠿</button><details class="note-menu"><summary aria-label="Mais ações para a nota" title="Mais ações">⋮</summary><div class="note-menu-popover"><button class="menu-action" type="button" data-pin-note="${id}" aria-pressed="${String(Boolean(note.isPinned))}">${pinLabel}</button><button class="menu-action menu-edit" type="button" data-duplicate-note="${id}">DUPLICAR NOTA</button><button class="menu-action" type="button" data-lock-note="${id}">TRANCAR 🔒</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="up">↑ MOVER ACIMA</button><button class="menu-action menu-move" type="button" data-move-note="${id}" data-direction="down">↓ MOVER ABAIXO</button><button class="menu-action menu-delete" type="button" data-delete-note="${id}">EXCLUIR</button></div></details></div></header><div class="note-card-body">${body}</div>${footer}</article>`;
     }).join('') : '<div class="empty">Nenhuma nota para as tags selecionadas.</div>';
-    renderFilterButton(); renderDialogLists(); renderDashboard();
+    renderFilterButton(); renderDialogLists();
   }
   function toggleNotePin(noteId) {
     const note=notes.find(item=>item.id===String(noteId)&&!item.deletedAt);if(!note)return;
@@ -1802,6 +1920,8 @@
   function toggleComplete(taskId,complete) {
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt);if(!task)return null;
     const wasCompleted=Boolean(task.completedAt);task.completedAt=complete?nowISO():null;task.updatedAt=nowISO();
+    if(complete){userSettings.taskKanbanStates={...(userSettings.taskKanbanStates||{}),[task.id]:'done'};}
+    else if(userSettings.taskKanbanStates?.[task.id]==='done'){const states={...userSettings.taskKanbanStates};delete states[task.id];userSettings.taskKanbanStates=states;}
     const nextDate=complete&&!wasCompleted?createNextTaskOccurrence(task):null;saveTasks();if(session?.user?.id)scheduleSync();return nextDate;
   }
   function showTaskCompletionToast(nextDate) {
@@ -1842,7 +1962,7 @@
   }
   function confirmDayTaskCompletion() {
     const task=tasks.find(item=>item.id===pendingDayTaskCompletionId&&!item.deletedAt&&!item.completedAt);if(!task){closeDayTaskCompletionConfirm();return;}
-    const fromTaskDialog=$('taskDialog')?.open;const nextDate=toggleComplete(task.id,true);closeDayTaskCompletionConfirm();if(fromTaskDialog)closeTaskDialog();showTaskCompletionToast(nextDate);
+    const nextDate=toggleComplete(task.id,true);closeDayTaskCompletionConfirm();showTaskCompletionToast(nextDate);
   }
   function moveTask(taskId,direction) {
     const task=tasks.find(item=>item.id===String(taskId)&&!item.deletedAt&&!item.completedAt);
@@ -1954,22 +2074,25 @@
   function handleDragStart(event) {
     const card=event.target.closest('.task-card[data-task-id]');
     if (!card || event.target.closest('.task-menu')) { event.preventDefault(); return; }
-    const task=tasks.find(item=>item.id===card.dataset.taskId && !item.deletedAt && !item.completedAt);
+    const task=tasks.find(item=>item.id===card.dataset.taskId && !item.deletedAt && (!item.completedAt||card.closest('#kanbanBoard,#kanbanColumnDialog')));
     if (!task) { event.preventDefault(); return; }
-    dragTaskId=task.id;card.classList.add('is-dragging');
+    dragTaskId=task.id;dragTaskFromMyDay=Boolean(card.closest('.my-day-task'));card.classList.add('is-dragging');
     if (event.dataTransfer) { event.dataTransfer.effectAllowed='move'; event.dataTransfer.setData('text/plain',dragTaskId); }
   }
   function clearDropStyles() { document.querySelectorAll('.drop-active,.is-dragging').forEach(node=>node.classList.remove('drop-active','is-dragging')); }
   function handleDragOver(event) {
     if (!dragTaskId) return;
     const targetCard=event.target.closest('.task-card[data-task-id]');
-    const destination=event.target.closest('.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
+    const destination=event.target.closest('[data-my-day-drop],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
     if(!targetCard&&!destination)return;
     event.preventDefault();(targetCard||destination)?.classList.add('drop-active');
   }
   function performTaskDrop(id,target,fromMyDay=false) {
     if(!target)return;
-    const targetCard=target.closest('.task-card[data-task-id]'),completed=target.closest('#completedPanel,#completedList,#completedBtn'),day=target.closest('.day-column[data-date]'),overdueColumn=target.closest('.day-column[data-kind="overdue"]'),planning=target.closest('#planningPanel,#planningList,#planningBtn'),dayList=target.closest('#dayDialogList');
+    const targetCard=target.closest('.task-card[data-task-id]'),myDay=target.closest('[data-my-day-drop]'),completed=target.closest('#completedPanel,#completedList,#completedBtn'),kanbanLane=target.closest('.kanban-column[data-kanban-column]'),day=target.closest('.day-column[data-date]'),overdueColumn=target.closest('.day-column[data-kind="overdue"]'),planning=target.closest('#planningPanel,#planningList,#planningBtn'),dayList=target.closest('#dayDialogList');
+    if(myDay){setMyDayTask(id,targetCard?.dataset.taskId||'');return;}
+    if(fromMyDay){removeMyDayTask(id);return;}
+    if(kanbanLane){const state=kanbanLane.dataset.kanbanColumn;if(!['todo','doing','blocked','done'].includes(state))return;if(state==='done'&&target.closest('#kanbanColumnDialog')){const task=tasks.find(item=>item.id===String(id));if(task&&!task.completedAt){openKanbanTaskCompletionConfirm(task.id);$('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog='done';}return;}finishKanbanDrop(id,state==='side'?'done':state);return;}
     if(completed){const task=tasks.find(item=>item.id===String(id)&&!item.deletedAt&&!item.completedAt);if(task){const nextDate=toggleComplete(id,true);showTaskCompletionToast(nextDate);}return;}
     if(overdueColumn||dayList&&activeDayKind==='all-overdue')reorderOverdueTaskBefore(id,targetCard?.dataset.taskId||'');
     else if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
@@ -1979,11 +2102,11 @@
   }
   function handleDrop(event) {
     if(!dragTaskId)return;
-    const id=dragTaskId;dragTaskId='';clearDropStyles();
-    if(!event.target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList'))return;
-    event.preventDefault();performTaskDrop(id,event.target);
+    const id=dragTaskId,fromMyDay=dragTaskFromMyDay;dragTaskId='';dragTaskFromMyDay=false;clearDropStyles();
+    if(!event.target.closest('.task-card[data-task-id],[data-my-day-drop],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList'))return;
+    event.preventDefault();performTaskDrop(id,event.target,fromMyDay);
   }
-  function handleDragEnd() { dragTaskId='';clearDropStyles(); }
+  function handleDragEnd() { dragTaskId='';dragTaskFromMyDay=false;clearDropStyles(); }
   function handleNotesClick(event) {
     if(event.target.closest('[data-touch-drag-note]')){event.preventDefault();return;}
     if(event.target.closest('a'))return;
@@ -2037,7 +2160,7 @@
     document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
     if(!target)return;
     let destination;
-    if(drag.kind==='task')destination=target.closest('.task-card[data-task-id],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
+    if(drag.kind==='task')destination=target.closest('.task-card[data-task-id],[data-my-day-drop],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
     else if(drag.kind==='checklist'){
       const sourceGroup=drag.card.closest('[data-task-checklist-group]'),targetGroup=target.closest('[data-task-checklist-group]');
       if(sourceGroup&&targetGroup&&sourceGroup.dataset.taskChecklistGroup===targetGroup.dataset.taskChecklistGroup)destination=target.closest('[data-task-checklist-row]')||targetGroup;
@@ -2394,7 +2517,7 @@
       const remoteVaultRow=vaultRows.find(row=>row.owner_id===session.user.id),remoteVault=remoteVaultRow?rowToPrivateVault(remoteVaultRow):null;if(remoteVault&&(!privateVault||remoteVault.ownerId===session.user.id&&Date.parse(remoteVault.updatedAt)>=Date.parse(privateVault.updatedAt||'')))privateVault=remoteVault;
       privateCipherRows=mergeById(privateCipherRows,privateRows.map(rowToPrivateNote).filter(Boolean)).map(normalizePrivateRow).filter(Boolean);
       localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));localStorage.setItem(NOTES_KEY,JSON.stringify(notes));localStorage.setItem(LOGS_KEY,JSON.stringify(logs));localStorage.setItem(FINANCE_KEY,JSON.stringify(finances));localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));localStorage.setItem(BANK_TRANSACTIONS_KEY,JSON.stringify(bankTransactions));localStorage.setItem(TAGS_KEY,JSON.stringify(tags));localStorage.setItem(USER_SETTINGS_KEY,JSON.stringify(userSettings));localStorage.setItem(PRIVATE_ROWS_KEY,JSON.stringify(privateCipherRows));if(privateVault)localStorage.setItem(PRIVATE_VAULT_KEY,JSON.stringify(privateVault));
-      if(privateNotesUnlocked&&privateCryptoKey)setDecryptedVaultItems(await loadDecryptedPrivateNotes());renderAll();if($('financeSummaryDialog')?.open)renderFinanceSummaryDialog(financeSummaryDialogMonth);renderDashboard();updateAuthUI();return true;
+      if(privateNotesUnlocked&&privateCryptoKey)setDecryptedVaultItems(await loadDecryptedPrivateNotes());renderAll();if($('financeSummaryDialog')?.open)renderFinanceSummaryDialog(financeSummaryDialogMonth);updateAuthUI();return true;
     }catch{return false;}finally{realtimePullInFlight=false;}
   }
   async function refreshFinanceCloudData() {
@@ -2554,7 +2677,7 @@
     taskPullInFlight=true;
     try{
       const remoteRows=await fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),remoteTasks=remoteRows.map(rowToTask).filter(Boolean),merged=mergeById(tasks,remoteTasks).map(normalizeTask).filter(Boolean);
-      if(JSON.stringify(merged)!==JSON.stringify(tasks)){tasks=merged;localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));renderTasks();renderHome();renderDashboard();}
+      if(JSON.stringify(merged)!==JSON.stringify(tasks)){tasks=merged;localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));renderTasks();renderHome();}
       return true;
     }catch{return false;}
     finally{taskPullInFlight=false;}
@@ -2665,18 +2788,55 @@
   $('tagManagerAddForm').addEventListener('submit',addManagedTag);
   $('tagManagerList').addEventListener('submit',saveManagedTag);
   document.querySelectorAll('[data-note-format]').forEach(button=>button.addEventListener('click',()=>applyNoteFormat(button.dataset.formatTarget,button.dataset.noteFormat)));
+  window.TNMBasecampToggle=()=>{
+    const next=currentPage==='home'?'tasks':'home';
+    setPage(next);
+    if(next==='tasks')jumpToCurrentWeek();
+  };
   document.querySelector('.main-nav').addEventListener('click',event=>{
     const button=event.target.closest('button[data-page]');if(!button)return;
-    setPage(button.dataset.page);
+    if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
+        setPage(button.dataset.page);
   });
+  function handleKanbanChange(event){
+    const control=event.target.closest('[data-kanban-state]');if(!control)return;
+    const taskId=control.dataset.kanbanState,choice=control.value;
+    if(choice==='reminder-today'){applyQuickReminder(taskId,todayKey());return;}
+    if(choice==='reminder-tomorrow'){applyQuickReminder(taskId,addDays(todayKey(),1));return;}
+    if(choice==='reminder-other'){const task=tasks.find(item=>item.id===String(taskId));control.value=task?getKanbanState(task):'todo';chooseQuickReminderDate(taskId);return;}
+    if(choice==='my-day'){setMyDayTask(taskId);return;}
+    setKanbanState(taskId,choice);
+  }
+  function handleKanbanClick(event){const removeMyDay=event.target.closest('[data-my-day-remove]');if(removeMyDay){removeMyDayTask(removeMyDay.dataset.myDayRemove);return;}const taskCardNode=event.target.closest('.kanban-task .task-card');if(taskCardNode&&!event.target.closest('button,summary,input,select,a,[data-kanban-state],[data-task-touch-handle]')){openTaskDialog(taskCardNode.dataset.taskId);return;}const monthToggle=event.target.closest('[data-kanban-reminders-month]');if(monthToggle){showAllMonthlyReminders=!showAllMonthlyReminders;renderKanban();return;}const addReminder=event.target.closest('[data-kanban-add-reminder]');if(addReminder){openQuickReminder();return;}const add=event.target.closest('[data-kanban-add]');if(add){openTaskDialog();return;}const complete=event.target.closest('[data-kanban-complete]');if(complete){openKanbanTaskCompletionConfirm(complete.dataset.kanbanComplete);return;}const collapse=event.target.closest('[data-kanban-collapse]');if(collapse){toggleKanbanCollapsed(collapse.dataset.kanbanCollapse);return;}if(event.target.closest('[data-close-kanban-dialog]')){$('kanbanColumnDialog').close();return;}handleTaskClick(event);}
+  function updateKanbanMobileNav(){const nav=$('kanbanMobileNav'),board=$('kanbanBoard');if(!nav||!board)return;const buttons=[...nav.querySelectorAll('[data-kanban-jump]')],line=150;let active=buttons[0];for(const button of buttons){const lane=board.querySelector(`[data-kanban-column="${button.dataset.kanbanJump}"]`);if(lane&&lane.getBoundingClientRect().top<=line)active=button;}buttons.forEach(button=>button===active?button.setAttribute('aria-current','true'):button.removeAttribute('aria-current'));}
+  let kanbanNavTapTimer=0,kanbanNavTapKey='';
+  function navigateKanbanNav(button){const key=button.dataset.kanbanJump,lane=$('kanbanBoard')?.querySelector(`[data-kanban-column="${key}"]`);if(!lane)return;document.querySelectorAll('#kanbanMobileNav [data-kanban-jump]').forEach(item=>item===button?item.setAttribute('aria-current','true'):item.removeAttribute('aria-current'));lane.scrollIntoView({behavior:'smooth',block:'start'});}
+  $('kanbanMobileNav').addEventListener('click',event=>{const button=event.target.closest('[data-kanban-jump]');if(!button)return;const key=button.dataset.kanbanJump;if(kanbanNavTapTimer&&kanbanNavTapKey===key){clearTimeout(kanbanNavTapTimer);kanbanNavTapTimer=0;kanbanNavTapKey='';navigateKanbanNav(button);toggleKanbanCollapsed(key);return;}if(kanbanNavTapTimer){clearTimeout(kanbanNavTapTimer);const previous=$(`kanbanMobileNav [data-kanban-jump="${kanbanNavTapKey}"]`);if(previous)navigateKanbanNav(previous);}kanbanNavTapKey=key;kanbanNavTapTimer=setTimeout(()=>{kanbanNavTapTimer=0;kanbanNavTapKey='';navigateKanbanNav(button);},350);});
+  window.addEventListener('scroll',()=>requestAnimationFrame(updateKanbanMobileNav),{passive:true});document.addEventListener('scroll',()=>requestAnimationFrame(updateKanbanMobileNav),{passive:true,capture:true});
+  const kanbanWheelHandler=event=>{if(document.body.classList.contains('view-mobile')||!event.deltaY)return;const root=event.currentTarget;let node=event.target instanceof Element?event.target:null,scrollable=null;while(node&&node!==root){const style=getComputedStyle(node),canScroll=/(auto|scroll)/.test(style.overflowY)&&node.scrollHeight>node.clientHeight+1;if(canScroll){const next=node.scrollTop+event.deltaY,limit=node.scrollHeight-node.clientHeight;if((event.deltaY<0&&node.scrollTop>0)||(event.deltaY>0&&node.scrollTop<limit-1)){scrollable=node;break;}}node=node.parentElement;}if(scrollable){event.preventDefault();scrollable.scrollTop+=event.deltaY;}};
+  $('kanbanBoard').addEventListener('wheel',kanbanWheelHandler,{passive:false});$('kanbanColumnDialog').addEventListener('wheel',kanbanWheelHandler,{passive:false});
+  $('kanbanBoard').addEventListener('change',handleKanbanChange);$('kanbanBoard').addEventListener('click',handleKanbanClick);$('kanbanBoard').addEventListener('click',handleKanbanTitleClick);$('kanbanBoard').addEventListener('dblclick',event=>{const title=event.target.closest('[data-kanban-title]');if(title){if(document.body.classList.contains('view-mobile'))return;clearTimeout(kanbanTitleClickTimer);openKanbanColumnDialog(title.dataset.kanbanTitle);}});$('kanbanBoard').addEventListener('dragstart',handleDragStart);$('kanbanBoard').addEventListener('dragover',handleDragOver);$('kanbanBoard').addEventListener('drop',handleDrop);
+  $('kanbanColumnDialog').addEventListener('change',handleKanbanChange);$('kanbanColumnDialog').addEventListener('close',()=>{if($('kanbanColumnDialog').dataset.columnKey==='done'){delete userSettings.kanbanDoneDialogOpen;renderKanban();}});$('kanbanColumnDialog').addEventListener('click',handleKanbanClick);$('kanbanColumnDialog').addEventListener('click',handleKanbanTitleClick);$('kanbanColumnDialog').addEventListener('dblclick',event=>{const title=event.target.closest('[data-kanban-title]');if(title){clearTimeout(kanbanTitleClickTimer);openKanbanColumnDialog(title.dataset.kanbanTitle);}});$('kanbanColumnDialog').addEventListener('dragstart',handleDragStart);$('kanbanColumnDialog').addEventListener('dragover',handleDragOver);$('kanbanColumnDialog').addEventListener('drop',handleDrop);
+  $('kanbanCompletionCancelBtn').addEventListener('click',closeKanbanTaskCompletionConfirm);
+  $('kanbanCompletionConfirmBtn').addEventListener('click',confirmKanbanTaskCompletion);
+  $('kanbanCompletionConfirm').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();closeKanbanTaskCompletionConfirm();}});
   function enforceExternalLinkTargets(root=document){const links=root.querySelectorAll?root.querySelectorAll('a[href]'):[];for(const link of links){try{const url=new URL(link.getAttribute('href'),location.href);if((url.protocol==='http:'||url.protocol==='https:')&&url.origin!==location.origin){link.target='_blank';link.rel='noopener noreferrer';}}catch{}}}
   enforceExternalLinkTargets();
   new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes)if(node.nodeType===1){if(node.matches?.('a[href]'))enforceExternalLinkTargets(node.parentNode||document);else enforceExternalLinkTargets(node);}}).observe(document.documentElement,{childList:true,subtree:true});
   document.addEventListener('click',event=>{const link=event.target.closest('a[href]');if(!link)return;try{const url=new URL(link.href,location.href);if((url.protocol==='http:'||url.protocol==='https:')&&url.origin!==location.origin){link.target='_blank';link.rel='noopener noreferrer';}}catch{}},true);
   document.addEventListener('click',event=>{const button=event.target.closest('[data-calendar-event-dismiss]');if(!button)return;event.preventDefault();event.stopPropagation();dismissCalendarEvent(button.dataset.calendarEventDismiss);},true);
   document.addEventListener('click',event=>{const button=event.target.closest('[data-calendar-event-complete]');if(!button)return;event.preventDefault();event.stopPropagation();toggleCalendarEventCompletion(button.dataset.calendarEventComplete);},true);
-  $('homePage').addEventListener('click',handleDashboardClick);$('dashboardModalClose').addEventListener('click',closeDashboardPage);$('dashboardModalOverlay').addEventListener('click',event=>{if(event.target===$('dashboardModalOverlay'))closeDashboardPage();});document.addEventListener('keydown',event=>{if(event.key==='Escape'&&dashboardModalPage)closeDashboardPage();});
+  document.addEventListener('click',event=>{
+    if(event.target.closest('[data-open-basecamp-calendar]')){renderBasecampCalendarWeek();return;}const calendarTask=event.target.closest('[data-basecamp-task]');if(calendarTask){openTaskDialog(calendarTask.dataset.basecampTask);return;}const calendarDay=event.target.closest('[data-basecamp-open-day]');if(calendarDay){setPage('tasks');setPlannerSubpage('kanban',false);setWeek(calendarDay.dataset.basecampOpenDay);openDayDialog(calendarDay.dataset.basecampOpenDay);return;}
+    if(event.target.closest('[data-basecamp-clients]')){setPage('tasks');jumpToCurrentWeek();return;}const clientFilter=event.target.closest('[data-basecamp-client-filter]');if(clientFilter){setPage('tasks');setTagFilter(clientFilter.dataset.basecampClientFilter,false);jumpToCurrentWeek();return;}
+    if(event.target.closest('[data-basecamp-connect-calendar]')){setPage('settings');$('calendarConnectBtn')?.click();return;}if(event.target.closest('[data-focus-message-board]')){$('basecampQuickText')?.focus();return;}
+    const edit=event.target.closest('[data-basecamp-edit-message]');if(edit){const rows=userSettings.basecampMessages||[],item=rows.find(row=>row.id===edit.dataset.basecampEditMessage);if(!item)return;const replacement=window.prompt('Editar nota rápida:',item.text);if(replacement===null)return;const text=replacement.trim();if(!text){showToast('A nota não foi alterada.');return;}item.text=text.slice(0,5000);item.updatedAt=nowISO();saveUserSettings();renderBasecampBoard();return;}
+    const remove=event.target.closest('[data-basecamp-delete-message]');if(remove){const rows=userSettings.basecampMessages||[],item=rows.find(row=>row.id===remove.dataset.basecampDeleteMessage);if(item&&window.confirm('Excluir esta nota rápida do Message Board?')){userSettings.basecampMessages=rows.filter(row=>row.id!==item.id);saveUserSettings();renderBasecampBoard();}return;}
+  });
+  $('basecampQuickForm')?.addEventListener('submit',event=>{event.preventDefault();const input=$('basecampQuickText'),content=input.value.trim(),tagId=$('basecampQuickTag').value;if(!content)return;const now=nowISO();userSettings.basecampMessages=[{id:makeId(),text:content.slice(0,5000),tagId,createdAt:now,updatedAt:now},...(userSettings.basecampMessages||[])].slice(0,100);saveUserSettings();input.value='';renderBasecampBoard();showToast('Publicado no Message Board.');});
   $('globalSearchOpenBtn').addEventListener('click',openGlobalSearch);$('globalSearchForm').addEventListener('submit',event=>{event.preventDefault();renderGlobalSearchResults();});$('globalSearchResults').addEventListener('click',handleGlobalSearchOpen);$('globalSearchClearBtn').addEventListener('click',()=>{$('globalSearchInput').value='';renderGlobalSearchResults();$('globalSearchInput').focus();});$('closeGlobalSearchBtn').addEventListener('click',()=>$('globalSearchDialog').close());$('closeGlobalSearchDetailBtn').addEventListener('click',()=>$('globalSearchDetailDialog').close());
+  $('basecampBoardSearch')?.addEventListener('input',renderBasecampBoard);
+  $('basecampBoardTagFilter')?.addEventListener('change',renderBasecampBoard);
   $('taskForm').addEventListener('submit',saveTaskFromForm);
   $('taskForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'task'));
   $('taskForm').addEventListener('input',event=>{taskDialogDirty=true;if(event.target.matches('[data-task-checklist-text]'))resizeTaskChecklistTextarea(event.target);});
