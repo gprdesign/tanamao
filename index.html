@@ -4,43 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="Seu quadro de tarefas, Tá na mão!">
+  <meta name="description" content="Seu painel central do Tá na mão!">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Tá na mão!">
   <link rel="manifest" href="./manifest.webmanifest?v=3">
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-  <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=1">
+  <title>Tá na mão! | Dashboard</title>
+  <link rel="stylesheet" href="./styles/app.css?v=2">
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
   <main class="wrap">
     <header class="app-header">
-      <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div class="brand-title-copy"><h1>Tá na mão!</h1><p>Seu quadro de tarefas</p></div><h1 class="brand-mobile-title">TNM!</h1></div>
+      <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div class="brand-title-copy"><h1>Tá na mão!</h1><p>Seu painel pessoal</p></div><h1 class="brand-mobile-title">TNM!</h1></div>
       <div class="header-actions"><button class="btn global-search-trigger" id="globalSearchOpenBtn" type="button" aria-label="Busca global" title="Buscar em todo o TNM">⌕ <span>BUSCAR</span></button><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div></div>
     </header>
 
-    <section id="homePage" class="page" aria-label="BASECAMP">
-      <div class="basecamp-header"><div><p class="eyebrow">BASECAMP</p><h2 id="basecampOrgTitle">GPR DESIGN</h2><p id="galleryDateLabel" class="gallery-date"></p><p id="basecampActivityLine" class="basecamp-activity-line"></p></div></div>
-      <section class="basecamp-grid" aria-label="Quadros do Basecamp">
-        <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-open-basecamp-calendar><span class="basecamp-card-icon">▣</span><span>Calendário</span><span class="basecamp-card-arrow">↗</span></button><div class="basecamp-card-body"><section class="basecamp-events-today"><h4>HOJE</h4><div id="basecampCalendarToday"></div></section><section class="basecamp-events-tomorrow"><h4>AMANHÃ</h4><div id="basecampCalendarTomorrow"></div></section></div><button type="button" class="basecamp-calendar-connect" data-basecamp-connect-calendar>Conectar/sincronizar Google Calendar</button></article>
-        <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-basecamp-clients><span class="basecamp-card-icon">♙</span><span>Clientes</span><span class="basecamp-card-arrow">↗</span></button><div id="basecampClients" class="basecamp-card-body"></div></article>
-        <article class="basecamp-card"><div class="basecamp-card-title static"><span class="basecamp-card-icon">▧</span><span>Docs &amp; arqs</span></div><div id="basecampDocs" class="basecamp-card-body"></div><div class="basecamp-file-shortcuts"><a href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener noreferrer">Abrir Google Drive ↗</a><div class="basecamp-share"><strong>Servidor (Tailscale)</strong><span>100.79.254.18 · dados</span><span>100.79.254.18 · home-kr</span></div></div><small class="basecamp-hint">No app de arquivos, adicione um servidor SMB enquanto estiver conectado ao Tailscale.</small></article>
-        <article class="basecamp-card"><button class="basecamp-card-title" type="button" data-focus-message-board><span class="basecamp-card-icon">▤</span><span>Message Board</span><span class="basecamp-card-arrow">＋</span></button><div id="basecampMessagePreview" class="basecamp-card-body"></div></article>
-      </section>
-      <section class="basecamp-board" id="basecampBoard" aria-label="Message Board">
-        <div class="basecamp-board-heading"><div><p class="eyebrow">DESCARREGO MENTAL</p><h3>Message Board</h3></div><span id="basecampBoardCount" class="basecamp-count"></span></div>
-        <form id="basecampQuickForm" class="basecamp-quick-form"><label class="sr-only" for="basecampQuickText">Nova nota rápida</label><textarea id="basecampQuickText" maxlength="20000" rows="2" placeholder="O que está na sua cabeça?" required></textarea><div class="basecamp-quick-controls"><select id="basecampQuickTag" aria-label="Tag da nota"></select><button class="btn primary small" type="submit">＋ PUBLICAR</button></div></form>
-        <div class="basecamp-board-filters"><input id="basecampBoardSearch" type="search" placeholder="Buscar no mural…" aria-label="Buscar no mural"><select id="basecampBoardTagFilter" aria-label="Filtrar por tag"></select></div>
-        <div id="basecampBoardTimeline" class="basecamp-board-timeline"></div>
-      </section>
+    <section id="homePage" class="page active dashboard-page" aria-label="Dashboard">
+      <header class="dashboard-heading"><div><p class="eyebrow">PANORAMA GERAL</p><h2>Seu dia, de relance</h2><p id="dashboardDate" class="dashboard-date"></p></div></header>
+      <div class="dashboard-grid">
+        <button class="dashboard-card dashboard-planner" type="button" data-dashboard-open="tasks"><span class="dashboard-card-kicker">PLANNER · HOJE</span><strong class="dashboard-card-value" id="dashboardTaskCount">0 tarefas</strong><span class="dashboard-card-copy" id="dashboardTaskPreview">Sua agenda de hoje</span><span class="dashboard-card-link">Abrir Planner <span aria-hidden="true">↗</span></span></button>
+        <button class="dashboard-card dashboard-notes" type="button" data-dashboard-open="notes"><span class="dashboard-card-kicker">NOTAS</span><strong class="dashboard-card-value" id="dashboardNoteCount">0 notas</strong><span class="dashboard-card-copy">Notas ativas no seu espaço</span><span class="dashboard-card-link">Abrir Notas <span aria-hidden="true">↗</span></span></button>
+        <button class="dashboard-card dashboard-finance" type="button" data-dashboard-open="finance"><span class="dashboard-card-kicker">FINANÇAS · MÊS</span><strong class="dashboard-card-value" id="dashboardFinanceBalance">—</strong><span class="dashboard-card-copy" id="dashboardFinanceSummary">Resumo atualizado do mês</span><span class="dashboard-card-link">Abrir Finanças <span aria-hidden="true">↗</span></span></button>
+        <button class="dashboard-card dashboard-calendar" type="button" data-dashboard-open="calendar"><span class="dashboard-card-kicker">GOOGLE CALENDAR · PRÓXIMO</span><strong class="dashboard-card-value" id="dashboardNextEvent">Sem evento próximo</strong><span class="dashboard-card-copy" id="dashboardNextEventWhen">Conecte ou sincronize sua agenda</span><span class="dashboard-card-link">Abrir agenda de hoje <span aria-hidden="true">↗</span></span></button>
+      </div>
     </section>
 
-    <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
-      <nav id="kanbanMobileNav" class="kanban-mobile-nav" aria-label="Navegação do Kanban"><button type="button" data-kanban-jump="events" aria-current="true">AGENDA | DIA</button><button type="button" data-kanban-jump="doing">FAZENDO</button><button type="button" data-kanban-jump="todo">A FAZER</button><button type="button" data-kanban-jump="blocked">TRAVADO</button><button type="button" data-kanban-jump="done">FEITO</button></nav>
-      <div id="plannerKanbanView" class="planner-kanban-view"><div class="kanban-board" id="kanbanBoard" aria-label="Quadro Kanban"></div></div>
-      <div id="plannerWeekView" class="planner-week-view" hidden>
+    <section id="tasksPage" class="page" aria-label="Planner de tarefas">
+      <div id="plannerWeekView" class="planner-week-view">
       <div class="planner-section-buttons">
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
         <button class="planner-section-btn completed-box" id="completedBtn" type="button" aria-expanded="false" aria-controls="completedPanel">Concluídas <span id="completedCount">0</span></button>
@@ -50,8 +42,6 @@
       <section class="planner-income-panel" aria-label="Próximos recebimentos"><div class="planner-income-heading"><h3>PRÓXIMOS RECEBIMENTOS</h3><span>30 DIAS · TOQUE PARA VER</span></div><div class="planner-income-lines" id="plannerUpcomingIncomeList" aria-live="polite"></div></section>
       <div class="week-board" id="weekBoard"><div class="week-grid" id="weekGrid" aria-label="Semana"></div><nav class="week-dock sub-dock" id="weekDock" aria-label="Ações da semana"><button class="subdock-item" id="prevWeekBtn" type="button" aria-label="Semana anterior"><span class="week-arrow-horizontal">‹</span><span class="week-arrow-vertical">↑</span></button><strong id="weekLabel" aria-live="polite"></strong><button class="subdock-item" id="nextWeekBtn" type="button" aria-label="Próxima semana"><span class="week-arrow-horizontal">›</span><span class="week-arrow-vertical">↓</span></button><button class="subdock-item subdock-add-task" id="weekDockAddTaskBtn" type="button">＋ TAREFA</button></nav></div>
       </div>
-      <dialog id="kanbanColumnDialog" class="app-dialog kanban-fullscreen-dialog" aria-label="Coluna do Kanban"></dialog>
-      <div id="kanbanCompletionConfirm" class="day-completion-confirm" role="alertdialog" aria-modal="true" aria-labelledby="kanbanCompletionText" hidden><span id="kanbanCompletionText" class="day-completion-confirm-text">Concluir esta tarefa?</span><div id="kanbanCompletionChecklistWarning" class="day-completion-checklist-warning" hidden><strong>Checklist ainda em aberto:</strong><ul id="kanbanCompletionChecklistItems"></ul></div><div class="day-completion-confirm-actions"><button class="btn ghost small" id="kanbanCompletionCancelBtn" type="button">CANCELAR</button><button class="btn small confirm-yes" id="kanbanCompletionConfirmBtn" type="button">CONCLUIR</button></div></div>
     </section>
 
     <section id="financePage" class="page" aria-label="Finanças">
@@ -96,7 +86,7 @@
           <div class="form-actions"><button class="btn primary" id="loginBtn" type="button">Entrar</button><button class="btn" id="signupBtn" type="button">Criar conta</button><button class="btn hidden" id="syncNowBtn" type="button">Sincronizar</button><button class="btn hidden" id="logoutBtn" type="button">Sair</button></div><p class="status-text" id="authMessage" aria-live="polite"></p>
         </section>
         <section class="panel" aria-label="Backup"><h3>Backup de dados</h3><p class="muted">O app salva um snapshot automático neste aparelho a cada 5 minutos enquanto estiver aberto. Para guardar uma cópia fora do navegador, exporte o arquivo JSON.</p><p class="status-text" id="autoBackupStatus" aria-live="polite">Preparando backup automático…</p><div class="form-actions"><button class="btn" id="exportBtn" type="button">Exportar backup</button></div><p class="status-text" id="backupMessage" aria-live="polite"></p></section>
-        <section class="panel" aria-label="Calendário Google"><h3>Calendário Google</h3><p class="muted" id="calendarStatus" aria-live="polite">Conecte sua conta para carregar os calendários.</p><div class="calendar-sync-actions"><button class="btn small" id="calendarConnectBtn" type="button">Conectar Google Calendar</button><button class="btn primary small" id="calendarSyncBtn" type="button" disabled>Sincronizar agora</button></div><p class="calendar-sync-note">Somente leitura: mostra na Home as agendas escolhidas. Atualiza a cada 15 min enquanto o acesso temporário estiver válido; depois, toque em Sincronizar para reconectar.</p><div id="calendarFilters" class="calendar-filters" aria-label="Agendas para sincronizar"><p class="muted">Depois de conectar, escolha quais agendas incluir.</p></div></section>
+        <section class="panel" aria-label="Calendário Google"><h3>Calendário Google</h3><p class="muted" id="calendarStatus" aria-live="polite">Conecte sua conta para carregar os calendários.</p><div class="calendar-sync-actions"><button class="btn small" id="calendarConnectBtn" type="button">Conectar Google Calendar</button><button class="btn primary small" id="calendarSyncBtn" type="button" disabled>Sincronizar agora</button></div><p class="calendar-sync-note">Somente leitura: mostra no Dashboard a próxima agenda escolhida. Atualiza a cada 15 min enquanto o acesso temporário estiver válido; depois, toque em Sincronizar para reconectar.</p><div id="calendarFilters" class="calendar-filters" aria-label="Agendas para sincronizar"><p class="muted">Depois de conectar, escolha quais agendas incluir.</p></div></section>
         <section class="panel" aria-label="Resumo diário"><h3>Resumo diário no WhatsApp</h3><p class="muted">Escolha um ou mais horários. O padrão é 08:00; os horários ficam sincronizados com sua conta.</p><div class="field"><label for="summaryNickname">Apelido na saudação</label><input id="summaryNickname" maxlength="32" placeholder="Gio"></div><div class="summary-time-add"><label for="summaryTimeInput">Adicionar horário</label><div class="summary-time-row"><input id="summaryTimeInput" type="time" value="08:00"><button class="btn small" id="addSummaryTimeBtn" type="button">＋ Horário</button></div></div><div id="summaryTimesList" class="summary-times-list"></div><p class="status-text">Os horários são salvos; o envio automático será ativado quando o agendador estiver conectado.</p></section>
         <section class="panel" aria-label="Últimas atualizações"><h3>Últimas atualizações</h3><ul class="updates-list"><li>Salvamento automático ao fechar os editores de tarefas e notas.</li><li>LOG DE EVENTOS com registros por data e filtros.</li><li>Dock principal e subdocks adaptados por tela.</li><li>Recorrência de tarefas com criação automática da próxima ocorrência.</li><li>Navegação entre dias no pop-up pelas setas ou deslizando.</li><li>TAREFAS: checklist simples com etapas marcáveis no pop-up.</li><li>FINANÇAS: tags automáticas ENTRADA/SAÍDA, saldo do Banco Jota, Caixinha de Contas e limite diário até a próxima entrada.</li><li>NOTAS: vários links por nota e fonte padronizada com o app.</li></ul></section>
       </div>
@@ -105,11 +95,13 @@
 
   <nav class="week-dock sub-dock notes-dock" id="notesDock" aria-label="Ações das notas"><button class="subdock-item subdock-add-note" id="notesDockAddBtn" type="button">＋ NOTA</button></nav>
 
+  <div id="dashboardModalOverlay" class="modal-overlay" hidden aria-hidden="true"><section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="dashboardModalTitle"><header class="modal-header"><h2 id="dashboardModalTitle">Planner</h2><button type="button" class="modal-close" id="dashboardModalClose" aria-label="Fechar janela">×</button></header><div class="modal-page-host" id="dashboardModalHost"></div></section></div>
+
   <button id="refreshSyncBtn" class="refresh-sync-btn refresh-sync-action" type="button" aria-label="Atualizar o TNM" title="Atualizar o TNM"><span aria-hidden="true">↻</span></button>
 
   <nav class="main-nav" aria-label="Navegação principal">
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
-    <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">KANBAN</span></button>
+    <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="home" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">PLANNER</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
     <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
     <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>CONFIGS</span></button>
@@ -139,9 +131,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=274'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=275'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=287',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=288',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
