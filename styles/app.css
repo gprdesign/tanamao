@@ -250,3 +250,9 @@ body[data-theme="light"] #dashboardPage .dashboard-stat { background:linear-grad
 .view-mode-switch { gap:3px; padding:2px; }
 .view-mode-switch button { display:grid; place-items:center; width:30px; min-width:30px; height:30px; min-height:30px; padding:4px; }
 .view-mode-switch button svg { display:block; width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+/* Dashboard agenda: clearly separated today / tomorrow groups. */
+
+#dashboardPage .dashboard-agenda-day + .dashboard-agenda-day { margin-top:8px; padding-top:8px; border-top:1px solid var(--line); }
+#dashboardPage .dashboard-agenda-day h4 { margin:0 7px 3px; color:var(--dash-accent); font-size:.62rem; font-weight:900; letter-spacing:.1em; }
+#dashboardPage .dashboard-agenda-day .dashboard-empty { margin:2px 7px 5px; }

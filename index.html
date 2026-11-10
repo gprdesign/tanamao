@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=5">
+  <link rel="stylesheet" href="./styles/app.css?v=7">
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -55,7 +55,7 @@
     </section>
 
     <section id="dashboardPage" class="page dashboard-page" aria-label="Dashboard">
-      <header class="dashboard-heading"><div><p class="eyebrow">PANORAMA GERAL</p><h2>Visão geral</h2><p class="dashboard-date" id="dashboardDate"></p></div></header>
+      <header class="dashboard-heading"><div><p class="eyebrow">PANORAMA GERAL</p><p class="dashboard-date" id="dashboardDate"></p></div></header>
       <section class="dashboard-panel dashboard-calendar-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">AGENDA</p><h3>Próximos eventos</h3></div><button type="button" class="dashboard-more" data-dashboard-go="tasks">Ver agenda <span aria-hidden="true">↗</span></button></header><div class="dashboard-list" id="dashboardCalendarList"></div></section>
       <section class="dashboard-panel dashboard-reminders-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">LEMBRETES</p><h3>Atrasados e hoje</h3></div></header><div class="dashboard-list" id="dashboardRemindersList"></div></section>
       <div class="dashboard-summary" aria-label="Resumo do TNM">
@@ -157,9 +157,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=278'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=280'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=292',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=294',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
