@@ -190,7 +190,7 @@
     .task-day-action--next-week:hover { border-color:#8fb2ff; background:linear-gradient(145deg,#293a5d,#252832); }
     .task-day-action--complete { width:40px; height:40px; min-height:40px; justify-self:center; padding:0; aspect-ratio:1 / 1; border-color:#38805c; background:linear-gradient(145deg,#18392a,#1e2028); color:#8fe0b5; }
     .task-day-action--complete:hover { border-color:#8fe0b5; background:linear-gradient(145deg,#20503a,#252832); }
-    .day-completion-confirm { position:absolute; z-index:10020; left:50%; bottom:18px; margin:0; transform:translateX(-50%); display:flex; align-items:center; gap:10px; width:min(520px,calc(100% - 24px)); max-width:calc(100% - 24px); padding:11px 12px; border:1px solid #38805c; border-radius:13px; background:linear-gradient(145deg,#14291f,#101729); color:var(--text); box-shadow:0 8px 28px #0009; }
+    .day-completion-confirm { position:fixed; z-index:10020; top:50%; left:50%; bottom:auto; margin:0; transform:translate(-50%,-50%); display:flex; align-items:center; gap:10px; width:min(520px,calc(100% - 24px)); max-width:calc(100% - 24px); max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); overflow-y:auto; padding:11px 12px; border:1px solid #38805c; border-radius:13px; background:linear-gradient(145deg,#14291f,#101729); color:var(--text); box-shadow:0 8px 28px #0009; }
     #dayDialog { position:fixed; }
     .day-completion-confirm::backdrop { background:transparent; }
     .day-completion-confirm[hidden] { display:none !important; }
