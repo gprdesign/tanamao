@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=8">
+  <link rel="stylesheet" href="./styles/app.css?v=9">
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -59,7 +59,7 @@
       <section class="dashboard-panel dashboard-calendar-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">AGENDA</p><h3>Próximos eventos</h3></div><button type="button" class="dashboard-more" data-dashboard-go="tasks">Ver agenda <span aria-hidden="true">↗</span></button></header><div class="dashboard-list" id="dashboardCalendarList"></div></section>
       <section class="dashboard-panel dashboard-reminders-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">LEMBRETES</p><h3>Atrasados e hoje</h3></div></header><div class="dashboard-list" id="dashboardRemindersList"></div></section>
       <div class="dashboard-summary" aria-label="Resumo do TNM">
-        <button class="dashboard-stat" type="button" data-dashboard-go="tasks"><span>EM ABERTO</span><strong id="dashboardOpenCount">—</strong><small id="dashboardOverdueCount">Carregando tarefas</small></button>
+        <button class="dashboard-stat" id="dashboardOpenCard" type="button"><span>EM ABERTO</span><strong id="dashboardOpenCount">—</strong><small id="dashboardOverdueCount">Carregando tarefas</small></button>
         <button class="dashboard-stat" type="button" data-dashboard-go="notes"><span>NOTAS</span><strong id="dashboardNotesCount">—</strong><small id="dashboardNotesHint">Notas abertas</small></button>
         <button class="dashboard-stat" type="button" data-dashboard-go="finance"><span>SALDO EM CONTA</span><strong id="dashboardBalance">—</strong><small id="dashboardBalanceHint">Saldo informado no TNM</small></button>
         <button class="dashboard-stat" type="button" data-dashboard-go="finance"><span>MÊS ATÉ AGORA</span><strong id="dashboardMonthNet">—</strong><small id="dashboardMonthFlow">Entradas e saídas realizadas</small></button>
@@ -70,6 +70,8 @@
         <section class="dashboard-panel dashboard-recent-panel"><header class="dashboard-panel-heading"><div><p class="eyebrow">ESPAÇO PESSOAL</p><h3>Notas e registros recentes</h3></div><button type="button" class="dashboard-more" data-dashboard-go="notes">Ver notas <span aria-hidden="true">↗</span></button></header><div class="dashboard-list" id="dashboardRecentList"></div></section>
       </div>
     </section>
+
+    <dialog id="dashboardOpenDialog" class="app-dialog dashboard-open-dialog" aria-labelledby="dashboardOpenDialogTitle"><div class="dialog-head"><h2 id="dashboardOpenDialogTitle">Tarefas e projetos em aberto</h2><button class="btn ghost small" id="closeDashboardOpenDialog" type="button" aria-label="Fechar">✕</button></div><div id="dashboardOpenSections" class="dashboard-open-sections"></div></dialog>
 
     <section id="financePage" class="page" aria-label="Finanças">
       <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div></div>
@@ -157,9 +159,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=281'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=282'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=295',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=296',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

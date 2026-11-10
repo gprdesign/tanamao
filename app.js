@@ -1187,7 +1187,23 @@
     $('dashboardRecentList').innerHTML=recent.length?recent.map(item=>{const d=item.date?new Date(item.date):null,date=d&&Number.isFinite(d.getTime())?d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';return `<div class="dashboard-row dashboard-recent-row"><span class="dashboard-row-day">${escapeHTML(item.kind)}${date?` · ${escapeHTML(date)}`:''}</span><span class="dashboard-row-main"><strong>${escapeHTML(item.title)}</strong><small>${escapeHTML(item.meta)}</small></span></div>`;}).join(''):'<p class="dashboard-empty">Ainda não há notas ou registros recentes.</p>';
 
   }
+  function renderDashboardOpenDialog(){
+    const today=todayKey(),open=tasks.filter(task=>!task.deletedAt&&!task.completedAt&&!isReminderTask(task));
+    const groups=[
+      ['ATRASADAS',sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<today))],
+      ['HOJE',open.filter(task=>task.executionDate===today).sort(taskOrder)],
+      ['TAREFAS E PROJETOS',open.filter(task=>task.executionDate>today).sort(taskOrder)],
+      ['SEM DATA',open.filter(task=>!task.executionDate).sort(taskOrder)]
+    ];
+    $('dashboardOpenSections').innerHTML=groups.map(([title,items])=>`<section class="dashboard-open-group"><h3>${title}<span>${items.length}</span></h3>${items.length?`<div class="dashboard-open-list">${items.map(task=>`<button class="dashboard-open-row" type="button" data-dashboard-open-task="${escapeHTML(task.id)}"><span class="dashboard-open-row-title">${escapeHTML(task.title)}</span><small>${escapeHTML(getTag(task.tagId).name)}${task.executionDate?` · ${escapeHTML(formatDate(task.executionDate,{day:'2-digit',month:'2-digit',year:'numeric'}))}`:''}</small><span aria-hidden="true">›</span></button>`).join('')}</div>`:'<p class="dashboard-open-empty">Nenhuma tarefa aberta.</p>'}</section>`).join('');
+  }
+  function handleDashboardOpenDialogClick(event){
+    if(event.target.closest('#closeDashboardOpenDialog')){$('dashboardOpenDialog').close();return;}
+    const row=event.target.closest('[data-dashboard-open-task]');if(!row)return;
+    const id=row.dataset.dashboardOpenTask;$('dashboardOpenDialog').close();setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(id);
+  }
   function handleDashboardClick(event){
+    const openCard=event.target.closest('#dashboardOpenCard');if(openCard){renderDashboardOpenDialog();showAppDialog($('dashboardOpenDialog'));return;}
     const reminderComplete=event.target.closest('[data-dashboard-reminder-complete]');if(reminderComplete){openKanbanTaskCompletionConfirm(reminderComplete.dataset.dashboardReminderComplete);return;}
     const task=event.target.closest('[data-dashboard-task]');if(task){setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(task.dataset.dashboardTask);return;}
     const eventRow=event.target.closest('[data-dashboard-event-date]');if(eventRow){const day=eventRow.dataset.dashboardEventDate;setPage('tasks');setPlannerSubpage('kanban',false);setWeek(day);openDayDialog(day);return;}
@@ -2837,7 +2853,7 @@
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
     setPage(button.dataset.page);
   });
-  $('dashboardPage').addEventListener('click',handleDashboardClick);
+  $('dashboardPage').addEventListener('click',handleDashboardClick);$('dashboardOpenDialog').addEventListener('click',handleDashboardOpenDialogClick);
   function handleKanbanChange(event){
     const control=event.target.closest('[data-kanban-state]');if(!control)return;
     const taskId=control.dataset.kanbanState,choice=control.value;
