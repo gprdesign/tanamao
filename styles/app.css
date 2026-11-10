@@ -245,3 +245,8 @@ body[data-theme="light"] #dashboardPage .dashboard-stat { background:linear-grad
 /* Keep DASH sections from shrinking to slivers on short mobile viewports. */
 #dashboardPage > .dashboard-panel, #dashboardPage > .dashboard-panels { flex: 0 0 auto; }
 #dashboardPage > .dashboard-panel { min-height: 96px; }
+
+/* Compact, accessible PC/mobile mode switch. */
+.view-mode-switch { gap:3px; padding:2px; }
+.view-mode-switch button { display:grid; place-items:center; width:30px; min-width:30px; height:30px; min-height:30px; padding:4px; }
+.view-mode-switch button svg { display:block; width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }

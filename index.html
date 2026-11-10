@@ -11,14 +11,14 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=4">
+  <link rel="stylesheet" href="./styles/app.css?v=5">
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
   <main class="wrap">
     <header class="app-header">
       <div class="brand"><img class="brand-icon" src="./icon-192.png" alt=""><div class="brand-title-copy"><h1>Tá na mão!</h1><p>Seu quadro de tarefas</p></div><h1 class="brand-mobile-title">TNM!</h1></div>
-      <div class="header-actions"><button class="btn global-search-trigger" id="globalSearchOpenBtn" type="button" aria-label="Busca global" title="Buscar em todo o TNM">⌕ <span>BUSCAR</span></button><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-pressed="true">PC</button><button id="viewModeMobileBtn" type="button" aria-pressed="false">MOBILE</button></div></div>
+      <div class="header-actions"><button class="btn global-search-trigger" id="globalSearchOpenBtn" type="button" aria-label="Busca global" title="Buscar em todo o TNM">⌕ <span>BUSCAR</span></button><button class="btn filter-open" id="headerTagsBtn" type="button" aria-haspopup="dialog" aria-label="Gerenciar tags">TAGS</button><button class="btn filter-open" id="headerFilterBtn" type="button" data-filter-open aria-haspopup="dialog">FILTRO</button><div class="view-mode-switch" role="group" aria-label="Versão PC ou Mobile"><button id="viewModePcBtn" type="button" aria-label="PC" title="PC" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M7 14h10"/></svg></button><button id="viewModeMobileBtn" type="button" aria-label="Mobile" title="Mobile" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="2.5" width="10" height="19" rx="2.4"/><path d="M10 5h4M11 18.5h2"/></svg></button></div></div>
     </header>
 
     <section id="homePage" class="page" aria-label="BASECAMP">
