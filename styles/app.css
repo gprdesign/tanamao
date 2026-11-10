@@ -241,3 +241,7 @@ body[data-theme="light"] #dashboardPage .dashboard-stat { background:linear-grad
   #dashboardPage .dashboard-panel { padding-top:12px; }
   #dashboardPage .dashboard-calendar-panel .dashboard-row,#dashboardPage .dashboard-reminders-panel .dashboard-row { min-height:46px; }
 }
+
+/* Keep DASH sections from shrinking to slivers on short mobile viewports. */
+#dashboardPage > .dashboard-panel, #dashboardPage > .dashboard-panels { flex: 0 0 auto; }
+#dashboardPage > .dashboard-panel { min-height: 96px; }
