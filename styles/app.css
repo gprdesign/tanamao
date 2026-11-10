@@ -256,3 +256,37 @@ body[data-theme="light"] #dashboardPage .dashboard-stat { background:linear-grad
 #dashboardPage .dashboard-agenda-day + .dashboard-agenda-day { margin-top:8px; padding-top:8px; border-top:1px solid var(--line); }
 #dashboardPage .dashboard-agenda-day h4 { margin:0 7px 3px; color:var(--dash-accent); font-size:.62rem; font-weight:900; letter-spacing:.1em; }
 #dashboardPage .dashboard-agenda-day .dashboard-empty { margin:2px 7px 5px; }
+
+/* One shared completion control for calendar events and reminders. */
+#kanbanBoard .kanban-event-row .calendar-event-complete,
+#kanbanBoard .kanban-reminder-row .reminder-complete,
+#kanbanBoard .kanban-reminder-row .kanban-reminder-reopen,
+#dashboardPage .calendar-event-complete,
+#dashboardPage .reminder-complete {
+  display:grid; flex:none; place-items:center; align-self:center;
+  width:38px; min-width:38px; height:38px; min-height:38px;
+  margin:0; padding:0; border:1px solid #397653; border-radius:9px;
+  background:#183b2d; color:#8fe0b5; font-size:1rem; font-weight:900;
+  line-height:1; cursor:pointer;
+}
+#kanbanBoard .kanban-event-row .calendar-event-complete:hover,
+#kanbanBoard .kanban-reminder-row .reminder-complete:hover,
+#kanbanBoard .kanban-reminder-row .kanban-reminder-reopen:hover,
+#dashboardPage .calendar-event-complete:hover,
+#dashboardPage .reminder-complete:hover { filter:brightness(1.18); }
+#kanbanBoard .calendar-event-complete.is-completed,
+#kanbanBoard .kanban-reminder-reopen.is-completed,
+#dashboardPage .calendar-event-complete.is-completed { background:#dcfce7; border-color:#86c99c; color:#14532d; }
+body[data-theme="light"] #kanbanBoard .calendar-event-complete,
+body[data-theme="light"] #kanbanBoard .reminder-complete,
+body[data-theme="light"] #kanbanBoard .kanban-reminder-reopen,
+body[data-theme="light"] #dashboardPage .calendar-event-complete,
+body[data-theme="light"] #dashboardPage .reminder-complete { color:#14532d; background:#dcfce7; border-color:#86c99c; }
+#dashboardPage .dashboard-action-row { display:grid; grid-template-columns:minmax(0,1fr) 38px; gap:8px; padding:5px 7px; }
+#dashboardPage .dashboard-reminders-panel .dashboard-action-row { grid-template-columns:50px minmax(0,1fr) 38px; }
+#dashboardPage .dashboard-row-content { display:flex; align-items:center; gap:10px; flex:1 1 auto; min-width:0; min-height:36px; padding:0; border:0; background:transparent; color:var(--text); text-align:left; cursor:pointer; }
+#dashboardPage .dashboard-row-content:hover { background:transparent; }
+#dashboardPage .dashboard-action-row > .dashboard-row-day { min-width:0; }
+body.view-mobile #dashboardPage .dashboard-action-row { grid-template-columns:minmax(0,1fr) 38px; }
+body.view-mobile #dashboardPage .dashboard-reminders-panel .dashboard-action-row { grid-template-columns:44px minmax(0,1fr) 38px; }
+body[data-theme="light"] #dashboardPage .dashboard-row-content { color:var(--text); }
