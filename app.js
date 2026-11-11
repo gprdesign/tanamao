@@ -2735,19 +2735,33 @@
     if(taskDialogDirty||noteDialogDirty||financeDialogDirty||privateNoteDirty||String($('financeCashboxInput')?.value||'').trim()){showToast('Salve suas alterações antes de atualizar.',5000);return;}
     if(!navigator.onLine){showToast('Sem internet. Seus dados locais foram mantidos.',5000);return;}
     button.disabled=true;button.setAttribute('aria-busy','true');showToast('Atualizando o TNM…',15000);
+    let balanceRequestQueued=false;
+    if(CLOUD_READY&&session?.user?.id){
+      try{const queued=await cloudRequest('rpc/request_bank_balance_refresh',{method:'POST',body:'{}'});balanceRequestQueued=Boolean(queued?.id);}
+      catch{showToast('Não consegui pedir o saldo ao Banco Jota; vou atualizar o TNM mesmo assim.',6000);}
+    }
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
     try {
+      if(balanceRequestQueued){const synced=await syncCloudAndWait();await refreshFinanceCloudData();showToast(synced?'TNM atualizado. Pedi o saldo ao Banco Jota; atualizo quando responder.':'Pedido enviado; a sincronização do TNM ficou pendente.',6000);void monitorBankRefreshRequest();return;}
       const url=new URL(window.location.href);url.searchParams.set('tnm_refresh',String(Date.now()));
       const response=await fetch(url.href,{cache:'no-store',signal:controller.signal});
       if(!response.ok||!String(response.headers.get('content-type')||'').includes('text/html'))throw new Error('Página indisponível');
-      const freshHTML=await response.text();
-      if(!freshHTML.includes('TNM!')||!freshHTML.includes('app.js'))throw new Error('Versão indisponível');
-      try{sessionStorage.setItem('tnm.refresh.completed','1');}catch{}
-      window.location.assign(url.href);
-    } catch(error) {
-      showToast('Não consegui atualizar. Confira a internet e tente novamente; seus dados locais foram mantidos.',6000);
-      button.disabled=false;button.removeAttribute('aria-busy');
-    } finally {clearTimeout(timeout);}
+      const freshHTML=await response.text();if(!freshHTML.includes('TNM!')||!freshHTML.includes('app.js'))throw new Error('Versão indisponível');
+      try{sessionStorage.setItem('tnm.refresh.completed','1');}catch{}window.location.assign(url.href);
+    } catch(error) {showToast(balanceRequestQueued?'TNM não recarregou, mas o pedido de saldo ficou na fila.':'Não consegui atualizar. Confira a internet e tente novamente; seus dados locais foram mantidos.',6000);button.disabled=false;button.removeAttribute('aria-busy');}
+    finally{clearTimeout(timeout);}
+  }
+  async function monitorBankRefreshRequest(){
+    if(!session?.user?.id)return;const deadline=Date.now()+120000;let statusName='queued';
+    while(Date.now()<deadline){
+      try{const status=await cloudRequest('rpc/latest_bank_balance_refresh_status',{method:'POST',body:'{}'});if(!status){await new Promise(resolve=>setTimeout(resolve,5000));continue;}statusName=status.status;
+        if(statusName==='completed'){await refreshFinanceCloudData();showToast('Saldo atualizado no TNM.',5000);return;}
+        if(status.request_source==='hourly'){showToast('Pedido horário do Banco Jota já está em andamento; aguardando o saldo.',5000);return;}
+        if(['failed','expired'].includes(statusName)){showToast(status.error_message||'O pedido de saldo não foi concluído.',6000);return;}
+      }catch{}
+      await new Promise(resolve=>setTimeout(resolve,7000));
+    }
+    showToast(statusName==='queued'||statusName==='processing'?'Pedido de saldo ainda está na fila; atualizo quando o Banco Jota responder.':'Ainda aguardando o Banco Jota; o TNM será atualizado quando responder.',6000);
   }
   async function initializeAuth() {
     updateAuthUI();
@@ -3041,5 +3055,5 @@
   window.addEventListener('online',()=>{ if (session?.user?.id) void syncCloud();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false); });
 
   applyTheme();syncViewModeSwitch();renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();
-  try{if(sessionStorage.getItem('tnm.refresh.completed')==='1'){sessionStorage.removeItem('tnm.refresh.completed');showToast(session?.access_token?'TNM atualizado. Sincronização em andamento.':'TNM atualizado.',4000);}}catch{}
+  try{if(sessionStorage.getItem('tnm.refresh.completed')==='1'){sessionStorage.removeItem('tnm.refresh.completed');showToast(session?.access_token?'TNM atualizado. Sincronização em andamento.':'TNM atualizado.',5000);}}catch{}
 })();
