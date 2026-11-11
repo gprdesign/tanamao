@@ -1183,7 +1183,7 @@
     const groups=[
       ['ATRASADAS',sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<today))],
       ['HOJE',open.filter(task=>task.executionDate===today).sort(taskOrder)],
-      ['TAREFAS E PROJETOS',open.filter(task=>task.executionDate>today).sort(taskOrder)],
+      ['FUTURAS',open.filter(task=>task.executionDate>today).sort(taskOrder)],
       ['SEM DATA',open.filter(task=>!task.executionDate).sort(taskOrder)]
     ];
     $('dashboardOpenSections').innerHTML=groups.map(([title,items])=>`<section class="dashboard-open-group"><h3>${title}<span>${items.length}</span></h3>${items.length?`<div class="dashboard-open-list">${items.map(task=>`<button class="dashboard-open-row" type="button" data-dashboard-open-task="${escapeHTML(task.id)}"><span class="dashboard-open-row-title">${escapeHTML(task.title)}</span><small>${escapeHTML(getTag(task.tagId).name)}${task.executionDate?` · ${escapeHTML(formatDate(task.executionDate,{day:'2-digit',month:'2-digit',year:'numeric'}))}`:''}</small><span aria-hidden="true">›</span></button>`).join('')}</div>`:'<p class="dashboard-open-empty">Nenhuma tarefa aberta.</p>'}</section>`).join('');
