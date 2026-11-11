@@ -1170,20 +1170,22 @@
     $('dashboardAgendaSummary').textContent=events.length?events[0].title:'Sem evento hoje';$('dashboardReminderSummary').textContent=todayReminders.length?todayReminders[0].task.title:reminders.length?`${reminders.filter(item=>item.date<today).length} atrasado${reminders.filter(item=>item.date<today).length===1?'':'s'} · abrir para ver`:'Sem lembretes hoje';$('dashboardPlannerSummary').textContent=todayTasks.length?todayTasks[0].title:'Sem tarefas hoje';$('dashboardPlannerCount').textContent=`${todayTasks.length} tarefa${todayTasks.length===1?'':'s'} em aberto`;
     if($('dashboardDetailDialog')?.open)renderDashboardDetail($('dashboardDetailDialog').dataset.dashboardKind||'open');
   }
-  function dashboardTaskRows(items){return items.length?`<div class="dashboard-open-list">${items.map(task=>`<button class="dashboard-open-row" type="button" data-dashboard-open-task="${escapeHTML(task.id)}"><span class="dashboard-open-row-title">${escapeHTML(task.title)}</span><small>${escapeHTML(getTag(task.tagId).name)}${task.executionDate?` · ${escapeHTML(formatDate(task.executionDate,{day:'2-digit',month:'2-digit',year:'numeric'}))}`:''}</small><span aria-hidden="true">›</span></button>`).join('')}</div>`:'<p class="dashboard-open-empty">Nenhuma tarefa aberta.</p>';}
+  function sortTodayPlannerTasks(list){return list.sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0)||taskOrder(a,b));}
+  function dashboardTaskRows(items,allowReorder=false){return items.length?`<div class="dashboard-open-list">${items.map(task=>`<button class="dashboard-open-row${allowReorder?' is-reorderable':''}" type="button" ${allowReorder?'data-dashboard-open-task="'+escapeHTML(task.id)+'"':'data-dashboard-open-task="'+escapeHTML(task.id)+'"'} aria-label="${escapeHTML(task.title)}"><span class="dashboard-open-row-title">${escapeHTML(task.title)}</span><small>${escapeHTML(getTag(task.tagId).name)}${task.executionDate?` · ${escapeHTML(formatDate(task.executionDate,{day:'2-digit',month:'2-digit',year:'numeric'}))}`:''}</small>${allowReorder?`<span class="dashboard-open-row-grip" draggable="true" data-touch-drag-task="${escapeHTML(task.id)}" aria-label="Arrastar tarefa" title="Arraste ou toque e segure para ordenar">⠿</span>`:''}<span class="dashboard-open-row-chevron" aria-hidden="true">›</span></button>`).join('')}</div>`:'<p class="dashboard-open-empty">Nenhuma tarefa aberta.</p>'; }
   function dashboardEventRows(events){return events.length?`<div class="dashboard-open-list">${events.map(event=>{const when=event.allDay?'Dia todo':calendarEventTimeLabel(event);return `<div class="dashboard-open-row dashboard-detail-event"><button class="dashboard-detail-event-main" type="button" data-dashboard-event-date="${escapeHTML(event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt)))}"><span class="dashboard-open-row-title">${escapeHTML(event.title)}</span><small>${escapeHTML([dashboardEventDateLabel(event),when,event.location].filter(Boolean).join(' · '))}</small></button>${calendarEventCompleteButton(event)}</div>`;}).join('')}</div>`:'<p class="dashboard-open-empty">Nenhum evento em aberto.</p>';}
   function dashboardReminderRows(items){return items.length?`<div class="dashboard-open-list">${items.map(({task,date})=>`<div class="dashboard-open-row dashboard-detail-event"><button class="dashboard-detail-event-main" type="button" data-dashboard-task="${escapeHTML(task.id)}"><span class="dashboard-open-row-title">${escapeHTML(task.title)}</span><small>${date<todayKey()?`ATRASADO · ${escapeHTML(formatDate(date,{day:'2-digit',month:'2-digit'}))}`:'HOJE'}</small></button><button class="kanban-complete-btn reminder-complete" type="button" data-dashboard-reminder-complete="${escapeHTML(task.id)}" aria-pressed="false" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir lembrete">✓</button></div>`).join('')}</div>`:'<p class="dashboard-open-empty">Nenhum lembrete atrasado ou para hoje.</p>';}
-  function dashboardGroup(title,items,kind='tasks'){const body=kind==='events'?dashboardEventRows(items):kind==='reminders'?dashboardReminderRows(items):dashboardTaskRows(items);return `<section class="dashboard-open-group"><h3>${title}<span>${items.length}</span></h3>${body}</section>`;}
+  function dashboardGroup(title,items,kind='tasks'){const body=kind==='events'?dashboardEventRows(items):kind==='reminders'?dashboardReminderRows(items):dashboardTaskRows(items,kind==='today');return `<section class="dashboard-open-group"><h3>${title}<span>${items.length}</span></h3>${body}</section>`;}
   function renderDashboardDetail(kind='open'){
     const today=todayKey(),tomorrow=addDays(today,1),open=tasks.filter(task=>!task.deletedAt&&!task.completedAt&&!isReminderTask(task)),reminders=dashboardReminderTasks();let title='Tarefas e projetos em aberto',groups=[];
     if(kind==='open')groups=[['ATRASADAS',sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<today))],['HOJE',open.filter(task=>task.executionDate===today).sort(taskOrder)],['FUTURAS',open.filter(task=>task.executionDate>today).sort(taskOrder)],['SEM DATA',open.filter(task=>!task.executionDate).sort(taskOrder)]].map(([name,items])=>dashboardGroup(name,items));
     else if(kind==='overdue'){title='Tarefas atrasadas';groups=[dashboardGroup('ATRASADAS',sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<today)))];}
-    else if(kind==='today'||kind==='planner'){title='Planner de hoje';groups=[dashboardGroup('HOJE',open.filter(task=>task.executionDate===today).sort(taskOrder))];}
+    else if(kind==='today'||kind==='planner'){title='Planner de hoje';groups=[dashboardGroup('HOJE',sortTodayPlannerTasks(open.filter(task=>task.executionDate===today)),'today')];}
     else if(kind==='reminders'){title='Lembretes atrasados e de hoje';groups=[dashboardGroup('ATRASADOS E HOJE',reminders,'reminders')];}
     else if(kind==='agenda'){title='Agenda';const todayEvents=getCalendarEventsForDate(today).filter(event=>!calendarEventIsCompleted(event)),tomorrowEvents=getCalendarEventsForDate(tomorrow).filter(event=>!calendarEventIsCompleted(event));groups=[dashboardGroup('HOJE',todayEvents,'events'),dashboardGroup('AMANHÃ',tomorrowEvents,'events'),dashboardGroup('FUTURAS',dashboardFutureEvents(),'events')];}
     $('dashboardDetailTitle').textContent=title;$('dashboardDetailContent').innerHTML=groups.join('');$('dashboardDetailDialog').dataset.dashboardKind=kind;
   }
   function handleDashboardDetailClick(event){
+    if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();event.stopPropagation();return;}
     if(event.target.closest('#closeDashboardDetailDialog')){$('dashboardDetailDialog').close();return;}
     const completeEvent=event.target.closest('[data-calendar-event-complete]');if(completeEvent){event.preventDefault();event.stopPropagation();toggleCalendarEventCompletion(completeEvent.dataset.calendarEventComplete);return;}
     const reminderComplete=event.target.closest('[data-dashboard-reminder-complete]');if(reminderComplete){openKanbanTaskCompletionConfirm(reminderComplete.dataset.dashboardReminderComplete);return;}
@@ -2109,9 +2111,9 @@
     if(floatingActionMenu&&!event.target.closest('.floating-action-menu'))closeFloatingActionMenu();
   }
   function handleDragStart(event) {
-    const card=event.target.closest('.task-card[data-task-id]');
+    const card=event.target.closest('.task-card[data-task-id],.dashboard-open-row[data-dashboard-open-task]');
     if (!card || event.target.closest('.task-menu')) { event.preventDefault(); return; }
-    const task=tasks.find(item=>item.id===card.dataset.taskId && !item.deletedAt && (!item.completedAt||card.closest('#kanbanBoard,#kanbanColumnDialog')));
+    const taskId=card.dataset.taskId||card.dataset.dashboardOpenTask;const task=tasks.find(item=>item.id===taskId && !item.deletedAt && (!item.completedAt||card.closest('#kanbanBoard,#kanbanColumnDialog')));
     if (!task) { event.preventDefault(); return; }
     dragTaskId=task.id;dragTaskFromMyDay=Boolean(card.closest('.my-day-task'));card.classList.add('is-dragging');
     if (event.dataTransfer) { event.dataTransfer.effectAllowed='move'; event.dataTransfer.setData('text/plain',dragTaskId); }
@@ -2119,20 +2121,20 @@
   function clearDropStyles() { document.querySelectorAll('.drop-active,.is-dragging').forEach(node=>node.classList.remove('drop-active','is-dragging')); }
   function handleDragOver(event) {
     if (!dragTaskId) return;
-    const targetCard=event.target.closest('.task-card[data-task-id]');
+    const targetCard=event.target.closest('.task-card[data-task-id],.dashboard-open-row[data-dashboard-open-task]');
     const destination=event.target.closest('[data-my-day-drop],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
     if(!targetCard&&!destination)return;
     event.preventDefault();(targetCard||destination)?.classList.add('drop-active');
   }
   function performTaskDrop(id,target,fromMyDay=false) {
     if(!target)return;
-    const targetCard=target.closest('.task-card[data-task-id]'),myDay=target.closest('[data-my-day-drop]'),completed=target.closest('#completedPanel,#completedList,#completedBtn'),kanbanLane=target.closest('.kanban-column[data-kanban-column]'),day=target.closest('.day-column[data-date]'),overdueColumn=target.closest('.day-column[data-kind="overdue"]'),planning=target.closest('#planningPanel,#planningList,#planningBtn'),dayList=target.closest('#dayDialogList');
+    const targetCard=target.closest('.task-card[data-task-id],.dashboard-open-row[data-dashboard-open-task]'),myDay=target.closest('[data-my-day-drop]'),completed=target.closest('#completedPanel,#completedList,#completedBtn'),kanbanLane=target.closest('.kanban-column[data-kanban-column]'),day=target.closest('.day-column[data-date]'),overdueColumn=target.closest('.day-column[data-kind="overdue"]'),planning=target.closest('#planningPanel,#planningList,#planningBtn'),dayList=target.closest('#dayDialogList');
     if(myDay){setMyDayTask(id,targetCard?.dataset.taskId||'');return;}
     if(fromMyDay){removeMyDayTask(id);return;}
     if(kanbanLane){const state=kanbanLane.dataset.kanbanColumn;if(!['todo','doing','blocked','done'].includes(state))return;if(state==='done'&&target.closest('#kanbanColumnDialog')){const task=tasks.find(item=>item.id===String(id));if(task&&!task.completedAt){openKanbanTaskCompletionConfirm(task.id);$('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog='done';}return;}finishKanbanDrop(id,state==='side'?'done':state);return;}
     if(completed){const task=tasks.find(item=>item.id===String(id)&&!item.deletedAt&&!item.completedAt);if(task){const nextDate=toggleComplete(id,true);showTaskCompletionToast(nextDate);}return;}
     if(overdueColumn||dayList&&activeDayKind==='all-overdue')reorderOverdueTaskBefore(id,targetCard?.dataset.taskId||'');
-    else if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId);
+    else if(targetCard)reorderTaskBefore(id,targetCard.dataset.taskId||targetCard.dataset.dashboardOpenTask);
     else if(day)appendTaskToBucket(id,day.dataset.date);
     else if(planning)appendTaskToBucket(id,'');
     else if(dayList&&activeDayKind==='day')appendTaskToBucket(id,activeDayDate);
@@ -2140,7 +2142,7 @@
   function handleDrop(event) {
     if(!dragTaskId)return;
     const id=dragTaskId,fromMyDay=dragTaskFromMyDay;dragTaskId='';dragTaskFromMyDay=false;clearDropStyles();
-    if(!event.target.closest('.task-card[data-task-id],[data-my-day-drop],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList'))return;
+    if(!event.target.closest('.task-card[data-task-id],.dashboard-open-row[data-dashboard-open-task],[data-my-day-drop],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList'))return;
     event.preventDefault();performTaskDrop(id,event.target,fromMyDay);
   }
   function handleDragEnd() { dragTaskId='';dragTaskFromMyDay=false;clearDropStyles(); }
@@ -2197,7 +2199,7 @@
     document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
     if(!target)return;
     let destination;
-    if(drag.kind==='task')destination=target.closest('.task-card[data-task-id],[data-my-day-drop],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
+    if(drag.kind==='task')destination=target.closest('.task-card[data-task-id],.dashboard-open-row[data-dashboard-open-task],[data-my-day-drop],.kanban-column[data-kanban-column],.day-column[data-date],.day-column[data-kind="overdue"],#planningPanel,#planningBtn,#completedPanel,#completedBtn,#dayDialogList');
     else if(drag.kind==='checklist'){
       const sourceGroup=drag.card.closest('[data-task-checklist-group]'),targetGroup=target.closest('[data-task-checklist-group]');
       if(sourceGroup&&targetGroup&&sourceGroup.dataset.taskChecklistGroup===targetGroup.dataset.taskChecklistGroup)destination=target.closest('[data-task-checklist-row]')||targetGroup;
@@ -2218,9 +2220,9 @@
     if(event.pointerType==='mouse'||event.pointerType==='touch'||event.button!==0||pointerDrag)return;
     const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]');
     if(!taskHandle&&!noteHandle&&!checklistHandle)return;
-    const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
+    const kind=taskHandle?'task':noteHandle?'note':'checklist',card=taskHandle?taskHandle.closest('.task-card[data-task-id],.dashboard-open-row[data-dashboard-open-task]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    event.preventDefault();pointerDrag={kind,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
+    event.preventDefault();pointerDrag={kind,id:taskHandle?(taskHandle.dataset.touchDragTask||card.dataset.dashboardOpenTask||card.dataset.taskId):noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,pointerId:event.pointerId,source:'pointer',card,wasDraggable:card.getAttribute('draggable')};
     card.setAttribute('draggable','false');card.classList.add('is-dragging');try{event.target.setPointerCapture(event.pointerId);}catch{}
   }
   function movePointerDrag(event) {
@@ -2241,9 +2243,9 @@
     if(pointerDrag||touchDragPending||event.touches?.length!==1)return;
     const taskHandle=event.target.closest('[data-touch-drag-task]'),noteHandle=event.target.closest('[data-touch-drag-note]'),checklistHandle=event.target.closest('[data-task-checklist-drag]'),touch=event.changedTouches?.[0];
     if((!taskHandle&&!noteHandle&&!checklistHandle)||!touch)return;
-    const kind=taskHandle?'task':noteHandle?'note':'checklist',handle=taskHandle||noteHandle||checklistHandle,card=taskHandle?taskHandle.closest('.task-card[data-task-id]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
+    const kind=taskHandle?'task':noteHandle?'note':'checklist',handle=taskHandle||noteHandle||checklistHandle,card=taskHandle?taskHandle.closest('.task-card[data-task-id],.dashboard-open-row[data-dashboard-open-task]'):noteHandle?noteHandle.closest('.note-card[data-note-id]'):checklistHandle.closest('[data-task-checklist-row]');
     if(!card)return;
-    const pending={kind,handle,card,id:taskHandle?taskHandle.dataset.touchDragTask:noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,startX:touch.clientX,startY:touch.clientY,wasDraggable:card.getAttribute('draggable')};
+    const pending={kind,handle,card,id:taskHandle?(taskHandle.dataset.touchDragTask||card.dataset.dashboardOpenTask||card.dataset.taskId):noteHandle?noteHandle.dataset.touchDragNote:card.dataset.checklistId,touchId:touch.identifier,startX:touch.clientX,startY:touch.clientY,wasDraggable:card.getAttribute('draggable')};
     // Disable native HTML5 touch dragging immediately; the custom long-press path owns the gesture.
     card.setAttribute('draggable','false');
     pending.timer=setTimeout(()=>{
@@ -2835,7 +2837,7 @@
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
     setPage(button.dataset.page);
   });
-  $('dashboardPage').addEventListener('click',handleDashboardClick);$('dashboardDetailDialog').addEventListener('click',handleDashboardDetailClick);
+  $('dashboardPage').addEventListener('click',handleDashboardClick);$('dashboardDetailDialog').addEventListener('click',handleDashboardDetailClick);$('dashboardDetailDialog').addEventListener('dragstart',handleDragStart);$('dashboardDetailDialog').addEventListener('dragover',handleDragOver);$('dashboardDetailDialog').addEventListener('drop',handleDrop);
   function handleKanbanChange(event){
     const control=event.target.closest('[data-kanban-state]');if(!control)return;
     const taskId=control.dataset.kanbanState,choice=control.value;
