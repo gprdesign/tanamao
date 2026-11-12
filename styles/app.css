@@ -433,3 +433,8 @@ body[data-page="dashboard"] .wrap{padding:10px 18px 0;}
 body[data-page="dashboard"] #dashboardPage.active{flex:1 1 0;height:auto;min-height:0;overflow:hidden;padding-bottom:0;}
 body.nav-dock-hidden .page.active{padding-bottom:10px;}
 @media(max-width:700px){.wrap{padding:8px 8px 0;}body[data-page="dashboard"] .wrap{padding:8px 8px 0;}.page.active{padding-bottom:calc(78px + env(safe-area-inset-bottom,0px));}}
+/* Right-side utility rail: refresh above the dock toggle, both at the screen corner */
+.main-nav-dock-toggle{right:calc(12px + env(safe-area-inset-right,0px))!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;}
+.refresh-sync-btn{right:calc(12px + env(safe-area-inset-right,0px))!important;bottom:calc(64px + env(safe-area-inset-bottom,0px))!important;}
+.main-nav{padding-right:58px;}
+@media(min-width:701px){.main-nav-dock-toggle{right:calc(12px + env(safe-area-inset-right,0px))!important;}.refresh-sync-btn{right:calc(12px + env(safe-area-inset-right,0px))!important;}}
