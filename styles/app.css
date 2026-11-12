@@ -627,3 +627,14 @@ body.view-mobile[data-page="tasks"] #kanbanBoard{display:grid!important;flex:1 1
 body[data-theme="light"].view-mobile[data-page="tasks"] .mobile-kanban-tile{background:linear-gradient(145deg,#f2f5fa,#fff 78%)!important;border-color:#d4dce8!important;color:#192438!important;}
 body[data-theme="light"].view-mobile[data-page="tasks"] .mobile-kanban-tile-head b{background:#e6edf8!important;border-color:#c5d2e5!important;color:#192438!important;font-size:.9rem;}
 body.view-mobile[data-page="tasks"] .mobile-kanban-tile-head b{min-width:32px;height:32px;font-size:.9rem;font-variant-numeric:tabular-nums;}
+/* Restore full contrast and compact Kanban typography inside mobile fullscreen popups */
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-event-section,body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-section{opacity:1!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-empty,body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-event-section h4,body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-section h4{color:var(--text)!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-heading,body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-title,body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-event-title{color:var(--text)!important;opacity:1!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-task .task-title,body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-task .task-open{font-size:.75rem!important;line-height:1.25!important;}
+body.view-mobile[data-page="tasks"] .kanban-fullscreen-head h2{font-size:1rem!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-event-item{font-size:.62rem!important;line-height:1.3!important;color:var(--text)!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-event-time{font-size:.58rem!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-badge{font-size:.52rem!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-item{background:#111827!important;color:var(--text)!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-today .kanban-reminder-item{background:#282414!important;color:#ffe0a1!important;}
