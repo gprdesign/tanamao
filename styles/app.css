@@ -402,3 +402,6 @@ body[data-theme="light"] #dashboardPage .countdown-card{background:linear-gradie
 /* Slightly larger event date/time line in dashboard cards */
 #dashboardPage .countdown-date-heading{font-size:clamp(.74rem,1.05vw,.95rem);}
 @media(max-width:700px){#dashboardPage .countdown-date-heading{font-size:clamp(.56rem,2.8vw,.74rem);}}
+/* Make both pinned and upcoming event date/time headers visibly readable */
+#dashboardPage .countdown-event-heading .countdown-label,#dashboardPage .countdown-date-heading{font-size:clamp(.95rem,1.2vw,1.12rem);}
+@media(max-width:700px){#dashboardPage .countdown-event-heading .countdown-label,#dashboardPage .countdown-date-heading{font-size:clamp(.68rem,3.5vw,.84rem);}}
