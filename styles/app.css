@@ -334,6 +334,8 @@ body[data-theme="light"] #dashboardPage .dashboard-tile{background:linear-gradie
 /* DASH: paired rows fill the viewport without an internal scroll area */
 #dashboardPage.active{display:flex;flex:1 1 0;flex-direction:column;gap:clamp(5px,1vh,12px);height:100%;min-height:0;overflow:hidden;overscroll-behavior:none;padding:2px 2px 0;}
 #dashboardPage .dashboard-heading{flex:0 0 auto;margin:0;}
+#dashboardPage .dashboard-sync-hint{display:block;margin-top:3px;color:var(--muted);font-size:.66rem;}
+#dashboardPage .dashboard-calendar-refresh{flex:none;min-width:40px;min-height:40px;font-size:1.15rem;}
 #dashboardPage .dashboard-date{margin:1px 0 0;font-size:.72rem;}
 #dashboardPage .dashboard-tiles{display:grid;flex:0 1 auto;width:min(100%,calc((100dvh - 180px)*2/3));aspect-ratio:2/3;min-height:0;margin-inline:auto;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:clamp(5px,1vh,12px);align-content:stretch;}
 #dashboardPage .dashboard-tile{width:100%;height:100%;min-height:0;aspect-ratio:1/1;gap:clamp(3px,.7vh,9px);padding:clamp(7px,1.3vw,16px);border-radius:clamp(9px,1.2vw,15px);}
@@ -357,3 +359,20 @@ body[data-page="dashboard"] .wrap{overflow:hidden;}
 #dashboardDetailDialog .dashboard-open-row-chevron{grid-column:3;grid-row:1 / span 2;color:var(--muted);font-size:1.1rem;}
 #dashboardDetailDialog .dashboard-open-row.is-dragging{opacity:.45;outline:2px dashed #f1c75b;}
 #dashboardDetailDialog .dashboard-open-row.drop-active{outline:2px solid #f1c75b;outline-offset:1px;}
+
+/* DASH: próximos três eventos com contador ao vivo e grade responsiva */
+#dashboardPage.active{display:flex!important;flex:1 1 auto;flex-direction:column;gap:clamp(8px,1.5vh,18px);min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 2px calc(92px + env(safe-area-inset-bottom,0px));}
+#dashboardPage .dashboard-heading{flex:0 0 auto;margin:0;}
+#dashboardPage .dashboard-sync-hint{display:block;margin-top:3px;color:var(--muted);font-size:.66rem;}
+#dashboardPage .dashboard-calendar-refresh{flex:none;min-width:40px;min-height:40px;font-size:1.15rem;}
+#dashboardPage .dashboard-date{margin:3px 0 0;color:var(--muted);font-size:.78rem;text-transform:capitalize;}
+#dashboardPage .dashboard-tiles{display:grid;flex:0 1 auto;width:100%;min-height:0;margin:0;aspect-ratio:auto;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));grid-template-rows:none;align-content:start;gap:clamp(10px,1.5vw,20px);}
+#dashboardPage .countdown-card{display:flex;width:100%;height:auto;min-height:0;aspect-ratio:1/1;gap:clamp(8px,1.1vw,15px);padding:clamp(14px,2vw,26px);border-top-width:4px;border-radius:clamp(14px,1.5vw,20px);cursor:default;}
+#dashboardPage .countdown-label{color:var(--tile-accent);font-size:clamp(.62rem,.9vw,.8rem);font-weight:900;letter-spacing:.1em;}
+#dashboardPage .countdown-title{display:-webkit-box;overflow:hidden;font-size:clamp(1.1rem,2.2vw,1.8rem);line-height:1.2;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow-wrap:anywhere;}
+#dashboardPage .countdown-value{display:block;color:var(--tile-accent);font-size:clamp(1.35rem,2.65vw,2.3rem);font-weight:900;line-height:1.1;letter-spacing:-.035em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+#dashboardPage .countdown-date{display:block;max-height:3.2em;overflow:hidden;color:var(--muted);font-size:clamp(.68rem,.95vw,.84rem);line-height:1.45;overflow-wrap:anywhere;}
+#dashboardPage .dashboard-countdown-empty{grid-column:1/-1;padding:18px 14px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);font-size:.86rem;text-align:center;}
+@media(max-width:700px){#dashboardPage.active{gap:8px;padding:2px 1px calc(88px + env(safe-area-inset-bottom,0px));}#dashboardPage .dashboard-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}#dashboardPage .countdown-card{gap:clamp(6px,1.5vw,10px);padding:clamp(9px,2.4vw,14px);border-radius:12px;}#dashboardPage .countdown-label{font-size:clamp(.5rem,2.4vw,.65rem);}#dashboardPage .countdown-title{font-size:clamp(.88rem,4.3vw,1.2rem);-webkit-line-clamp:3;}#dashboardPage .countdown-value{font-size:clamp(1rem,5vw,1.5rem);}#dashboardPage .countdown-date{font-size:clamp(.57rem,2.7vw,.7rem);}}
+@media(max-width:360px){#dashboardPage .dashboard-tiles{gap:6px;}#dashboardPage .countdown-card{padding:8px;}}
+body[data-theme="light"] #dashboardPage .countdown-card{background:linear-gradient(145deg,color-mix(in srgb,var(--tile-accent) 10%,#fff),#fff 76%);}

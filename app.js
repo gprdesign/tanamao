@@ -94,6 +94,7 @@
   let calendarStatusFailed=false;
   let calendarLastSyncAt=String(readStored(CALENDAR_SYNC_META_KEY,'')||'');
   let calendarAutoSyncTimer=null;
+  let dashboardCountdownTimer=null;
   let session = readStored(SESSION_KEY,null);
   const storedViewMode=localStorage.getItem(VIEW_MODE_KEY);
   const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
@@ -282,7 +283,7 @@
     renderCalendarFilters();return availableGoogleCalendars;
   }
   async function fetchGoogleCalendarEvents(token,calendar){
-    const base=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events`,weekBeginning=new Date(`${startOfWeek(todayKey())}T00:00:00`),params=new URLSearchParams({timeMin:weekBeginning.toISOString(),timeMax:new Date(Date.now()+30*86400000).toISOString(),singleEvents:'true',orderBy:'startTime',maxResults:'2500',showDeleted:'false'}),events=[];
+    const base=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events`,weekBeginning=new Date(`${startOfWeek(todayKey())}T00:00:00`),params=new URLSearchParams({timeMin:weekBeginning.toISOString(),timeMax:new Date(Date.now()+365*86400000).toISOString(),singleEvents:'true',orderBy:'startTime',maxResults:'2500',showDeleted:'false'}),events=[];
     while(true){const data=await googleCalendarApi(`${base}?${params.toString()}`,token);for(const event of Array.isArray(data.items)?data.items:[])events.push({...event,id:`${calendar.id}:${event.id||makeId()}`,calendarId:calendar.id,summary:event.summary||calendar.summary});if(!data.nextPageToken)break;params.set('pageToken',data.nextPageToken);}
     return events;
   }
@@ -299,9 +300,9 @@
       if(!selected.length){setCalendarStatus('Nenhuma agenda selecionada para sincronizar.');return;}
       const batches=await Promise.all(selected.map(calendar=>fetchGoogleCalendarEvents(token,calendar))),events=batches.flat();
       setCalendarEvents(events);calendarLastSyncAt=nowISO();localStorage.setItem(CALENDAR_SYNC_META_KEY,JSON.stringify(calendarLastSyncAt));
-      setCalendarStatus(`Sincronizado às ${new Date(calendarLastSyncAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${getUpcomingCalendarEvents().length} eventos nos próximos 30 dias.`);
+      setCalendarStatus(`Sincronizado às ${new Date(calendarLastSyncAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${getUpcomingCalendarEvents().length} eventos nos próximos 12 meses.`);
     }catch(error){setCalendarStatus(`Não consegui sincronizar: ${error?.message||'erro desconhecido'}`,true);}
-    finally{calendarSyncInProgress=false;renderCalendarSyncUI();}
+    finally{calendarSyncInProgress=false;renderCalendarSyncUI();if(currentPage==='dashboard')renderDashboard();}
   }
   async function connectGoogleCalendar(){
     if(!GOOGLE_CALENDAR_CLIENT_ID){setCalendarStatus('Falta configurar a conexão OAuth do Google Calendar.',true);return;}
@@ -701,7 +702,7 @@
     if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
     if(page!=='notes'&&privateNotesUnlocked)void lockPrivateNotes();
     if(page!==currentPage){persistPageFilters();filterTagIds=[...selectedPageTags(page)];}
-    currentPage=page;localStorage.setItem(PAGE_KEY,page);document.body.dataset.page=page;
+    currentPage=page;if(page!=='dashboard'&&dashboardCountdownTimer){clearInterval(dashboardCountdownTimer);dashboardCountdownTimer=null;}localStorage.setItem(PAGE_KEY,page);document.body.dataset.page=page;
     document.querySelectorAll('.page').forEach(node=>{
       const active=node.id===`${page}Page`;node.classList.toggle('active',active);
       if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
@@ -711,7 +712,7 @@
     updateNavIndicator(page);renderFilterButton();
     if(page==='home'){renderHome();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
     if(page==='tasks'){renderTasks();setPlannerSubpage('kanban',false);}
-    if(page==='dashboard'){renderDashboard();}
+    if(page==='dashboard'){renderDashboard();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
     if(page==='finance'){renderFinancePage();void refreshFinanceCloudData();}
     if(page==='notes'){renderNotes();renderNotesMode();}
     if(page==='settings'){updateAuthUI();renderSettings();}
@@ -1156,44 +1157,54 @@
   function openGlobalSearch(){const dialog=$('globalSearchDialog');if(!dialog.open)showAppDialog(dialog);requestAnimationFrame(()=>{$('globalSearchInput').focus();$('globalSearchInput').select();});}
   function handleGlobalSearchOpen(event){const button=event.target.closest('[data-global-open]');if(!button)return;const kind=button.dataset.globalOpen,id=button.dataset.id,date=button.dataset.date;$('globalSearchDialog').close();if(kind==='task'){setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(id);return;}if(kind==='note'){setPage('notes');setNotesMode('public');openNoteDialog(id);return;}if(kind==='private-note'){if(!privateNotesUnlocked){showToast('Desbloqueie o cofre para abrir esta nota.');return;}setPage('notes');setNotesMode('private');openPrivateNoteEditor(id);return;}if(kind==='finance'){setPage('finance');openFinanceDialog(id);return;}if(kind==='calendar'&&isDateKey(date)){setPage('tasks');setPlannerSubpage('kanban',false);setWeek(date);openDayDialog(date);return;}const results=globalSearchRun($('globalSearchInput').value),row=results.get(button.dataset.group)?.[Number(button.dataset.index)];if(row){$('globalSearchDetailTitle').textContent=row.label||button.dataset.group;$('globalSearchDetailBody').textContent=[row.title,row.meta,row.summary].filter(Boolean).join('\n\n');showAppDialog($('globalSearchDetailDialog'));}}
   function renderAll() { renderTasks(); renderHome(); renderDashboard(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
-  function dashboardReminderTasks(){
-    const today=todayKey(),reminderTagIds=new Set(tags.filter(tag=>!tag.deletedAt&&['LEMBRETE','LEMBRETES'].includes(String(tag.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleUpperCase('pt-BR'))).map(tag=>String(tag.id)));
-    return tasks.filter(task=>!task.deletedAt&&!task.completedAt&&(task.recurrence||reminderTagIds.has(String(task.tagId)))).map(task=>({task,date:task.executionDate||task.recurrence?.anchorDate||''})).filter(item=>item.date&&item.date<=today).sort((a,b)=>a.date.localeCompare(b.date)||taskOrder(a.task,b.task));
+  function dashboardCountdownLabel(event,now=Date.now()){
+    const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));
+    if(event.allDay){
+      const days=Math.max(0,Math.ceil((dateAtNoon(date).getTime()-dateAtNoon(todayKey()).getTime())/86400000));
+      return {main:days===0?'HOJE':`${days} ${days===1?'DIA':'DIAS'}`,detail:'Evento de dia todo'};
+    }
+    const remaining=Math.max(0,Math.floor((Date.parse(event.startAt)-now)/1000));
+    const days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60),seconds=remaining%60;
+    const pad=value=>String(value).padStart(2,'0');
+    return {main:days?`${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`:`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`,detail:'FALTAM'};
   }
-  function dashboardFutureEvents(){const today=todayKey(),tomorrow=addDays(today,1);return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>!calendarEventIsDismissed(event)&&!calendarEventIsCompleted(event)&&(event.allDay?String(event.startAt).slice(0,10)>tomorrow:dateKey(new Date(event.startAt))>tomorrow)).sort(calendarEventOrder);}
-  function dashboardEventDateLabel(event){const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return date===todayKey()?'HOJE':date===addDays(todayKey(),1)?'AMANHÃ':formatDate(date,{weekday:'short',day:'2-digit',month:'2-digit'}).replace(/\./g,'').toLocaleUpperCase('pt-BR');}
+  function dashboardEventDateTime(event){
+    if(event.allDay)return formatDate(String(event.startAt).slice(0,10),{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    const date=new Date(event.startAt);
+    return `${formatDate(dateKey(date),{weekday:'long',day:'2-digit',month:'long',year:'numeric'})} · ${date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+  }
+  function tickDashboardCountdowns(){
+    if(currentPage!=='dashboard'){
+      if(dashboardCountdownTimer){clearInterval(dashboardCountdownTimer);dashboardCountdownTimer=null;}
+      return;
+    }
+    const now=Date.now();
+    const shouldAdvance=calendarEvents.some(raw=>{const event=normalizeCalendarEvent(raw);if(!event||calendarEventIsCompleted(event)||calendarEventIsDismissed(event))return false;if(event.allDay)return String(event.endAt||event.startAt).slice(0,10)<=todayKey()&&String(event.startAt).slice(0,10)<todayKey();return Number.isFinite(Date.parse(event.startAt))&&Date.parse(event.startAt)<now;});
+    if(shouldAdvance){renderDashboard();return;}
+    document.querySelectorAll('[data-countdown-event]').forEach(card=>{
+      const event=calendarEvents.find(item=>String(item.id)===card.dataset.countdownEvent);
+      const node=card.querySelector('[data-countdown-value]');
+      if(event&&node)node.textContent=dashboardCountdownLabel(normalizeCalendarEvent(event),now).main;
+    });
+  }
+  function startDashboardCountdown(){
+    if(dashboardCountdownTimer)clearInterval(dashboardCountdownTimer);
+    dashboardCountdownTimer=null;
+    if(currentPage==='dashboard'&&document.querySelector('[data-countdown-event]'))dashboardCountdownTimer=window.setInterval(tickDashboardCountdowns,1000);
+  }
   function renderDashboard(){
-    if(!$('dashboardDate'))return;
-    const today=todayKey(),all=tasks.filter(task=>!task.deletedAt),todayTasks=all.filter(task=>!task.completedAt&&!isReminderTask(task)&&task.executionDate===today).sort(taskOrder),open=all.filter(task=>!task.completedAt&&!isReminderTask(task)),overdue=open.filter(task=>task.executionDate&&task.executionDate<today),reminders=dashboardReminderTasks(),todayReminders=reminders.filter(item=>item.date===today),events=getCalendarEventsForDate(today).filter(event=>!calendarEventIsCompleted(event));
-    $('dashboardDate').textContent=formatDate(today,{weekday:'long',day:'2-digit',month:'long'});
-    $('dashboardOpenCount').textContent=String(open.length);$('dashboardOverdueCount').textContent=String(overdue.length);$('dashboardTodayCount').textContent=String(todayTasks.length);$('dashboardReminderCount').textContent=String(todayReminders.length);
-    $('dashboardAgendaSummary').textContent=events.length?events[0].title:'Sem evento hoje';$('dashboardReminderSummary').textContent=todayReminders.length?todayReminders[0].task.title:reminders.length?`${reminders.filter(item=>item.date<today).length} atrasado${reminders.filter(item=>item.date<today).length===1?'':'s'} · abrir para ver`:'Sem lembretes hoje';$('dashboardPlannerSummary').textContent=todayTasks.length?todayTasks[0].title:'Sem tarefas hoje';$('dashboardPlannerCount').textContent=`${todayTasks.length} tarefa${todayTasks.length===1?'':'s'} em aberto`;
-    if($('dashboardDetailDialog')?.open)renderDashboardDetail($('dashboardDetailDialog').dataset.dashboardKind||'open');
+    const dateNode=$('dashboardDate'),container=$('dashboardCountdowns');
+    if(!dateNode||!container)return;
+    dateNode.textContent=formatDate(todayKey(),{weekday:'long',day:'2-digit',month:'long'});
+    const hint=$('dashboardSyncHint');if(hint){const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null;hint.textContent=last&&!Number.isNaN(last.getTime())?`Agenda sincronizada às ${last.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:'Toque em ↻ para atualizar a agenda';}
+    const primaryPrefix='giovanni.p.rimoli@gmail.com:';
+    const events=getUpcomingCalendarEvents().filter(event=>String(event.id).startsWith(primaryPrefix)&&!calendarEventIsCompleted(event)&&!calendarEventIsDismissed(event)&&!calendarEventIsPast(event)).slice(0,3);
+    container.innerHTML=events.length?events.map((event,index)=>{
+      const countdown=dashboardCountdownLabel(event),date=dashboardEventDateTime(event);
+      return `<article class="dashboard-tile countdown-card" data-countdown-event="${escapeHTML(event.id)}" style="--tile-accent:${['#79aaff','#ffbd69','#be9aff'][index]}"><span class="countdown-label">PRÓXIMO EVENTO ${index+1}</span><strong class="countdown-title">${escapeHTML(event.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(countdown.main)}</div><small class="countdown-date">${escapeHTML(date)}${event.location?` · ${escapeHTML(event.location)}`:''}</small></article>`;
+    }).join(''):'<div class="dashboard-countdown-empty">Nenhum evento futuro nas agendas sincronizadas do Google Calendar.</div>';
+    startDashboardCountdown();
   }
-  function sortTodayPlannerTasks(list){return list.sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0)||taskOrder(a,b));}
-  function dashboardTaskRows(items,allowReorder=false){return items.length?`<div class="dashboard-open-list">${items.map(task=>`<button class="dashboard-open-row${allowReorder?' is-reorderable':''}" type="button" ${allowReorder?'data-dashboard-open-task="'+escapeHTML(task.id)+'"':'data-dashboard-open-task="'+escapeHTML(task.id)+'"'} aria-label="${escapeHTML(task.title)}"><span class="dashboard-open-row-title">${escapeHTML(task.title)}</span><small>${escapeHTML(getTag(task.tagId).name)}${task.executionDate?` · ${escapeHTML(formatDate(task.executionDate,{day:'2-digit',month:'2-digit',year:'numeric'}))}`:''}</small>${allowReorder?`<span class="dashboard-open-row-grip" draggable="true" data-touch-drag-task="${escapeHTML(task.id)}" aria-label="Arrastar tarefa" title="Arraste ou toque e segure para ordenar">⠿</span>`:''}<span class="dashboard-open-row-chevron" aria-hidden="true">›</span></button>`).join('')}</div>`:'<p class="dashboard-open-empty">Nenhuma tarefa aberta.</p>'; }
-  function dashboardEventRows(events){return events.length?`<div class="dashboard-open-list">${events.map(event=>{const when=event.allDay?'Dia todo':calendarEventTimeLabel(event);return `<div class="dashboard-open-row dashboard-detail-event"><button class="dashboard-detail-event-main" type="button" data-dashboard-event-date="${escapeHTML(event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt)))}"><span class="dashboard-open-row-title">${escapeHTML(event.title)}</span><small>${escapeHTML([dashboardEventDateLabel(event),when,event.location].filter(Boolean).join(' · '))}</small></button>${calendarEventCompleteButton(event)}</div>`;}).join('')}</div>`:'<p class="dashboard-open-empty">Nenhum evento em aberto.</p>';}
-  function dashboardReminderRows(items){return items.length?`<div class="dashboard-open-list">${items.map(({task,date})=>`<div class="dashboard-open-row dashboard-detail-event"><button class="dashboard-detail-event-main" type="button" data-dashboard-task="${escapeHTML(task.id)}"><span class="dashboard-open-row-title">${escapeHTML(task.title)}</span><small>${date<todayKey()?`ATRASADO · ${escapeHTML(formatDate(date,{day:'2-digit',month:'2-digit'}))}`:'HOJE'}</small></button><button class="kanban-complete-btn reminder-complete" type="button" data-dashboard-reminder-complete="${escapeHTML(task.id)}" aria-pressed="false" aria-label="Concluir ${escapeHTML(task.title)}" title="Concluir lembrete">✓</button></div>`).join('')}</div>`:'<p class="dashboard-open-empty">Nenhum lembrete atrasado ou para hoje.</p>';}
-  function dashboardGroup(title,items,kind='tasks'){const body=kind==='events'?dashboardEventRows(items):kind==='reminders'?dashboardReminderRows(items):dashboardTaskRows(items,kind==='today');return `<section class="dashboard-open-group"><h3>${title}<span>${items.length}</span></h3>${body}</section>`;}
-  function renderDashboardDetail(kind='open'){
-    const today=todayKey(),tomorrow=addDays(today,1),open=tasks.filter(task=>!task.deletedAt&&!task.completedAt&&!isReminderTask(task)),reminders=dashboardReminderTasks();let title='Tarefas e projetos em aberto',groups=[];
-    if(kind==='open')groups=[['ATRASADAS',sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<today))],['HOJE',open.filter(task=>task.executionDate===today).sort(taskOrder)],['FUTURAS',open.filter(task=>task.executionDate>today).sort(taskOrder)],['SEM DATA',open.filter(task=>!task.executionDate).sort(taskOrder)]].map(([name,items])=>dashboardGroup(name,items));
-    else if(kind==='overdue'){title='Tarefas atrasadas';groups=[dashboardGroup('ATRASADAS',sortOverdueTasks(open.filter(task=>task.executionDate&&task.executionDate<today)))];}
-    else if(kind==='today'||kind==='planner'){title='Planner de hoje';groups=[dashboardGroup('HOJE',sortTodayPlannerTasks(open.filter(task=>task.executionDate===today)),'today')];}
-    else if(kind==='reminders'){title='Lembretes atrasados e de hoje';groups=[dashboardGroup('ATRASADOS E HOJE',reminders,'reminders')];}
-    else if(kind==='agenda'){title='Agenda';const todayEvents=getCalendarEventsForDate(today).filter(event=>!calendarEventIsCompleted(event)),tomorrowEvents=getCalendarEventsForDate(tomorrow).filter(event=>!calendarEventIsCompleted(event));groups=[dashboardGroup('HOJE',todayEvents,'events'),dashboardGroup('AMANHÃ',tomorrowEvents,'events'),dashboardGroup('FUTURAS',dashboardFutureEvents(),'events')];}
-    $('dashboardDetailTitle').textContent=title;$('dashboardDetailContent').innerHTML=groups.join('');$('dashboardDetailDialog').dataset.dashboardKind=kind;
-  }
-  function handleDashboardDetailClick(event){
-    if(event.target.closest('[data-touch-drag-task]')){event.preventDefault();event.stopPropagation();return;}
-    if(event.target.closest('#closeDashboardDetailDialog')){$('dashboardDetailDialog').close();return;}
-    const completeEvent=event.target.closest('[data-calendar-event-complete]');if(completeEvent){event.preventDefault();event.stopPropagation();toggleCalendarEventCompletion(completeEvent.dataset.calendarEventComplete);return;}
-    const reminderComplete=event.target.closest('[data-dashboard-reminder-complete]');if(reminderComplete){openKanbanTaskCompletionConfirm(reminderComplete.dataset.dashboardReminderComplete);return;}
-    const row=event.target.closest('[data-dashboard-open-task]');if(row){const id=row.dataset.dashboardOpenTask;$('dashboardDetailDialog').close();setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(id);return;}
-    const task=event.target.closest('[data-dashboard-task]');if(task){$('dashboardDetailDialog').close();setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(task.dataset.dashboardTask);return;}
-    const eventRow=event.target.closest('[data-dashboard-event-date]');if(eventRow){const day=eventRow.dataset.dashboardEventDate;$('dashboardDetailDialog').close();setPage('tasks');setPlannerSubpage('kanban',false);setWeek(day);openDayDialog(day);}
-  }
-  function handleDashboardClick(event){const card=event.target.closest('[data-dashboard-detail]');if(!card)return;const kind=card.dataset.dashboardDetail;renderDashboardDetail(kind);showAppDialog($('dashboardDetailDialog'));}
   function homeDateLabel(date) {
     const text=formatDate(date).replace(/\./g,'');
     const title=text.charAt(0).toLocaleUpperCase('pt-BR')+text.slice(1);
@@ -2837,7 +2848,7 @@
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
     setPage(button.dataset.page);
   });
-  $('dashboardPage').addEventListener('click',handleDashboardClick);$('dashboardDetailDialog').addEventListener('click',handleDashboardDetailClick);$('dashboardDetailDialog').addEventListener('dragstart',handleDragStart);$('dashboardDetailDialog').addEventListener('dragover',handleDragOver);$('dashboardDetailDialog').addEventListener('drop',handleDrop);
+  $('dashboardPage').addEventListener('click',event=>{if(event.target.closest('#dashboardCalendarSyncBtn'))void syncGoogleCalendar(true);});
   function handleKanbanChange(event){
     const control=event.target.closest('[data-kanban-state]');if(!control)return;
     const taskId=control.dataset.kanbanState,choice=control.value;
