@@ -1197,8 +1197,12 @@
       if(dashboardClockTimer){clearInterval(dashboardClockTimer);dashboardClockTimer=null;}
       return;
     }
-    const now=Date.now();
-    const shouldAdvance=calendarEvents.some(raw=>{const event=normalizeCalendarEvent(raw);if(!event||calendarEventIsCompleted(event)||calendarEventIsDismissed(event))return false;if(event.allDay)return String(event.endAt||event.startAt).slice(0,10)<=todayKey()&&String(event.startAt).slice(0,10)<todayKey();return Number.isFinite(Date.parse(event.startAt))&&Date.parse(event.startAt)<now;});
+    const now=Date.now(),today=todayKey();
+    const shouldAdvance=Array.from(document.querySelectorAll('[data-countdown-event]')).some(card=>{
+      const raw=calendarEvents.find(item=>String(item.id)===card.dataset.countdownEvent),event=raw?normalizeCalendarEvent(raw):null;
+      if(!event||calendarEventIsCompleted(event)||calendarEventIsDismissed(event))return false;
+      return event.allDay?String(event.startAt).slice(0,10)<today:Number.isFinite(Date.parse(event.startAt))&&Date.parse(event.startAt)<now;
+    });
     if(shouldAdvance){renderDashboard();return;}
     document.querySelectorAll('[data-countdown-event]').forEach(card=>{const event=calendarEvents.find(item=>String(item.id)===card.dataset.countdownEvent),node=card.querySelector('[data-countdown-value]');if(event&&node)node.textContent=dashboardCountdownLabel(normalizeCalendarEvent(event),now);});
     const clock=dashboardClockText(new Date(now));if($('dashboardClockTime'))$('dashboardClockTime').textContent=clock.time;if($('dashboardClockDate'))$('dashboardClockDate').textContent=clock.date;
