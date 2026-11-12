@@ -512,3 +512,6 @@ body.nav-dock-hidden[data-page="dashboard"] #dashboardPage.active{padding-bottom
 #dashboardPage .dashboard-week-agenda .dashboard-week-free{font-size:clamp(.68rem,.82vw,.84rem);}
 @media(max-width:700px){#dashboardPage .dashboard-week-column-heading{font-size:.64rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-day h3{font-size:.7rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event{grid-template-columns:40px minmax(0,1fr);}#dashboardPage .dashboard-week-agenda .dashboard-week-event time{font-size:.6rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event strong{font-size:.64rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-free{font-size:.62rem;}}
 @media(max-height:620px){#dashboardPage .dashboard-week-agenda .dashboard-week-day h3{font-size:.68rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event time{font-size:.61rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event strong{font-size:.66rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event small{font-size:.58rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-free{font-size:.62rem;}}
+
+/* Agenda starts at today and divides available height across the remaining days */
+#dashboardPage .dashboard-week-agenda{grid-template-rows:repeat(var(--dashboard-week-days,7),minmax(0,1fr));}
