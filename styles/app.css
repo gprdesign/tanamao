@@ -619,3 +619,8 @@ body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-state-
 body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-complete-btn{width:42px;height:42px;font-size:1rem;}
 body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-event-section,body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-section{margin-bottom:12px;}
 @media(max-width:390px){body.view-mobile[data-page="tasks"] #kanbanBoard,body.view-mobile[data-page="tasks"] .mobile-kanban-dashboard{gap:5px;}body.view-mobile[data-page="tasks"] .mobile-kanban-tile{padding:7px;gap:5px;}body.view-mobile[data-page="tasks"] .mobile-kanban-preview-line{font-size:.62rem;}}
+/* Mobile Kanban dashboard must occupy the usable viewport, not flow below it */
+body.view-mobile[data-page="tasks"] .wrap{display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important;overflow:hidden!important;padding-bottom:calc(132px + env(safe-area-inset-bottom,0px))!important;}
+body.view-mobile[data-page="tasks"] #tasksPage.active{display:flex!important;flex:1 1 0!important;height:auto!important;min-height:0!important;overflow:hidden!important;}
+body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]){display:flex!important;flex:1 1 0!important;width:100%!important;height:auto!important;min-height:0!important;overflow:hidden!important;}
+body.view-mobile[data-page="tasks"] #kanbanBoard{display:grid!important;flex:1 1 0!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;overflow:hidden!important;}
