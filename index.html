@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=28">
+  <link rel="stylesheet" href="./styles/app.css?v=29">
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -55,10 +55,11 @@
     </section>
 
     <section id="dashboardPage" class="page dashboard-page" aria-label="Relógio, evento escolhido e próximos eventos">
-      <header class="dashboard-heading"><div><p class="eyebrow">PRÓXIMOS EVENTOS</p><p class="dashboard-date" id="dashboardDate"></p><small class="dashboard-sync-hint" id="dashboardSyncHint" aria-live="polite"></small></div><button class="btn small dashboard-calendar-refresh" id="dashboardCalendarSyncBtn" type="button" aria-label="Atualizar eventos do Google Calendar" title="Atualizar eventos do Google Calendar">↻</button></header>
+      <header class="dashboard-heading"><div><p class="eyebrow">PRÓXIMOS EVENTOS</p><small class="dashboard-sync-hint" id="dashboardSyncHint" aria-live="polite"></small></div><div class="dashboard-header-actions"><button class="btn small dashboard-week-btn" id="dashboardWeekEventsBtn" type="button" aria-label="Ver eventos desta semana" title="Eventos da semana">SEMANA</button><button class="btn small dashboard-calendar-refresh" id="dashboardCalendarSyncBtn" type="button" aria-label="Atualizar calendários" title="Atualizar calendários">↻</button></div></header>
       <div class="dashboard-tiles" id="dashboardCountdowns" aria-live="polite" aria-label="Relógio, evento escolhido e dois próximos eventos da agenda principal do Google Calendar"></div>
     </section>
 
+    <dialog id="dashboardWeekEventsDialog" class="app-dialog dashboard-week-events-dialog" aria-labelledby="dashboardWeekEventsTitle"><div class="dialog-head"><h2 id="dashboardWeekEventsTitle">Eventos desta semana</h2><button class="btn ghost small" id="dashboardWeekEventsClose" type="button" aria-label="Fechar">✕</button></div><div id="dashboardWeekEventsList" class="dashboard-week-events-list"></div></dialog>
     <dialog id="dashboardEventPickerDialog" class="app-dialog dashboard-event-picker-dialog" aria-labelledby="dashboardEventPickerTitle"><div class="dialog-head"><h2 id="dashboardEventPickerTitle">Escolha um evento</h2><button class="btn ghost small" id="dashboardEventPickerClose" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione um evento futuro da agenda principal. Essa escolha fica salva no seu TNM.</p><div id="dashboardEventPickerList" class="dashboard-event-picker-list"></div><div class="form-actions dialog-save-actions"><button class="btn" id="dashboardEventPickerClear" type="button">Limpar escolha</button></div></dialog>
 
     <section id="financePage" class="page" aria-label="Finanças">
@@ -118,7 +119,7 @@
     <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
     <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">KANBAN</span></button>
     <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
-    <button class="nav-btn" type="button" data-page="dashboard" aria-label="Dashboard"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg></span><span>DASH</span></button>
+    <button class="nav-btn" type="button" data-page="dashboard" aria-label="Calendário"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="5" width="17" height="16" rx="2"></rect><path d="M7.5 3v4M16.5 3v4M3.5 9.5h17M7.5 13h3M13.5 13h3M7.5 16.5h3M13.5 16.5h3"></path></svg></span><span>CAL</span></button>
     <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
     <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>CONFIGS</span></button>
   </nav>
@@ -148,9 +149,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=300'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=301'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=323',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=324',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

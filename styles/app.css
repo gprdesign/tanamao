@@ -442,3 +442,31 @@ body.nav-dock-hidden .page.active{padding-bottom:10px;}
 #dashboardPage .dashboard-tile>small.clock-date{font-size:clamp(1.1rem,1.8vw,1.45rem);font-weight:800;line-height:1.35;text-align:center;}
 @media(max-width:700px){#dashboardPage .dashboard-tile>small.clock-date{font-size:clamp(.95rem,4.5vw,1.15rem);}}
 @media(max-height:620px){#dashboardPage .dashboard-tile>small.clock-date{font-size:1rem;line-height:1.25;}}
+/* Calendar header: no redundant current date; week and refresh controls on the right */
+#dashboardPage .dashboard-header-actions{display:flex;align-items:center;gap:8px;flex:none;}
+#dashboardPage .dashboard-week-btn{min-height:38px;padding:6px 12px;font-size:.76rem;font-weight:850;}
+#dashboardPage .dashboard-calendar-refresh{min-width:40px;min-height:40px;}
+/* Selected event card: gentle red neon pulse */
+#dashboardPage .event-neon-card{--tile-accent:#ff5364!important;border-color:#ff5364!important;background:linear-gradient(145deg,#ff53641e,var(--panel) 78%)!important;animation:dashboard-neon-breathe 3.6s ease-in-out infinite;}
+@keyframes dashboard-neon-breathe{0%,100%{box-shadow:0 0 0 1px #ff536426,0 0 9px #ff33441c,inset 0 0 12px #ff33440c;}50%{box-shadow:0 0 0 1px #ff53645c,0 0 18px #ff334438,inset 0 0 20px #ff334416;}}
+/* Upcoming event card: prominent day/time header and tighter title/countdown spacing */
+#dashboardPage .upcoming-countdown-card{gap:clamp(5px,.8vh,10px);}
+#dashboardPage .upcoming-countdown-card .countdown-date-heading{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;line-height:1.2;}
+#dashboardPage .upcoming-countdown-card .countdown-day-tag{font-size:clamp(1.3rem,2.5vw,2rem);font-weight:950;letter-spacing:.03em;line-height:1.05;color:var(--tile-accent);}
+#dashboardPage .upcoming-countdown-card .countdown-start-time{font-size:clamp(.92rem,1.35vw,1.15rem);font-weight:750;}
+#dashboardPage .upcoming-countdown-card .countdown-title{margin-top:0;}
+#dashboardPage .upcoming-countdown-card .countdown-value{margin-top:-3px;}
+#dashboardPage .upcoming-countdown-card .countdown-info{font-size:clamp(.82rem,1.05vw,.98rem);line-height:1.3;}
+@media(max-height:620px){#dashboardPage .upcoming-countdown-card .countdown-day-tag{font-size:1.15rem;}#dashboardPage .upcoming-countdown-card .countdown-start-time{font-size:.85rem;}#dashboardPage .upcoming-countdown-card .countdown-info{font-size:.74rem;}}
+@media(max-width:700px){#dashboardPage .upcoming-countdown-card .countdown-day-tag{font-size:clamp(.92rem,4.6vw,1.25rem);}#dashboardPage .upcoming-countdown-card .countdown-start-time{font-size:clamp(.72rem,3.2vw,.88rem);}#dashboardPage .upcoming-countdown-card .countdown-info{font-size:clamp(.66rem,2.9vw,.82rem);}}
+/* Week events popup */
+#dashboardWeekEventsDialog{width:min(720px,calc(100% - 24px));max-height:min(86dvh,780px);}
+#dashboardWeekEventsList{display:grid;gap:10px;max-height:68dvh;overflow:auto;padding-right:3px;}
+.dashboard-week-day{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);}
+.dashboard-week-day h3{margin:0 0 7px;font-size:.9rem;text-transform:capitalize;}
+.dashboard-week-event{display:grid;grid-template-columns:64px minmax(0,1fr);gap:9px;padding:7px 0;border-top:1px solid var(--line);}
+.dashboard-week-event time{font-size:.8rem;font-weight:900;color:var(--accent);}
+.dashboard-week-event>div{display:grid;gap:3px;min-width:0;}
+.dashboard-week-event strong{font-size:.85rem;overflow-wrap:anywhere;}
+.dashboard-week-event small{font-size:.74rem;color:var(--muted);overflow-wrap:anywhere;}
+.dashboard-week-free{margin:0;padding:3px 0;color:var(--muted);font-size:.82rem;}

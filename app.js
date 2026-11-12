@@ -1175,6 +1175,14 @@
     const dateObj=new Date(event.startAt),time=dateObj.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false});
     return `${prefix}${dateLabel} - ${time}`;
   }
+  function dashboardEventDayTag(event){const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));if(date===todayKey())return 'HOJE';if(date===addDays(todayKey(),1))return 'AMANHÃ';return formatDate(date,{weekday:'long',day:'2-digit',month:'short'}).replace(/\./g,'').toLocaleUpperCase('pt-BR');}
+  function dashboardEventStartTime(event){if(event.allDay)return 'DIA TODO';return new Date(event.startAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false});}
+  function openDashboardWeekEvents(){
+    const dialog=$('dashboardWeekEventsDialog'),list=$('dashboardWeekEventsList');if(!dialog||!list)return;
+    const start=startOfWeek(todayKey()),days=Array.from({length:7},(_,i)=>addDays(start,i));
+    list.innerHTML=days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder);return `<section class="dashboard-week-day"><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?dayEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong>${dashboardEventInfo(event)?`<small>${escapeHTML(dashboardEventInfo(event))}</small>`:''}</div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}</section>`;}).join('');
+    showAppDialog(dialog);
+  }
   function dashboardEventInfo(event){return String(event.location||'').trim()||String(event.description||'').trim();}
   function dashboardPrimaryEvents(){
     const primaryPrefix='giovanni.p.rimoli@gmail.com:';
@@ -1213,14 +1221,13 @@
     if(currentPage==='dashboard'){dashboardCountdownTimer=window.setInterval(tickDashboardCountdowns,1000);dashboardClockTimer=dashboardCountdownTimer;tickDashboardCountdowns();}
   }
   function renderDashboard(){
-    const dateNode=$('dashboardDate'),container=$('dashboardCountdowns');if(!dateNode||!container)return;
-    dateNode.textContent=formatDate(todayKey(),{weekday:'long',day:'2-digit',month:'long'});
+    const container=$('dashboardCountdowns');if(!container)return;
     const hint=$('dashboardSyncHint');if(hint){const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null;hint.textContent=(calendarSyncInProgress||calendarStatusFailed)&&calendarStatusMessage?calendarStatusMessage:last&&!Number.isNaN(last.getTime())?`Agenda sincronizada às ${last.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:calendarStatusMessage||'Toque em ↻ para atualizar a agenda';}
     const events=dashboardPrimaryEvents(),pinnedId=userSettings.dashboardPinnedEventId||'',primaryPrefix='giovanni.p.rimoli@gmail.com:',pinnedRaw=calendarEvents.find(item=>String(item.id)===pinnedId),pinnedCandidate=pinnedRaw?normalizeCalendarEvent(pinnedRaw):null,pinned=pinnedCandidate&&String(pinnedCandidate.id).startsWith(primaryPrefix)&&!calendarEventIsCompleted(pinnedCandidate)&&!calendarEventIsDismissed(pinnedCandidate)&&!calendarEventIsPast(pinnedCandidate)?pinnedCandidate:null;
     const upcoming=events.filter(event=>event.id!==pinned?.id).slice(0,2),clock=dashboardClockText();
     const clockCard=`<article class="dashboard-tile countdown-card clock-card" style="--tile-accent:#79aaff"><strong class="clock-time" id="dashboardClockTime">${escapeHTML(clock.time)}</strong><small class="clock-date" id="dashboardClockDate">${escapeHTML(clock.date)}</small></article>`;
-    const chosenCard=pinned?`<article class="dashboard-tile countdown-card chosen-event-card" data-countdown-event="${escapeHTML(pinned.id)}" style="--tile-accent:#be9aff"><div class="countdown-event-heading"><span class="countdown-label">${escapeHTML(dashboardEventDateTime(pinned))}</span><button class="countdown-choice-button" type="button" data-dashboard-choose-event aria-label="Trocar evento escolhido">TROCAR</button></div><strong class="countdown-title">${escapeHTML(pinned.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(dashboardCountdownLabel(pinned))}</div><small class="countdown-info">${escapeHTML(dashboardEventInfo(pinned))}</small></article>`:`<button class="dashboard-tile countdown-card choose-event-card" type="button" data-dashboard-choose-event style="--tile-accent:#be9aff"><span class="countdown-label">SEU EVENTO</span><strong class="countdown-title">Escolha um evento</strong><span class="countdown-info">Toque para selecionar na sua agenda</span></button>`;
-    const upcomingCards=upcoming.map((event,index)=>`<article class="dashboard-tile countdown-card" data-countdown-event="${escapeHTML(event.id)}" style="--tile-accent:${['#ffbd69','#73d6a2'][index]}"><span class="countdown-label countdown-date-heading">${escapeHTML(dashboardEventDateTime(event))}</span><strong class="countdown-title">${escapeHTML(event.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(dashboardCountdownLabel(event))}</div><small class="countdown-info">${escapeHTML(dashboardEventInfo(event))}</small></article>`).join('');
+    const chosenCard=pinned?`<article class="dashboard-tile countdown-card chosen-event-card event-neon-card" data-countdown-event="${escapeHTML(pinned.id)}" style="--tile-accent:#ff646e"><div class="countdown-event-heading"><span class="countdown-label">${escapeHTML(dashboardEventDateTime(pinned))}</span><button class="countdown-choice-button" type="button" data-dashboard-choose-event aria-label="Trocar evento escolhido">TROCAR</button></div><strong class="countdown-title">${escapeHTML(pinned.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(dashboardCountdownLabel(pinned))}</div><small class="countdown-info">${escapeHTML(dashboardEventInfo(pinned))}</small></article>`:`<button class="dashboard-tile countdown-card choose-event-card event-neon-card" type="button" data-dashboard-choose-event style="--tile-accent:#be9aff"><span class="countdown-label">SEU EVENTO</span><strong class="countdown-title">Escolha um evento</strong><span class="countdown-info">Toque para selecionar na sua agenda</span></button>`;
+    const upcomingCards=upcoming.map((event,index)=>`<article class="dashboard-tile countdown-card upcoming-countdown-card" data-countdown-event="${escapeHTML(event.id)}" style="--tile-accent:${['#ffbd69','#73d6a2'][index]}"><div class="countdown-date-heading"><strong class="countdown-day-tag">${escapeHTML(dashboardEventDayTag(event))}</strong><span class="countdown-start-time">— ${escapeHTML(dashboardEventStartTime(event))}</span></div><strong class="countdown-title">${escapeHTML(event.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(dashboardCountdownLabel(event))}</div><small class="countdown-info">${escapeHTML(dashboardEventInfo(event))}</small></article>`).join('');
     container.innerHTML=clockCard+chosenCard+upcomingCards;
     startDashboardCountdown();
   }
@@ -2873,6 +2880,8 @@
   $('dashboardPage').addEventListener('click',event=>{if(event.target.closest('#dashboardCalendarSyncBtn')){const hint=$('dashboardSyncHint');if(hint)hint.textContent='Atualizando o Google Calendar…';void syncGoogleCalendar(true);return;}if(event.target.closest('[data-dashboard-choose-event]'))openDashboardEventPicker();});
   $('dashboardEventPickerList').addEventListener('click',event=>{const button=event.target.closest('[data-dashboard-pick-event]');if(button)selectDashboardEvent(button.dataset.dashboardPickEvent);});
   $('dashboardEventPickerClear').addEventListener('click',clearDashboardEventSelection);
+  $('dashboardWeekEventsBtn').addEventListener('click',openDashboardWeekEvents);
+  $('dashboardWeekEventsClose').addEventListener('click',()=>$('dashboardWeekEventsDialog').close());
   $('dashboardEventPickerClose').addEventListener('click',()=>$('dashboardEventPickerDialog').close());
   function handleKanbanChange(event){
     const control=event.target.closest('[data-kanban-state]');if(!control)return;
