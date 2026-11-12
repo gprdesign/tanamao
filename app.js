@@ -2867,6 +2867,9 @@
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
     setPage(button.dataset.page);
   });
+  const mainNavDock=document.querySelector('.main-nav'),mainNavDockToggle=$('mainNavDockToggle');
+  function setMainNavDockHidden(hidden){document.body.classList.toggle('nav-dock-hidden',hidden);if(mainNavDockToggle){mainNavDockToggle.textContent=hidden?'↑':'↓';mainNavDockToggle.setAttribute('aria-label',hidden?'Mostrar dock':'Ocultar dock');mainNavDockToggle.title=hidden?'Mostrar dock':'Ocultar dock';mainNavDockToggle.setAttribute('aria-expanded',String(!hidden));}try{localStorage.setItem('tnm.weekly.navDockHidden',hidden?'1':'0');}catch{}}
+  if(mainNavDock&&mainNavDockToggle){setMainNavDockHidden(localStorage.getItem('tnm.weekly.navDockHidden')==='1');mainNavDockToggle.addEventListener('click',()=>setMainNavDockHidden(!document.body.classList.contains('nav-dock-hidden')));}
   $('dashboardPage').addEventListener('click',event=>{if(event.target.closest('#dashboardCalendarSyncBtn')){const hint=$('dashboardSyncHint');if(hint)hint.textContent='Atualizando o Google Calendar…';void syncGoogleCalendar(true);return;}if(event.target.closest('[data-dashboard-choose-event]'))openDashboardEventPicker();});
   $('dashboardEventPickerList').addEventListener('click',event=>{const button=event.target.closest('[data-dashboard-pick-event]');if(button)selectDashboardEvent(button.dataset.dashboardPickEvent);});
   $('dashboardEventPickerClear').addEventListener('click',clearDashboardEventSelection);

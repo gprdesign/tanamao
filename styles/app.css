@@ -405,3 +405,14 @@ body[data-theme="light"] #dashboardPage .countdown-card{background:linear-gradie
 /* Make both pinned and upcoming event date/time headers visibly readable */
 #dashboardPage .countdown-event-heading .countdown-label,#dashboardPage .countdown-date-heading{font-size:clamp(.95rem,1.2vw,1.12rem);}
 @media(max-width:700px){#dashboardPage .countdown-event-heading .countdown-label,#dashboardPage .countdown-date-heading{font-size:clamp(.68rem,3.5vw,.84rem);}}
+
+/* Event date/time readable on every countdown card */
+#dashboardPage .dashboard-tile>span.countdown-date-heading,#dashboardPage .dashboard-tile .countdown-event-heading .countdown-label{font-size:1rem;line-height:1.4;}
+@media(max-width:700px){#dashboardPage .dashboard-tile>span.countdown-date-heading,#dashboardPage .dashboard-tile .countdown-event-heading .countdown-label{font-size:.8rem;line-height:1.35;}}
+/* Desktop and landscape tablets: flexible, non-overlapping 2x2 grid */
+@media(min-width:701px){#dashboardPage.active{flex:1 1 0;min-height:0;overflow-y:auto;padding-bottom:20px;}#dashboardPage .dashboard-tiles{flex:0 0 auto;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(220px,34dvh));align-content:start;gap:clamp(10px,1.5vw,20px);}#dashboardPage .countdown-card{height:100%;min-height:0;aspect-ratio:auto;}}
+/* Main navigation dock visibility toggle */
+.main-nav{transition:transform .22s ease,opacity .18s ease;}body.nav-dock-hidden .main-nav{transform:translate(-50%,calc(100% + 24px));opacity:0;pointer-events:none;}
+.main-nav-dock-toggle{position:fixed;z-index:21;right:max(12px,calc((100vw - 720px)/2 + 10px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:grid;place-items:center;width:42px;height:42px;padding:0;border:1px solid #536487;border-radius:50%;background:#17233bcc;color:var(--text);font-size:1.35rem;font-weight:900;line-height:1;backdrop-filter:blur(10px);box-shadow:0 5px 18px #0005;cursor:pointer;}
+.main-nav-dock-toggle{transition:bottom .22s ease,transform .18s ease;}body:not(.nav-dock-hidden) .main-nav-dock-toggle{bottom:calc(84px + env(safe-area-inset-bottom,0px));}
+@media(min-width:701px){.main-nav-dock-toggle{right:max(12px,calc((100vw - 720px)/2 - 50px));}}
