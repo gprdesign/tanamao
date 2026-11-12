@@ -389,3 +389,8 @@ body[data-page="dashboard"] .wrap{overflow:hidden;}
 @media(max-width:700px){#dashboardPage.active{gap:8px;padding:2px 1px calc(88px + env(safe-area-inset-bottom,0px));}#dashboardPage .dashboard-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}#dashboardPage .countdown-card{gap:clamp(6px,1.5vw,10px);padding:clamp(9px,2.4vw,14px);border-radius:12px;}#dashboardPage .countdown-label{font-size:clamp(.5rem,2.4vw,.65rem);}#dashboardPage .countdown-title{font-size:clamp(.88rem,4.3vw,1.2rem);-webkit-line-clamp:3;}#dashboardPage .countdown-value{font-size:clamp(1rem,5vw,1.5rem);}#dashboardPage .countdown-date,#dashboardPage .countdown-info{font-size:clamp(.57rem,2.7vw,.7rem);}#dashboardPage .clock-time{font-size:clamp(2.2rem,12vw,3.4rem);}#dashboardPage .clock-date{font-size:clamp(.72rem,3.4vw,.9rem);}}
 @media(max-width:360px){#dashboardPage .dashboard-tiles{gap:6px;}#dashboardPage .countdown-card{padding:8px;}}
 body[data-theme="light"] #dashboardPage .countdown-card{background:linear-gradient(145deg,color-mix(in srgb,var(--tile-accent) 10%,#fff),#fff 76%);}
+/* DASH clock: fill the first card with a large, comfortably inset time */
+#dashboardPage .clock-card{align-items:center;justify-content:center;gap:clamp(14px,2.2vh,24px);padding:clamp(22px,3vw,40px);text-align:center;}
+#dashboardPage .clock-time{width:100%;font-size:clamp(3rem,8vw,6rem);line-height:1;letter-spacing:-.055em;white-space:nowrap;}
+#dashboardPage .clock-date{max-width:100%;font-size:clamp(.9rem,1.35vw,1.12rem);line-height:1.4;}
+@media(max-width:700px){#dashboardPage .clock-card{gap:clamp(10px,3vw,16px);padding:clamp(14px,4vw,22px);}#dashboardPage .clock-time{font-size:clamp(2.55rem,14vw,4.1rem);}#dashboardPage .clock-date{font-size:clamp(.72rem,3.4vw,.9rem);}}
