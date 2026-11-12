@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tnm-weekly-v260';
-const APP_FILES = ['./','./index.html','./config.js?v=3','./app.js?v=307','./styles/app.css?v=38','./manifest.webmanifest?v=3','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./favicon.png'];
+const CACHE_NAME = 'tnm-weekly-v261';
+const APP_FILES = ['./','./index.html','./config.js?v=3','./app.js?v=308','./styles/app.css?v=39','./manifest.webmanifest?v=3','./icon-192.png','./icon-512.png','./apple-touch-icon.png','./favicon.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_FILES)));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key)))));self.clients.claim();});
 self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin)return;if(url.searchParams.has('tnm_refresh')||url.searchParams.has('tnm_asset')){event.respondWith(fetch(event.request,{cache:'no-store'}));return;}event.respondWith(fetch(event.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(event.request,copy));}return response;}).catch(async()=> (await caches.match(event.request))||caches.match('./index.html')));});
