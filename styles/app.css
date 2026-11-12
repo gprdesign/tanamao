@@ -480,3 +480,22 @@ body.nav-dock-hidden .page.active{padding-bottom:10px;}
 @keyframes dashboard-today-pulse{0%,100%{box-shadow:0 0 0 1px #ffbd6920,0 0 8px #ffbd6918,inset 0 0 10px #ffbd6908;}50%{box-shadow:0 0 0 2px #ffbd6970,0 0 20px #ffbd6940,inset 0 0 18px #ffbd691b;}}
 .dashboard-week-day.is-current-day{border:2px solid #ffbd69;background:linear-gradient(145deg,#ffbd6926,var(--panel2) 78%);box-shadow:0 0 0 1px #ffbd694d,0 0 14px #ffbd6926;}
 .dashboard-week-day.is-current-day h3{color:#ffbd69;}
+/* Calendar DASH: left stack (clock + selected event), full weekly agenda on the right */
+#dashboardPage .dashboard-calendar-layout{display:grid;flex:1 1 0;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:clamp(8px,1.2vw,16px);min-width:0;min-height:0;overflow:hidden;}
+#dashboardPage .dashboard-left-column{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr));gap:clamp(6px,1vh,12px);min-width:0;min-height:0;overflow:hidden;}
+#dashboardPage .dashboard-left-column .countdown-card{width:100%;height:100%;min-width:0;min-height:0;aspect-ratio:auto;}
+#dashboardPage .dashboard-week-column{display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0;padding:clamp(7px,1vw,12px);border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel) 82%,transparent);overflow:hidden;}
+#dashboardPage .dashboard-week-column-heading{flex:none;color:var(--muted);font-size:.7rem;font-weight:900;letter-spacing:.1em;}
+#dashboardPage .dashboard-week-agenda{display:grid;flex:1 1 0;grid-template-rows:repeat(7,minmax(0,1fr));gap:clamp(3px,.45vh,6px);min-width:0;min-height:0;overflow:hidden;}
+#dashboardPage .dashboard-week-agenda .dashboard-week-day{min-height:0;padding:clamp(4px,.55vh,8px) clamp(6px,.7vw,10px);overflow:hidden;}
+#dashboardPage .dashboard-week-agenda .dashboard-week-day h3{margin:0 0 2px;font-size:clamp(.68rem,.82vw,.84rem);}
+#dashboardPage .dashboard-week-agenda .dashboard-week-event{grid-template-columns:48px minmax(0,1fr);gap:6px;padding:2px 0;border-top:0;}
+#dashboardPage .dashboard-week-agenda .dashboard-week-event time{font-size:clamp(.6rem,.7vw,.72rem);}
+#dashboardPage .dashboard-week-agenda .dashboard-week-event>div{display:flex;align-items:baseline;gap:6px;min-width:0;}
+#dashboardPage .dashboard-week-agenda .dashboard-week-event strong{overflow:hidden;font-size:clamp(.62rem,.75vw,.78rem);text-overflow:ellipsis;white-space:nowrap;}
+#dashboardPage .dashboard-week-agenda .dashboard-week-event small{overflow:hidden;font-size:clamp(.56rem,.65vw,.68rem);text-overflow:ellipsis;white-space:nowrap;}
+#dashboardPage .dashboard-week-agenda .dashboard-week-free{padding:0;font-size:clamp(.62rem,.72vw,.74rem);}
+#dashboardPage .dashboard-week-agenda .dashboard-week-day.is-current-day{border:2px solid #ffbd69;background:linear-gradient(145deg,#ffbd6926,var(--panel2) 78%);box-shadow:0 0 0 1px #ffbd694d,0 0 12px #ffbd6926;}
+#dashboardPage .dashboard-week-agenda .dashboard-week-day.is-current-day h3{color:#ffbd69;}
+@media(max-width:700px){#dashboardPage .dashboard-calendar-layout{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:5px;}#dashboardPage .dashboard-left-column{gap:5px;}#dashboardPage .dashboard-week-column{padding:5px;gap:4px;}#dashboardPage .dashboard-week-column-heading{font-size:.58rem;}#dashboardPage .dashboard-week-agenda{gap:3px;}#dashboardPage .dashboard-week-agenda .dashboard-week-day{padding:4px;}#dashboardPage .dashboard-week-agenda .dashboard-week-day h3{font-size:.62rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event{grid-template-columns:37px minmax(0,1fr);gap:3px;}#dashboardPage .dashboard-week-agenda .dashboard-week-event time{font-size:.53rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event strong{font-size:.56rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event small{display:none;}#dashboardPage .dashboard-week-agenda .dashboard-week-free{font-size:.54rem;}}
+@media(max-height:620px){#dashboardPage .dashboard-left-column .countdown-card{gap:3px;padding:6px;}#dashboardPage .dashboard-week-column{padding:5px;}#dashboardPage .dashboard-week-agenda .dashboard-week-day h3{font-size:.62rem;}#dashboardPage .dashboard-week-agenda .dashboard-week-event{padding:0;}}
