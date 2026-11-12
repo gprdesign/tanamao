@@ -1185,7 +1185,7 @@
     if(!isDateKey(day))return;const dialog=$('dashboardDayEventsDialog'),title=$('dashboardDayEventsTitle'),list=$('dashboardDayEventsList');if(!dialog||!title||!list)return;
     title.textContent=formatDate(day,{weekday:'long',day:'2-digit',month:'long'});
     const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder);
-    list.innerHTML=dayEvents.length?dayEvents.map(event=>{const info=String(event.location||'').trim(),description=String(event.description||'').trim(),time=event.allDay?'Dia todo':`${dashboardEventStartTime(event)}${event.endAt?`–${new Date(event.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false})}`:''}`;return `<article class="dashboard-day-event"><div class="dashboard-day-event-heading"><time>${escapeHTML(time)}</time><strong>${escapeHTML(event.title)}</strong></div>${info?`<p><b>Local:</b> ${escapeHTML(info)}</p>`:''}${description?`<p><b>Descrição:</b> ${escapeHTML(description)}</p>`:''}</article>`;}).join(''):'<p class="dashboard-week-free">Tempo livre...</p>';
+    list.innerHTML=dayEvents.length?dayEvents.map(event=>{const info=String(event.location||'').trim(),description=String(event.description||'').trim(),time=event.allDay?'Dia todo':`${dashboardEventStartTime(event)}${event.endAt?`–${new Date(event.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false})}`:''}`;return `<article class="dashboard-day-event" data-day-countdown-event="${escapeHTML(event.id)}"><div class="dashboard-day-event-heading"><time>${escapeHTML(time)}</time><strong>${escapeHTML(event.title)}</strong></div><div class="dashboard-day-event-countdown" data-day-event-countdown>${escapeHTML(dashboardCountdownLabel(event))}</div>${info?`<p><b>Local:</b> ${escapeHTML(info)}</p>`:''}${description?`<p><b>Descrição:</b> ${escapeHTML(description)}</p>`:''}</article>`;}).join(''):'<p class="dashboard-week-free">Tempo livre...</p>';
     showAppDialog(dialog);
   }
   function dashboardEventInfo(event){return String(event.location||'').trim()||String(event.description||'').trim();}
@@ -1218,6 +1218,7 @@
     });
     if(shouldAdvance){renderDashboard();return;}
     document.querySelectorAll('[data-countdown-event]').forEach(card=>{const event=calendarEvents.find(item=>String(item.id)===card.dataset.countdownEvent),node=card.querySelector('[data-countdown-value]');if(event&&node)node.textContent=dashboardCountdownLabel(normalizeCalendarEvent(event),now);});
+    document.querySelectorAll('[data-day-countdown-event]').forEach(card=>{const event=calendarEvents.find(item=>String(item.id)===card.dataset.dayCountdownEvent),node=card.querySelector('[data-day-event-countdown]');if(event&&node)node.textContent=dashboardCountdownLabel(normalizeCalendarEvent(event),now);});
     const clock=dashboardClockText(new Date(now));if($('dashboardClockTime'))$('dashboardClockTime').textContent=clock.time;if($('dashboardClockDate'))$('dashboardClockDate').textContent=clock.date;
   }
   function startDashboardCountdown(){
