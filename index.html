@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=34">
+  <link rel="stylesheet" href="./styles/app.css?v=35">
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -59,7 +59,8 @@
       <div class="dashboard-calendar-layout" aria-label="Relógio, evento escolhido e agenda da semana"><div class="dashboard-left-column" id="dashboardCountdowns" aria-live="polite" aria-label="Relógio e evento escolhido"></div><div class="dashboard-week-column" aria-label="Agenda da semana"><div class="dashboard-week-column-heading">AGENDA DA SEMANA</div><div id="dashboardWeekAgenda" class="dashboard-week-agenda"></div></div></div>
     </section>
 
-    <dialog id="dashboardWeekEventsDialog" class="app-dialog dashboard-week-events-dialog" aria-labelledby="dashboardWeekEventsTitle"><div class="dialog-head"><h2 id="dashboardWeekEventsTitle">Eventos desta semana</h2><button class="btn ghost small" id="dashboardWeekEventsClose" type="button" aria-label="Fechar">✕</button></div><div id="dashboardWeekEventsList" class="dashboard-week-events-list"></div></dialog>
+    <dialog id="dashboardDayEventsDialog" class="app-dialog dashboard-day-events-dialog" aria-labelledby="dashboardDayEventsTitle"><div class="dialog-head"><h2 id="dashboardDayEventsTitle">Detalhes do dia</h2><button class="btn ghost small" id="dashboardDayEventsClose" type="button" aria-label="Fechar">✕</button></div><div id="dashboardDayEventsList" class="dashboard-day-events-list"></div></dialog>
+        <dialog id="dashboardWeekEventsDialog" class="app-dialog dashboard-week-events-dialog" aria-labelledby="dashboardWeekEventsTitle"><div class="dialog-head"><h2 id="dashboardWeekEventsTitle">Eventos desta semana</h2><button class="btn ghost small" id="dashboardWeekEventsClose" type="button" aria-label="Fechar">✕</button></div><div id="dashboardWeekEventsList" class="dashboard-week-events-list"></div></dialog>
     <dialog id="dashboardEventPickerDialog" class="app-dialog dashboard-event-picker-dialog" aria-labelledby="dashboardEventPickerTitle"><div class="dialog-head"><h2 id="dashboardEventPickerTitle">Escolha um evento</h2><button class="btn ghost small" id="dashboardEventPickerClose" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione um evento futuro da agenda principal. Essa escolha fica salva no seu TNM.</p><div id="dashboardEventPickerList" class="dashboard-event-picker-list"></div><div class="form-actions dialog-save-actions"><button class="btn" id="dashboardEventPickerClear" type="button">Limpar escolha</button></div></dialog>
 
     <section id="financePage" class="page" aria-label="Finanças">
@@ -149,9 +150,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=305'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=306'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=329',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=330',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

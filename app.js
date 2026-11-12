@@ -1179,7 +1179,14 @@
   function dashboardEventStartTime(event){if(event.allDay)return 'DIA TODO';return new Date(event.startAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false});}
   function dashboardWeekEventsMarkup({popup=false}={}){
     const today=todayKey(),days=Array.from({length:7},(_,i)=>addDays(today,i));
-    const weekMarkup=days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder);const current=day===today;return `<section class="dashboard-week-day${current?' is-current-day':''}"${popup&&current?' id="dashboardWeekToday"':''}><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?dayEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong>${dashboardEventInfo(event)?`<small>${escapeHTML(dashboardEventInfo(event))}</small>`:''}</div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}</section>`;}).join('');const agenda=$('dashboardWeekAgenda');if(agenda)agenda.style.setProperty('--dashboard-week-days',String(days.length));return weekMarkup;
+    const weekMarkup=days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder);const current=day===today;return `<section class="dashboard-week-day dashboard-week-day-clickable${current?' is-current-day':''}" data-dashboard-week-day="${escapeHTML(day)}" role="button" tabindex="0" aria-label="Ver eventos de ${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}"${popup&&current?' id="dashboardWeekToday"':''}><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?dayEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong></div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}</section>`;}).join('');const agenda=$('dashboardWeekAgenda');if(agenda)agenda.style.setProperty('--dashboard-week-days',String(days.length));return weekMarkup;
+  }
+  function openDashboardDayEvents(day){
+    if(!isDateKey(day))return;const dialog=$('dashboardDayEventsDialog'),title=$('dashboardDayEventsTitle'),list=$('dashboardDayEventsList');if(!dialog||!title||!list)return;
+    title.textContent=formatDate(day,{weekday:'long',day:'2-digit',month:'long'});
+    const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder);
+    list.innerHTML=dayEvents.length?dayEvents.map(event=>{const info=String(event.location||'').trim(),description=String(event.description||'').trim(),time=event.allDay?'Dia todo':`${dashboardEventStartTime(event)}${event.endAt?`–${new Date(event.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false})}`:''}`;return `<article class="dashboard-day-event"><div class="dashboard-day-event-heading"><time>${escapeHTML(time)}</time><strong>${escapeHTML(event.title)}</strong></div>${info?`<p><b>Local:</b> ${escapeHTML(info)}</p>`:''}${description?`<p><b>Descrição:</b> ${escapeHTML(description)}</p>`:''}</article>`;}).join(''):'<p class="dashboard-week-free">Tempo livre...</p>';
+    const weekDialog=$('dashboardWeekEventsDialog');if(weekDialog?.open){weekDialog.close();requestAnimationFrame(()=>showAppDialog(dialog));}else showAppDialog(dialog);
   }
   function openDashboardWeekEvents(){
     const dialog=$('dashboardWeekEventsDialog'),list=$('dashboardWeekEventsList');if(!dialog||!list)return;
@@ -2886,6 +2893,11 @@
   $('dashboardEventPickerClear').addEventListener('click',clearDashboardEventSelection);
   $('dashboardWeekEventsBtn').addEventListener('click',openDashboardWeekEvents);
   $('dashboardWeekEventsClose').addEventListener('click',()=>$('dashboardWeekEventsDialog').close());
+  $('dashboardDayEventsClose').addEventListener('click',()=>$('dashboardDayEventsDialog').close());
+  function handleDashboardWeekDayOpen(event){const day=event.target.closest('[data-dashboard-week-day]');if(day)openDashboardDayEvents(day.dataset.dashboardWeekDay);}
+  function handleDashboardWeekDayKey(event){if(event.key!=='Enter'&&event.key!==' ')return;const day=event.target.closest('[data-dashboard-week-day]');if(day){event.preventDefault();openDashboardDayEvents(day.dataset.dashboardWeekDay);}}
+  $('dashboardWeekAgenda').addEventListener('click',handleDashboardWeekDayOpen);$('dashboardWeekAgenda').addEventListener('keydown',handleDashboardWeekDayKey);
+  $('dashboardWeekEventsList').addEventListener('click',handleDashboardWeekDayOpen);$('dashboardWeekEventsList').addEventListener('keydown',handleDashboardWeekDayKey);
   $('dashboardEventPickerClose').addEventListener('click',()=>$('dashboardEventPickerDialog').close());
   function handleKanbanChange(event){
     const control=event.target.closest('[data-kanban-state]');if(!control)return;
