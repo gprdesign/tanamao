@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <title>CAL | Tá na mão</title>
-<link rel="stylesheet" href="./cal.css?v=5">
+<link rel="stylesheet" href="./cal.css?v=6">
 <script src="../config.js?v=3" defer></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 </head>
@@ -41,7 +41,7 @@
 <dialog id="dayDialog"><div class="dialog-head"><h2 id="dayTitle"></h2><button type="button" data-close="dayDialog" aria-label="Fechar">×</button></div><div id="dayDetails" class="dialog-list"></div></dialog>
 <dialog id="focusDialog" class="focus-dialog"><div class="dialog-head"><h2 id="focusTitle"></h2><button type="button" data-close="focusDialog" aria-label="Fechar">×</button></div><div id="focusContent" class="focus-content"></div></dialog>
 <dialog id="loginDialog"><form id="loginForm"><div class="dialog-head"><h2>Conectar ao TNM</h2><button type="button" data-close="loginDialog" aria-label="Fechar">×</button></div><p class="muted">Use a mesma conta do TNM para sincronizar sua agenda e evento escolhido.</p><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Entrar</button></form></dialog>
-<script src="./cal.js?v=5" defer></script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js?v=5',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});</script>
+<script src="./cal.js?v=6" defer></script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js?v=6',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});</script>
 </body>
 </html>
