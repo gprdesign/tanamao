@@ -1160,6 +1160,7 @@
   function dashboardCountdownLabel(event,now=Date.now()){
     const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));
     const target=event.allDay?new Date(`${date}T00:00:00`).getTime():Date.parse(event.startAt);
+    if(event.allDay&&date===todayKey())return {main:'HOJE',detail:'Evento de dia todo'};
     const remaining=Math.max(0,Math.floor((target-now)/1000));
     const days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60),seconds=remaining%60;
     const pad=value=>String(value).padStart(2,'0');
@@ -1198,7 +1199,7 @@
     const events=getUpcomingCalendarEvents().filter(event=>String(event.id).startsWith(primaryPrefix)&&!calendarEventIsCompleted(event)&&!calendarEventIsDismissed(event)&&!calendarEventIsPast(event)).slice(0,3);
     container.innerHTML=events.length?events.map((event,index)=>{
       const countdown=dashboardCountdownLabel(event),date=dashboardEventDateTime(event);
-      return `<article class="dashboard-tile countdown-card" data-countdown-event="${escapeHTML(event.id)}" style="--tile-accent:${['#79aaff','#ffbd69','#be9aff'][index]}"><span class="countdown-label">PRÓXIMO EVENTO ${index+1}</span><strong class="countdown-title">${escapeHTML(event.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(countdown.main)}</div><small class="countdown-date">${escapeHTML(date)}${event.location?` · ${escapeHTML(event.location)}`:''}</small></article>`;
+      return `<article class="dashboard-tile countdown-card" data-countdown-event="${escapeHTML(event.id)}" style="--tile-accent:${['#79aaff','#ffbd69','#be9aff'][index]}"><span class="countdown-label">PRÓXIMO EVENTO ${index+1}</span><strong class="countdown-title">${escapeHTML(event.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(countdown.main)}</div><small class="countdown-date">${escapeHTML(countdown.detail==='Evento de dia todo'?countdown.detail:date)}${event.location?` · ${escapeHTML(event.location)}`:''}</small></article>`;
     }).join(''):'<div class="dashboard-countdown-empty">Nenhum evento futuro na agenda principal do Google Calendar.</div>';
     startDashboardCountdown();
   }
