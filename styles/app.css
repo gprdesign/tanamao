@@ -425,3 +425,11 @@ body[data-page="dashboard"] .wrap>main{display:flex;flex:1 1 0;flex-direction:co
 #dashboardPage .countdown-title,#dashboardPage .countdown-value,#dashboardPage .countdown-info,#dashboardPage .countdown-date-heading{min-width:0;overflow:hidden;}
 @media(max-width:700px){body[data-page="dashboard"] .wrap{padding:8px 8px calc(82px + env(safe-area-inset-bottom,0px));}#dashboardPage.active{gap:6px;}#dashboardPage .dashboard-tiles{gap:6px;}#dashboardPage .countdown-card{gap:4px;padding:8px;}#dashboardPage .countdown-title{font-size:clamp(.76rem,3.6vw,1rem);-webkit-line-clamp:2;}#dashboardPage .countdown-value{font-size:clamp(.88rem,4.2vw,1.25rem);}#dashboardPage .countdown-info,#dashboardPage .countdown-date-heading{font-size:clamp(.62rem,2.7vw,.78rem);}}
 @media(max-height:620px){body[data-page="dashboard"] .wrap{padding-top:5px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));}#dashboardPage.active{gap:4px;}#dashboardPage .dashboard-heading h2{font-size:1rem;}#dashboardPage .dashboard-date{font-size:.68rem;}#dashboardPage .dashboard-sync-hint{font-size:.58rem;}#dashboardPage .dashboard-calendar-refresh{min-width:34px;min-height:34px;}#dashboardPage .dashboard-tiles{gap:5px;}#dashboardPage .countdown-card{gap:3px;padding:6px;}#dashboardPage .countdown-label,#dashboardPage .countdown-date-heading,#dashboardPage .countdown-event-heading .countdown-label{font-size:.72rem;}#dashboardPage .countdown-title{font-size:.92rem;-webkit-line-clamp:2;}#dashboardPage .countdown-value{font-size:1.1rem;}#dashboardPage .countdown-info{font-size:.66rem;line-height:1.2;}}
+/* Every TNM page occupies the viewport below the app header; the dock overlays the page */
+.wrap{display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;padding:10px 18px 0;}
+.app-header{flex:0 0 auto;}
+.page.active{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(82px + env(safe-area-inset-bottom,0px));}
+body[data-page="dashboard"] .wrap{padding:10px 18px 0;}
+body[data-page="dashboard"] #dashboardPage.active{flex:1 1 0;height:auto;min-height:0;overflow:hidden;padding-bottom:0;}
+body.nav-dock-hidden .page.active{padding-bottom:10px;}
+@media(max-width:700px){.wrap{padding:8px 8px 0;}body[data-page="dashboard"] .wrap{padding:8px 8px 0;}.page.active{padding-bottom:calc(78px + env(safe-area-inset-bottom,0px));}}
