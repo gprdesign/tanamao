@@ -578,3 +578,7 @@ body.view-mobile[data-page="dashboard"] #dashboardPage .chosen-event-neon .count
 body.view-mobile[data-page="dashboard"] #dashboardPage .chosen-event-neon .countdown-value{font-size:clamp(.82rem,4vw,1.08rem);line-height:1.05;overflow-wrap:anywhere;}
 body.view-mobile[data-page="dashboard"] #dashboardPage .chosen-event-neon .countdown-info{display:-webkit-box;overflow:hidden;font-size:clamp(.58rem,2.8vw,.7rem);line-height:1.18;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere;}
 @media(max-width:360px){body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-left-column .countdown-card{gap:4px;padding:6px;}body.view-mobile[data-page="dashboard"] #dashboardPage .chosen-event-neon .countdown-label{font-size:.56rem;}body.view-mobile[data-page="dashboard"] #dashboardPage .chosen-event-neon .countdown-title{font-size:.68rem;}body.view-mobile[data-page="dashboard"] #dashboardPage .chosen-event-neon .countdown-info{font-size:.55rem;}}
+/* Mobile: keep dock controls above the dock and restore the full-width nav items */
+body.view-mobile .main-nav{padding-right:5px!important;}
+body.view-mobile:not(.nav-dock-hidden) .main-nav-dock-toggle{right:calc(12px + env(safe-area-inset-right,0px))!important;bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;}
+body.view-mobile:not(.nav-dock-hidden) .refresh-sync-btn{right:calc(12px + env(safe-area-inset-right,0px))!important;bottom:calc(140px + env(safe-area-inset-bottom,0px))!important;}
