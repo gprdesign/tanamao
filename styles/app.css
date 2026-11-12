@@ -438,3 +438,7 @@ body.nav-dock-hidden .page.active{padding-bottom:10px;}
 .refresh-sync-btn{right:calc(12px + env(safe-area-inset-right,0px))!important;bottom:calc(64px + env(safe-area-inset-bottom,0px))!important;}
 .main-nav{padding-right:58px;}
 @media(min-width:701px){.main-nav-dock-toggle{right:calc(12px + env(safe-area-inset-right,0px))!important;}.refresh-sync-btn{right:calc(12px + env(safe-area-inset-right,0px))!important;}}
+/* Clock card date: readable on desktop and tablet, with enough room to wrap */
+#dashboardPage .dashboard-tile>small.clock-date{font-size:clamp(1.1rem,1.8vw,1.45rem);font-weight:800;line-height:1.35;text-align:center;}
+@media(max-width:700px){#dashboardPage .dashboard-tile>small.clock-date{font-size:clamp(.95rem,4.5vw,1.15rem);}}
+@media(max-height:620px){#dashboardPage .dashboard-tile>small.clock-date{font-size:1rem;line-height:1.25;}}
