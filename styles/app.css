@@ -470,3 +470,13 @@ body.nav-dock-hidden .page.active{padding-bottom:10px;}
 .dashboard-week-event strong{font-size:.85rem;overflow-wrap:anywhere;}
 .dashboard-week-event small{font-size:.74rem;color:var(--muted);overflow-wrap:anywhere;}
 .dashboard-week-free{margin:0;padding:3px 0;color:var(--muted);font-size:.82rem;}
+/* Event time flush right; keep the title and live countdown together */
+#dashboardPage .upcoming-countdown-card{justify-content:flex-start;gap:clamp(3px,.5vh,6px);}
+#dashboardPage .upcoming-countdown-card .countdown-date-heading{display:flex;align-items:baseline;gap:6px;flex-wrap:nowrap;width:100%;}
+#dashboardPage .upcoming-countdown-card .countdown-start-time{margin-left:auto;text-align:right;white-space:nowrap;}
+#dashboardPage .upcoming-countdown-card .countdown-title{margin:0;}
+#dashboardPage .upcoming-countdown-card .countdown-value{margin:-2px 0 0;}
+#dashboardPage .today-event-neon{animation:dashboard-today-pulse 3.2s ease-in-out infinite;border:2px solid #ffbd69;background:linear-gradient(145deg,#ffbd6924,var(--panel) 78%)!important;}
+@keyframes dashboard-today-pulse{0%,100%{box-shadow:0 0 0 1px #ffbd6920,0 0 8px #ffbd6918,inset 0 0 10px #ffbd6908;}50%{box-shadow:0 0 0 2px #ffbd6970,0 0 20px #ffbd6940,inset 0 0 18px #ffbd691b;}}
+.dashboard-week-day.is-current-day{border:2px solid #ffbd69;background:linear-gradient(145deg,#ffbd6926,var(--panel2) 78%);box-shadow:0 0 0 1px #ffbd694d,0 0 14px #ffbd6926;}
+.dashboard-week-day.is-current-day h3{color:#ffbd69;}
