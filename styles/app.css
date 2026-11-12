@@ -557,3 +557,10 @@ body.nav-dock-hidden[data-page="dashboard"] #dashboardPage.active{padding-bottom
 @media(max-height:620px){#dashboardPage .chosen-event-neon{gap:6px;padding:8px;}#dashboardPage .chosen-event-neon .countdown-label{font-size:.72rem;}#dashboardPage .chosen-event-neon .countdown-title{font-size:.95rem;}#dashboardPage .chosen-event-neon .countdown-value{font-size:1.4rem;}#dashboardPage .chosen-event-neon .countdown-info{font-size:.68rem;}}
 
 .dashboard-day-event-countdown{width:max-content;max-width:100%;padding:4px 8px;border:1px solid color-mix(in srgb,#ff5364 42%,var(--line));border-radius:7px;background:color-mix(in srgb,#ff5364 10%,var(--panel2));color:#ff7884;font-size:.84rem;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+/* Mobile dashboard: clock + chosen-event cards share the top row; weekly agenda below */
+body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-calendar-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(145px,34dvh) minmax(0,1fr);gap:6px;}
+body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-left-column{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr);gap:6px;}
+body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-left-column .countdown-card{width:100%;height:100%;min-width:0;min-height:0;padding:clamp(7px,2vw,12px);}
+body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-week-column{min-height:0;}
+body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-week-agenda{grid-template-rows:repeat(var(--dashboard-week-days,7),minmax(0,1fr));}
+@media(max-height:620px){body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-calendar-layout{grid-template-rows:minmax(118px,31dvh) minmax(0,1fr);gap:4px;}body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-left-column{gap:4px;}}
