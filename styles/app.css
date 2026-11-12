@@ -397,3 +397,5 @@ body[data-theme="light"] #dashboardPage .countdown-card{background:linear-gradie
 /* Clock size must override the generic dashboard-card title rules */
 #dashboardPage .dashboard-tile>strong.clock-time{flex:none;width:100%;margin:0;text-align:center;font-size:clamp(4rem,10vw,6rem);line-height:1;letter-spacing:-.06em;}
 @media(max-width:700px){#dashboardPage .dashboard-tile>strong.clock-time{font-size:clamp(3.5rem,22vw,5rem);}}
+/* PC DASH: four cards in a true 2x2 grid, filling available height */
+@media(min-width:701px){#dashboardPage .dashboard-tiles{flex:1 1 0;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));align-content:stretch;}#dashboardPage .countdown-card{height:100%;aspect-ratio:auto;}}
