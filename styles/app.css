@@ -624,3 +624,6 @@ body.view-mobile[data-page="tasks"] .wrap{display:flex!important;flex-direction:
 body.view-mobile[data-page="tasks"] #tasksPage.active{display:flex!important;flex:1 1 0!important;height:auto!important;min-height:0!important;overflow:hidden!important;}
 body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]){display:flex!important;flex:1 1 0!important;width:100%!important;height:auto!important;min-height:0!important;overflow:hidden!important;}
 body.view-mobile[data-page="tasks"] #kanbanBoard{display:grid!important;flex:1 1 0!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;overflow:hidden!important;}
+body[data-theme="light"].view-mobile[data-page="tasks"] .mobile-kanban-tile{background:linear-gradient(145deg,#f2f5fa,#fff 78%)!important;border-color:#d4dce8!important;color:#192438!important;}
+body[data-theme="light"].view-mobile[data-page="tasks"] .mobile-kanban-tile-head b{background:#e6edf8!important;border-color:#c5d2e5!important;color:#192438!important;font-size:.9rem;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-tile-head b{min-width:32px;height:32px;font-size:.9rem;font-variant-numeric:tabular-nums;}
