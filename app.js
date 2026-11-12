@@ -1159,11 +1159,8 @@
   function renderAll() { renderTasks(); renderHome(); renderDashboard(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
   function dashboardCountdownLabel(event,now=Date.now()){
     const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));
-    if(event.allDay){
-      const days=Math.max(0,Math.ceil((dateAtNoon(date).getTime()-dateAtNoon(todayKey()).getTime())/86400000));
-      return {main:days===0?'HOJE':`${days} ${days===1?'DIA':'DIAS'}`,detail:'Evento de dia todo'};
-    }
-    const remaining=Math.max(0,Math.floor((Date.parse(event.startAt)-now)/1000));
+    const target=event.allDay?new Date(`${date}T00:00:00`).getTime():Date.parse(event.startAt);
+    const remaining=Math.max(0,Math.floor((target-now)/1000));
     const days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60),seconds=remaining%60;
     const pad=value=>String(value).padStart(2,'0');
     return {main:days?`${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`:`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`,detail:'FALTAM'};
@@ -1196,13 +1193,13 @@
     const dateNode=$('dashboardDate'),container=$('dashboardCountdowns');
     if(!dateNode||!container)return;
     dateNode.textContent=formatDate(todayKey(),{weekday:'long',day:'2-digit',month:'long'});
-    const hint=$('dashboardSyncHint');if(hint){const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null;hint.textContent=last&&!Number.isNaN(last.getTime())?`Agenda sincronizada às ${last.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:'Toque em ↻ para atualizar a agenda';}
+    const hint=$('dashboardSyncHint');if(hint){const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null;hint.textContent=(calendarSyncInProgress||calendarStatusFailed)&&calendarStatusMessage?calendarStatusMessage:last&&!Number.isNaN(last.getTime())?`Agenda sincronizada às ${last.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:calendarStatusMessage||'Toque em ↻ para atualizar a agenda';}
     const primaryPrefix='giovanni.p.rimoli@gmail.com:';
     const events=getUpcomingCalendarEvents().filter(event=>String(event.id).startsWith(primaryPrefix)&&!calendarEventIsCompleted(event)&&!calendarEventIsDismissed(event)&&!calendarEventIsPast(event)).slice(0,3);
     container.innerHTML=events.length?events.map((event,index)=>{
       const countdown=dashboardCountdownLabel(event),date=dashboardEventDateTime(event);
       return `<article class="dashboard-tile countdown-card" data-countdown-event="${escapeHTML(event.id)}" style="--tile-accent:${['#79aaff','#ffbd69','#be9aff'][index]}"><span class="countdown-label">PRÓXIMO EVENTO ${index+1}</span><strong class="countdown-title">${escapeHTML(event.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(countdown.main)}</div><small class="countdown-date">${escapeHTML(date)}${event.location?` · ${escapeHTML(event.location)}`:''}</small></article>`;
-    }).join(''):'<div class="dashboard-countdown-empty">Nenhum evento futuro nas agendas sincronizadas do Google Calendar.</div>';
+    }).join(''):'<div class="dashboard-countdown-empty">Nenhum evento futuro na agenda principal do Google Calendar.</div>';
     startDashboardCountdown();
   }
   function homeDateLabel(date) {
@@ -2848,7 +2845,7 @@
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
     setPage(button.dataset.page);
   });
-  $('dashboardPage').addEventListener('click',event=>{if(event.target.closest('#dashboardCalendarSyncBtn'))void syncGoogleCalendar(true);});
+  $('dashboardPage').addEventListener('click',event=>{if(event.target.closest('#dashboardCalendarSyncBtn')){const hint=$('dashboardSyncHint');if(hint)hint.textContent='Atualizando o Google Calendar…';void syncGoogleCalendar(true);}});
   function handleKanbanChange(event){
     const control=event.target.closest('[data-kanban-state]');if(!control)return;
     const taskId=control.dataset.kanbanState,choice=control.value;
