@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=16">
+  <link rel="stylesheet" href="./styles/app.css?v=18">
 </head>
 <body>
   <script>(()=>{const android=/Android/i.test(navigator.userAgent||'');let mode='';try{mode=localStorage.getItem('tnm.weekly.viewMode.v1')||'';}catch{}if(mode!=='pc'&&mode!=='mobile')mode=(android||(window.matchMedia?.('(max-width: 700px)').matches||false))?'mobile':'pc';document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -54,10 +54,12 @@
       <div id="kanbanCompletionConfirm" class="day-completion-confirm" role="alertdialog" aria-modal="true" aria-labelledby="kanbanCompletionText" hidden><span id="kanbanCompletionText" class="day-completion-confirm-text">Concluir esta tarefa?</span><div id="kanbanCompletionChecklistWarning" class="day-completion-checklist-warning" hidden><strong>Checklist ainda em aberto:</strong><ul id="kanbanCompletionChecklistItems"></ul></div><div class="day-completion-confirm-actions"><button class="btn ghost small" id="kanbanCompletionCancelBtn" type="button">CANCELAR</button><button class="btn small confirm-yes" id="kanbanCompletionConfirmBtn" type="button">CONCLUIR</button></div></div>
     </section>
 
-    <section id="dashboardPage" class="page dashboard-page" aria-label="Contadores regressivos dos próximos eventos">
+    <section id="dashboardPage" class="page dashboard-page" aria-label="Relógio, evento escolhido e próximos eventos">
       <header class="dashboard-heading"><div><p class="eyebrow">PRÓXIMOS EVENTOS</p><p class="dashboard-date" id="dashboardDate"></p><small class="dashboard-sync-hint" id="dashboardSyncHint" aria-live="polite"></small></div><button class="btn small dashboard-calendar-refresh" id="dashboardCalendarSyncBtn" type="button" aria-label="Atualizar eventos do Google Calendar" title="Atualizar eventos do Google Calendar">↻</button></header>
-      <div class="dashboard-tiles" id="dashboardCountdowns" aria-live="polite" aria-label="Três próximos eventos da agenda principal do Google Calendar"></div>
+      <div class="dashboard-tiles" id="dashboardCountdowns" aria-live="polite" aria-label="Relógio, evento escolhido e dois próximos eventos da agenda principal do Google Calendar"></div>
     </section>
+
+    <dialog id="dashboardEventPickerDialog" class="app-dialog dashboard-event-picker-dialog" aria-labelledby="dashboardEventPickerTitle"><div class="dialog-head"><h2 id="dashboardEventPickerTitle">Escolha um evento</h2><button class="btn ghost small" id="dashboardEventPickerClose" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione um evento futuro da agenda principal. Essa escolha fica salva no seu TNM.</p><div id="dashboardEventPickerList" class="dashboard-event-picker-list"></div><div class="form-actions dialog-save-actions"><button class="btn" id="dashboardEventPickerClear" type="button">Limpar escolha</button></div></dialog>
 
     <section id="financePage" class="page" aria-label="Finanças">
       <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div></div>
@@ -145,9 +147,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=296'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=298'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=310',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=312',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

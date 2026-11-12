@@ -95,6 +95,7 @@
   let calendarLastSyncAt=String(readStored(CALENDAR_SYNC_META_KEY,'')||'');
   let calendarAutoSyncTimer=null;
   let dashboardCountdownTimer=null;
+  let dashboardClockTimer=null;
   let session = readStored(SESSION_KEY,null);
   const storedViewMode=localStorage.getItem(VIEW_MODE_KEY);
   const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
@@ -215,7 +216,7 @@
     if(!allDay&&(!startDate||!Number.isFinite(startDate.getTime())))return null;
     const startAt=allDay?String(rawStart):startDate.toISOString();let endAt='';
     if(rawEnd){if(allDay&&/^\d{4}-\d{2}-\d{2}$/.test(String(rawEnd)))endAt=String(rawEnd);else if(!allDay){const endDate=new Date(rawEnd);if(Number.isFinite(endDate.getTime()))endAt=endDate.toISOString();}}
-    return {id:String(value.id||`${title}:${startAt}`),title,startAt,endAt,allDay,location:String(value.location||'').trim().slice(0,180),url:normalizeLink(value.htmlLink||value.url||'')};
+    return {id:String(value.id||`${title}:${startAt}`),title,startAt,endAt,allDay,location:String(value.location||'').trim().slice(0,300),description:String(value.description||'').trim().slice(0,1000),url:normalizeLink(value.htmlLink||value.url||'')};
   }
   function calendarEventIsPast(event){const today=todayKey();if(event.allDay)return event.endAt?event.endAt<=today:event.startAt<today;const end=Date.parse(event.endAt||event.startAt);return Number.isFinite(end)&&end<=Date.now();}
   function calendarEventClass(event,date){return calendarEventIsPast(event)||(date&&date<todayKey())?' is-past':'';}
@@ -436,7 +437,7 @@
     const theme=source.theme==='light'?'light':'dark',rawSavingsGoals=Array.isArray(source.savingsGoals)?source.savingsGoals:[],savingsGoals=rawSavingsGoals.map(item=>{const id=String(item?.id||''),name=String(item?.name||'').trim().slice(0,100),targetNumber=Number(item?.targetAmount),savedNumber=Number(item?.savedAmount);return id&&name&&Number.isFinite(targetNumber)&&targetNumber>0?{id,name,targetAmount:Math.round(targetNumber*100)/100,savedAmount:Number.isFinite(savedNumber)?Math.max(0,Math.round(savedNumber*100)/100):0,createdAt:String(item?.createdAt||''),updatedAt:String(item?.updatedAt||'')}:null;}).filter(Boolean).slice(0,100);
     const rawHabits=Array.isArray(source.plannerHabits)?source.plannerHabits:[],plannerHabits=rawHabits.map(item=>({id:String(item?.id||''),name:String(item?.name||'').trim().slice(0,80),doneDates:Array.isArray(item?.doneDates)?Array.from(new Set(item.doneDates.map(String).filter(isDateKey))):[]})).filter(item=>item.id&&item.name).slice(0,100);
     const rawBasecamp=Array.isArray(source.basecampMessages)?source.basecampMessages:[],basecampMessages=rawBasecamp.map(item=>{const text=String(item?.text||'').trim().slice(0,5000),createdAt=String(item?.createdAt||''),id=String(item?.id||'');return text&&id?{id,text,tagId:String(item?.tagId||''),createdAt,updatedAt:String(item?.updatedAt||createdAt)}:null;}).filter(Boolean).slice(0,100);
-    return {theme,summaryTimes:times.sort(),calendarIds,calendarEventCompletions,calendarEventDismissals,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,savingsGoals,plannerHabits,basecampMessages,taskKanbanStates:source.taskKanbanStates&&typeof source.taskKanbanStates==='object'&&!Array.isArray(source.taskKanbanStates)?source.taskKanbanStates:{},taskKanbanBlockers:source.taskKanbanBlockers&&typeof source.taskKanbanBlockers==='object'&&!Array.isArray(source.taskKanbanBlockers)?source.taskKanbanBlockers:{},myDayTaskIds:Array.isArray(source.myDayTaskIds)?Array.from(new Set(source.myDayTaskIds.map(String).filter(Boolean))).slice(0,500):[],kanbanCollapsedColumns:Array.isArray(source.kanbanCollapsedColumns)?Array.from(new Set(source.kanbanCollapsedColumns.map(String).filter(key=>['todo','doing','blocked','events','reminders','done'].includes(key)))):[],kanbanDoneMobileExpanded:Boolean(source.kanbanDoneMobileExpanded),plannerSubpage:'kanban',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
+    return {theme,summaryTimes:times.sort(),calendarIds,calendarEventCompletions,calendarEventDismissals,calendarIdsConfigured:Boolean(source.calendarIdsConfigured||calendarIds.length),dashboardPinnedEventId:String(source.dashboardPinnedEventId||'').slice(0,400),overdueTaskOrder:Array.isArray(source.overdueTaskOrder)?Array.from(new Set(source.overdueTaskOrder.map(String))):[],householdBillCycles,savingsGoals,plannerHabits,basecampMessages,taskKanbanStates:source.taskKanbanStates&&typeof source.taskKanbanStates==='object'&&!Array.isArray(source.taskKanbanStates)?source.taskKanbanStates:{},taskKanbanBlockers:source.taskKanbanBlockers&&typeof source.taskKanbanBlockers==='object'&&!Array.isArray(source.taskKanbanBlockers)?source.taskKanbanBlockers:{},myDayTaskIds:Array.isArray(source.myDayTaskIds)?Array.from(new Set(source.myDayTaskIds.map(String).filter(Boolean))).slice(0,500):[],kanbanCollapsedColumns:Array.isArray(source.kanbanCollapsedColumns)?Array.from(new Set(source.kanbanCollapsedColumns.map(String).filter(key=>['todo','doing','blocked','events','reminders','done'].includes(key)))):[],kanbanDoneMobileExpanded:Boolean(source.kanbanDoneMobileExpanded),plannerSubpage:'kanban',nickname:String(source.nickname||'Gio').trim().slice(0,32)||'Gio',timezone:'America/Sao_Paulo',updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
   }
   function normalizePrivateVault(value) {
     if(!value||typeof value!=='object'||!value.salt||!value.verifierIv||!value.verifierCiphertext)return null;
@@ -702,7 +703,7 @@
     if(page!=='notes'&&privateNotesUnlocked&&privateNoteDirty){void lockPrivateNotes().then(ok=>{if(ok)setPage(page);});return;}
     if(page!=='notes'&&privateNotesUnlocked)void lockPrivateNotes();
     if(page!==currentPage){persistPageFilters();filterTagIds=[...selectedPageTags(page)];}
-    currentPage=page;if(page!=='dashboard'&&dashboardCountdownTimer){clearInterval(dashboardCountdownTimer);dashboardCountdownTimer=null;}localStorage.setItem(PAGE_KEY,page);document.body.dataset.page=page;
+    currentPage=page;if(page!=='dashboard'&&dashboardCountdownTimer){clearInterval(dashboardCountdownTimer);dashboardCountdownTimer=null;dashboardClockTimer=null;}localStorage.setItem(PAGE_KEY,page);document.body.dataset.page=page;
     document.querySelectorAll('.page').forEach(node=>{
       const active=node.id===`${page}Page`;node.classList.toggle('active',active);
       if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
@@ -1157,50 +1158,66 @@
   function openGlobalSearch(){const dialog=$('globalSearchDialog');if(!dialog.open)showAppDialog(dialog);requestAnimationFrame(()=>{$('globalSearchInput').focus();$('globalSearchInput').select();});}
   function handleGlobalSearchOpen(event){const button=event.target.closest('[data-global-open]');if(!button)return;const kind=button.dataset.globalOpen,id=button.dataset.id,date=button.dataset.date;$('globalSearchDialog').close();if(kind==='task'){setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(id);return;}if(kind==='note'){setPage('notes');setNotesMode('public');openNoteDialog(id);return;}if(kind==='private-note'){if(!privateNotesUnlocked){showToast('Desbloqueie o cofre para abrir esta nota.');return;}setPage('notes');setNotesMode('private');openPrivateNoteEditor(id);return;}if(kind==='finance'){setPage('finance');openFinanceDialog(id);return;}if(kind==='calendar'&&isDateKey(date)){setPage('tasks');setPlannerSubpage('kanban',false);setWeek(date);openDayDialog(date);return;}const results=globalSearchRun($('globalSearchInput').value),row=results.get(button.dataset.group)?.[Number(button.dataset.index)];if(row){$('globalSearchDetailTitle').textContent=row.label||button.dataset.group;$('globalSearchDetailBody').textContent=[row.title,row.meta,row.summary].filter(Boolean).join('\n\n');showAppDialog($('globalSearchDetailDialog'));}}
   function renderAll() { renderTasks(); renderHome(); renderDashboard(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
+  function dashboardClockText(now=new Date()){
+    return {time:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false}),date:now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})};
+  }
   function dashboardCountdownLabel(event,now=Date.now()){
     const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));
+    if(event.allDay&&date===todayKey())return 'HOJE';
     const target=event.allDay?new Date(`${date}T00:00:00`).getTime():Date.parse(event.startAt);
-    if(event.allDay&&date===todayKey())return {main:'HOJE',detail:'Evento de dia todo'};
-    const remaining=Math.max(0,Math.floor((target-now)/1000));
-    const days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60),seconds=remaining%60;
+    const remaining=Math.max(0,Math.floor((target-now)/1000)),days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60),seconds=remaining%60;
     const pad=value=>String(value).padStart(2,'0');
-    return {main:days?`${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`:`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`,detail:'FALTAM'};
+    return days?`${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`:`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
   }
   function dashboardEventDateTime(event){
-    if(event.allDay)return formatDate(String(event.startAt).slice(0,10),{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-    const date=new Date(event.startAt);
-    return `${formatDate(dateKey(date),{weekday:'long',day:'2-digit',month:'long',year:'numeric'})} · ${date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+    const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt)),dateLabel=formatDate(date,{weekday:'long',day:'2-digit',month:'long',year:'numeric'}),prefix=date===todayKey()?'HOJE, ':date===addDays(todayKey(),1)?'AMANHÃ, ':'';
+    if(event.allDay)return `${prefix}${dateLabel} - DIA TODO`;
+    const dateObj=new Date(event.startAt),time=dateObj.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false});
+    return `${prefix}${dateLabel} - ${time}`;
   }
+  function dashboardEventInfo(event){return String(event.location||'').trim()||String(event.description||'').trim();}
+  function dashboardPrimaryEvents(){
+    const primaryPrefix='giovanni.p.rimoli@gmail.com:';
+    return getUpcomingCalendarEvents().filter(event=>String(event.id).startsWith(primaryPrefix)&&!calendarEventIsCompleted(event)&&!calendarEventIsDismissed(event)&&!calendarEventIsPast(event)).sort(calendarEventOrder);
+  }
+  function openDashboardEventPicker(){
+    const dialog=$('dashboardEventPickerDialog'),list=$('dashboardEventPickerList');if(!dialog||!list)return;
+    const events=dashboardPrimaryEvents();
+    list.innerHTML=events.length?events.map(event=>`<button class="dashboard-event-choice${userSettings.dashboardPinnedEventId===event.id?' is-selected':''}" type="button" data-dashboard-pick-event="${escapeHTML(event.id)}"><strong>${escapeHTML(event.title)}</strong><span>${escapeHTML(dashboardEventDateTime(event))}</span><small>${escapeHTML(dashboardEventInfo(event)||'Sem local ou descrição')}</small></button>`).join(''):'<p class="dashboard-event-picker-empty">Nenhum evento futuro carregado. Atualize a agenda no DASH e tente de novo.</p>';
+    showAppDialog(dialog);
+  }
+  function selectDashboardEvent(eventId){
+    const event=dashboardPrimaryEvents().find(item=>item.id===eventId);if(!event)return;
+    userSettings.dashboardPinnedEventId=event.id;saveUserSettings();$('dashboardEventPickerDialog')?.close();renderDashboard();showToast(`Evento escolhido: ${event.title}`);
+  }
+  function clearDashboardEventSelection(){userSettings.dashboardPinnedEventId='';saveUserSettings();$('dashboardEventPickerDialog')?.close();renderDashboard();showToast('Evento escolhido removido.');}
   function tickDashboardCountdowns(){
     if(currentPage!=='dashboard'){
       if(dashboardCountdownTimer){clearInterval(dashboardCountdownTimer);dashboardCountdownTimer=null;}
+      if(dashboardClockTimer){clearInterval(dashboardClockTimer);dashboardClockTimer=null;}
       return;
     }
     const now=Date.now();
     const shouldAdvance=calendarEvents.some(raw=>{const event=normalizeCalendarEvent(raw);if(!event||calendarEventIsCompleted(event)||calendarEventIsDismissed(event))return false;if(event.allDay)return String(event.endAt||event.startAt).slice(0,10)<=todayKey()&&String(event.startAt).slice(0,10)<todayKey();return Number.isFinite(Date.parse(event.startAt))&&Date.parse(event.startAt)<now;});
     if(shouldAdvance){renderDashboard();return;}
-    document.querySelectorAll('[data-countdown-event]').forEach(card=>{
-      const event=calendarEvents.find(item=>String(item.id)===card.dataset.countdownEvent);
-      const node=card.querySelector('[data-countdown-value]');
-      if(event&&node)node.textContent=dashboardCountdownLabel(normalizeCalendarEvent(event),now).main;
-    });
+    document.querySelectorAll('[data-countdown-event]').forEach(card=>{const event=calendarEvents.find(item=>String(item.id)===card.dataset.countdownEvent),node=card.querySelector('[data-countdown-value]');if(event&&node)node.textContent=dashboardCountdownLabel(normalizeCalendarEvent(event),now);});
+    const clock=dashboardClockText(new Date(now));if($('dashboardClockTime'))$('dashboardClockTime').textContent=clock.time;if($('dashboardClockDate'))$('dashboardClockDate').textContent=clock.date;
   }
   function startDashboardCountdown(){
-    if(dashboardCountdownTimer)clearInterval(dashboardCountdownTimer);
-    dashboardCountdownTimer=null;
-    if(currentPage==='dashboard'&&document.querySelector('[data-countdown-event]'))dashboardCountdownTimer=window.setInterval(tickDashboardCountdowns,1000);
+    if(dashboardCountdownTimer)clearInterval(dashboardCountdownTimer);if(dashboardClockTimer)clearInterval(dashboardClockTimer);
+    dashboardCountdownTimer=null;dashboardClockTimer=null;
+    if(currentPage==='dashboard'){dashboardCountdownTimer=window.setInterval(tickDashboardCountdowns,1000);dashboardClockTimer=dashboardCountdownTimer;tickDashboardCountdowns();}
   }
   function renderDashboard(){
-    const dateNode=$('dashboardDate'),container=$('dashboardCountdowns');
-    if(!dateNode||!container)return;
+    const dateNode=$('dashboardDate'),container=$('dashboardCountdowns');if(!dateNode||!container)return;
     dateNode.textContent=formatDate(todayKey(),{weekday:'long',day:'2-digit',month:'long'});
     const hint=$('dashboardSyncHint');if(hint){const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null;hint.textContent=(calendarSyncInProgress||calendarStatusFailed)&&calendarStatusMessage?calendarStatusMessage:last&&!Number.isNaN(last.getTime())?`Agenda sincronizada às ${last.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:calendarStatusMessage||'Toque em ↻ para atualizar a agenda';}
-    const primaryPrefix='giovanni.p.rimoli@gmail.com:';
-    const events=getUpcomingCalendarEvents().filter(event=>String(event.id).startsWith(primaryPrefix)&&!calendarEventIsCompleted(event)&&!calendarEventIsDismissed(event)&&!calendarEventIsPast(event)).slice(0,3);
-    container.innerHTML=events.length?events.map((event,index)=>{
-      const countdown=dashboardCountdownLabel(event),date=dashboardEventDateTime(event);
-      return `<article class="dashboard-tile countdown-card" data-countdown-event="${escapeHTML(event.id)}" style="--tile-accent:${['#79aaff','#ffbd69','#be9aff'][index]}"><span class="countdown-label">PRÓXIMO EVENTO ${index+1}</span><strong class="countdown-title">${escapeHTML(event.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(countdown.main)}</div><small class="countdown-date">${escapeHTML(countdown.detail==='Evento de dia todo'?countdown.detail:date)}${event.location?` · ${escapeHTML(event.location)}`:''}</small></article>`;
-    }).join(''):'<div class="dashboard-countdown-empty">Nenhum evento futuro na agenda principal do Google Calendar.</div>';
+    const events=dashboardPrimaryEvents(),pinnedId=userSettings.dashboardPinnedEventId||'',primaryPrefix='giovanni.p.rimoli@gmail.com:',pinnedRaw=calendarEvents.find(item=>String(item.id)===pinnedId),pinnedCandidate=pinnedRaw?normalizeCalendarEvent(pinnedRaw):null,pinned=pinnedCandidate&&String(pinnedCandidate.id).startsWith(primaryPrefix)&&!calendarEventIsCompleted(pinnedCandidate)&&!calendarEventIsDismissed(pinnedCandidate)&&!calendarEventIsPast(pinnedCandidate)?pinnedCandidate:null;
+    const upcoming=events.filter(event=>event.id!==pinned?.id).slice(0,2),clock=dashboardClockText();
+    const clockCard=`<article class="dashboard-tile countdown-card clock-card" style="--tile-accent:#79aaff"><strong class="clock-time" id="dashboardClockTime">${escapeHTML(clock.time)}</strong><small class="clock-date" id="dashboardClockDate">${escapeHTML(clock.date)}</small></article>`;
+    const chosenCard=pinned?`<article class="dashboard-tile countdown-card chosen-event-card" data-countdown-event="${escapeHTML(pinned.id)}" style="--tile-accent:#be9aff"><div class="countdown-event-heading"><span class="countdown-label">${escapeHTML(dashboardEventDateTime(pinned))}</span><button class="countdown-choice-button" type="button" data-dashboard-choose-event aria-label="Trocar evento escolhido">TROCAR</button></div><strong class="countdown-title">${escapeHTML(pinned.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(dashboardCountdownLabel(pinned))}</div><small class="countdown-info">${escapeHTML(dashboardEventInfo(pinned))}</small></article>`:`<button class="dashboard-tile countdown-card choose-event-card" type="button" data-dashboard-choose-event style="--tile-accent:#be9aff"><span class="countdown-label">SEU EVENTO</span><strong class="countdown-title">Escolha um evento</strong><span class="countdown-info">Toque para selecionar na sua agenda</span></button>`;
+    const upcomingCards=upcoming.map((event,index)=>`<article class="dashboard-tile countdown-card" data-countdown-event="${escapeHTML(event.id)}" style="--tile-accent:${['#ffbd69','#73d6a2'][index]}"><span class="countdown-label countdown-date-heading">${escapeHTML(dashboardEventDateTime(event))}</span><strong class="countdown-title">${escapeHTML(event.title)}</strong><div class="countdown-value" data-countdown-value>${escapeHTML(dashboardCountdownLabel(event))}</div><small class="countdown-info">${escapeHTML(dashboardEventInfo(event))}</small></article>`).join('');
+    container.innerHTML=clockCard+chosenCard+upcomingCards;
     startDashboardCountdown();
   }
   function homeDateLabel(date) {
@@ -2846,7 +2863,10 @@
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
     setPage(button.dataset.page);
   });
-  $('dashboardPage').addEventListener('click',event=>{if(event.target.closest('#dashboardCalendarSyncBtn')){const hint=$('dashboardSyncHint');if(hint)hint.textContent='Atualizando o Google Calendar…';void syncGoogleCalendar(true);}});
+  $('dashboardPage').addEventListener('click',event=>{if(event.target.closest('#dashboardCalendarSyncBtn')){const hint=$('dashboardSyncHint');if(hint)hint.textContent='Atualizando o Google Calendar…';void syncGoogleCalendar(true);return;}if(event.target.closest('[data-dashboard-choose-event]'))openDashboardEventPicker();});
+  $('dashboardEventPickerList').addEventListener('click',event=>{const button=event.target.closest('[data-dashboard-pick-event]');if(button)selectDashboardEvent(button.dataset.dashboardPickEvent);});
+  $('dashboardEventPickerClear').addEventListener('click',clearDashboardEventSelection);
+  $('dashboardEventPickerClose').addEventListener('click',()=>$('dashboardEventPickerDialog').close());
   function handleKanbanChange(event){
     const control=event.target.closest('[data-kanban-state]');if(!control)return;
     const taskId=control.dataset.kanbanState,choice=control.value;
