@@ -860,7 +860,7 @@
     if(!['pc','mobile'].includes(mode)||mode===viewMode)return;
     viewMode=mode;localStorage.setItem(VIEW_MODE_KEY,viewMode);syncViewModeSwitch();
     if(currentPage==='home'){setPage('tasks');return;}
-    updateNavIndicator(currentPage);if(currentPage==='tasks')renderTasks();
+    updateNavIndicator(currentPage);if(currentPage==='tasks')renderTasks();if(currentPage==='dashboard')renderDashboard();
   }
   function openFilterDialog() {
     $('tagMessage').textContent=''; $('newTagName').value='';
@@ -1179,7 +1179,7 @@
   function dashboardEventStartTime(event){if(event.allDay)return 'DIA TODO';return new Date(event.startAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false});}
   function dashboardWeekEventsMarkup(){
     const today=todayKey(),days=Array.from({length:7},(_,i)=>addDays(today,i));
-    return days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder),current=day===today,visibleEvents=dayEvents.slice(0,2),moreCount=Math.max(0,dayEvents.length-visibleEvents.length);return `<section class="dashboard-week-day dashboard-week-day-clickable${current?' is-current-day':''}" data-dashboard-week-day="${escapeHTML(day)}" role="button" tabindex="0" aria-label="Ver ${dayEvents.length} evento${dayEvents.length===1?'':'s'} de ${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}"><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?visibleEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong></div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}${moreCount?`<p class="dashboard-week-more">+${moreCount} evento${moreCount===1?'':'s'} · toque para ver todos</p>`:''}</section>`;}).join('');
+    return days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder),current=day===today,previewLimit=viewMode==='mobile'?1:2,visibleEvents=dayEvents.slice(0,previewLimit),moreCount=Math.max(0,dayEvents.length-visibleEvents.length);return `<section class="dashboard-week-day dashboard-week-day-clickable${current?' is-current-day':''}" data-dashboard-week-day="${escapeHTML(day)}" role="button" tabindex="0" aria-label="Ver ${dayEvents.length} evento${dayEvents.length===1?'':'s'} de ${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}"><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?visibleEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong></div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}${moreCount?`<p class="dashboard-week-more">+${moreCount} evento${moreCount===1?'':'s'} · toque para ver todos</p>`:''}</section>`;}).join('');
   }
   function openDashboardDayEvents(day){
     if(!isDateKey(day))return;const dialog=$('dashboardDayEventsDialog'),title=$('dashboardDayEventsTitle'),list=$('dashboardDayEventsList');if(!dialog||!title||!list)return;
