@@ -394,3 +394,6 @@ body[data-theme="light"] #dashboardPage .countdown-card{background:linear-gradie
 #dashboardPage .clock-time{width:100%;font-size:clamp(3rem,8vw,6rem);line-height:1;letter-spacing:-.055em;white-space:nowrap;}
 #dashboardPage .clock-date{max-width:100%;font-size:clamp(.9rem,1.35vw,1.12rem);line-height:1.4;}
 @media(max-width:700px){#dashboardPage .clock-card{gap:clamp(10px,3vw,16px);padding:clamp(14px,4vw,22px);}#dashboardPage .clock-time{font-size:clamp(2.55rem,14vw,4.1rem);}#dashboardPage .clock-date{font-size:clamp(.72rem,3.4vw,.9rem);}}
+/* Clock size must override the generic dashboard-card title rules */
+#dashboardPage .dashboard-tile>strong.clock-time{flex:none;width:100%;margin:0;text-align:center;font-size:clamp(4rem,10vw,6rem);line-height:1;letter-spacing:-.06em;}
+@media(max-width:700px){#dashboardPage .dashboard-tile>strong.clock-time{font-size:clamp(3.5rem,22vw,5rem);}}
