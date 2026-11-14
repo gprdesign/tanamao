@@ -794,3 +794,11 @@ dialog[open]{overflow-x:hidden;overflow-y:auto;touch-action:auto!important;-webk
 .kanban-fullscreen-dialog .kanban-calendar-choices{display:block;width:100%;}
 .kanban-fullscreen-dialog .kanban-calendar-choices #calendarFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
 @media(max-width:700px){#kanbanColumnDialog.kanban-fullscreen-dialog{width:calc(100% - 16px);max-width:900px;max-height:calc(100dvh - 16px);height:calc(100dvh - 16px);padding:12px}.kanban-fullscreen-dialog .kanban-calendar-choices #calendarFilters{grid-template-columns:1fr}}
+/* In the GERAL reminders list, only overdue (red) and due-today items are shown. */
+#kanbanBoard .kanban-reminder-overdue .kanban-reminder-item,.kanban-fullscreen-dialog .kanban-reminder-overdue .kanban-reminder-item{background:#2a1822;border-color:#8f3e50;color:#ffe1e4}
+#kanbanBoard .kanban-reminder-overdue .kanban-reminder-badge,.kanban-fullscreen-dialog .kanban-reminder-overdue .kanban-reminder-badge{background:#fee2e2;border-color:#e9a0a7;color:#7f1d1d}
+#kanbanBoard .kanban-reminder-today .kanban-reminder-item,.kanban-fullscreen-dialog .kanban-reminder-today .kanban-reminder-item{background:#282414;border-color:#8a6a2e;color:#fff}
+#kanbanBoard .kanban-reminder-today .kanban-reminder-badge,.kanban-fullscreen-dialog .kanban-reminder-today .kanban-reminder-badge{background:transparent;border-color:#8a6a2e;color:#fff}
+body[data-theme="light"] #kanbanBoard .kanban-reminder-today .kanban-reminder-item,body[data-theme="light"] .kanban-fullscreen-dialog .kanban-reminder-today .kanban-reminder-item{background:#fff!important;color:#192438!important;border-color:#d4dce8!important}
+body[data-theme="light"] #kanbanBoard .kanban-reminder-today .kanban-reminder-badge,body[data-theme="light"] .kanban-fullscreen-dialog .kanban-reminder-today .kanban-reminder-badge{background:transparent!important;color:#192438!important;border-color:#cbd5e1!important}
+body[data-theme="light"] #kanbanBoard .kanban-reminder-overdue .kanban-reminder-item,body[data-theme="light"] .kanban-fullscreen-dialog .kanban-reminder-overdue .kanban-reminder-item{background:#fee2e2!important;color:#7f1d1d!important;border-color:#e9a0a7!important}
