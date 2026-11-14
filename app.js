@@ -327,7 +327,7 @@
     else return;
     userSettings.calendarIdsConfigured=true;saveUserSettings();renderCalendarFilters();
     if(!userSettings.calendarIds.length){setCalendarEvents([]);setCalendarStatus('Nenhuma agenda selecionada; os eventos foram removidos da Home.');renderCalendarSyncUI();refreshMobileKanbanDialog();return;}
-    void syncGoogleCalendar(true).finally(()=>setTimeout(refreshMobileKanbanDialog,150));
+    void syncGoogleCalendar(true).finally(()=>setTimeout(()=>{const dialog=$('kanbanColumnDialog');if(dialog?.open){if(dialog.dataset.mobileDashboard==='true')refreshMobileKanbanDialog();else if(dialog.dataset.columnKey==='events')openKanbanColumnDialog('events');}},180));
   }
   function startCalendarAutoSync(){
     if(calendarAutoSyncTimer)return;
@@ -2104,7 +2104,7 @@
     const peers=key==='reminders'?tasks.filter(item=>!item.deletedAt&&isReminderTask(item)&&Boolean(item.completedAt)===Boolean(task.completedAt)):key==='myday'?(userSettings.myDayTaskIds||[]).map(id=>tasks.find(item=>item.id===id&&!item.deletedAt&&!item.completedAt)).filter(Boolean):tasks.filter(item=>!item.deletedAt&&(key==='done'?Boolean(item.completedAt):!item.completedAt&&!isReminderTask(item)&&getKanbanState(item)===key));
     const ordered=kanbanSortTasks(peers,key),index=ordered.findIndex(item=>item.id===task.id),target=index+(direction==='up'?-1:1);if(index<0||target<0||target>=ordered.length)return;
     [ordered[index],ordered[target]]=[ordered[target],ordered[index]];userSettings.kanbanSortBy={...(userSettings.kanbanSortBy||{}),[key]:'manual'};userSettings.kanbanManualOrderBy={...(userSettings.kanbanManualOrderBy||{}),[key]:ordered.map(item=>item.id)};
-    ordered.forEach((item,i)=>{item.sortOrder=i;item.updatedAt=nowISO();});if(key==='myday')userSettings.myDayTaskIds=ordered.map(item=>item.id);saveTasks(false);saveUserSettings();renderKanban();refreshMobileKanbanDialog();
+    ordered.forEach((item,i)=>{item.sortOrder=i;item.updatedAt=nowISO();});if(key==='myday')userSettings.myDayTaskIds=ordered.map(item=>item.id);saveTasks();saveUserSettings();renderKanban();refreshMobileKanbanDialog();
   }
   function reorderTaskBefore(sourceId,targetId) {
     if (sourceId===targetId) return;
