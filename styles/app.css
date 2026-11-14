@@ -645,3 +645,13 @@ body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-task .
 body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-task .task-open{display:block!important;width:100%!important;max-width:100%!important;max-height:none!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;-webkit-line-clamp:unset!important;-webkit-box-orient:initial!important;overflow-wrap:anywhere!important;word-break:normal!important;}
 /* Keep the completion confirmation in the mobile Kanban modal top layer. */
 #kanbanColumnDialog>.day-completion-confirm{z-index:10021!important;}
+
+/* Requested mobile Kanban tile order: agenda first, Meu Dia second. */
+body.view-mobile[data-page="tasks"] .mobile-kanban-dashboard{grid-template-rows:repeat(4,minmax(0,1fr));}
+body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-events{grid-column:1;grid-row:1;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-reminders{grid-column:2;grid-row:1;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-myday{grid-column:1/-1;grid-row:2;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-doing{grid-column:1;grid-row:3;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-todo{grid-column:2;grid-row:3;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-blocked{grid-column:1;grid-row:4;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-done{grid-column:2;grid-row:4;}
