@@ -1015,9 +1015,10 @@
     $('kanbanCompletionChecklistItems').innerHTML=open.map(item=>`<li>${escapeHTML(item.text)}</li>`).join('');
     confirm.classList.toggle('has-open-subtasks',Boolean(open.length));
     if(returnDialog==='task-dialog'){$('taskDialog').append(confirm);confirm.dataset.kanbanReturnDialog=returnDialog;}
+    else if($('kanbanColumnDialog').open&&$('kanbanColumnDialog').dataset.mobileDashboard==='true'){$('kanbanColumnDialog').append(confirm);confirm.dataset.kanbanReturnParent='tasksPage';}
     confirm.hidden=false;$('kanbanCompletionConfirmBtn').focus();
   }
-  function closeKanbanTaskCompletionConfirm(){const confirm=$('kanbanCompletionConfirm');pendingKanbanCompletionId='';confirm.hidden=true;if(confirm.dataset.kanbanReturnDialog==='task-dialog'){$('tasksPage').append(confirm);delete confirm.dataset.kanbanReturnDialog;}}
+  function closeKanbanTaskCompletionConfirm(){const confirm=$('kanbanCompletionConfirm');pendingKanbanCompletionId='';confirm.hidden=true;if(confirm.dataset.kanbanReturnDialog==='task-dialog'){$('tasksPage').append(confirm);delete confirm.dataset.kanbanReturnDialog;}if(confirm.dataset.kanbanReturnParent){$('tasksPage').append(confirm);delete confirm.dataset.kanbanReturnParent;}}
   function confirmKanbanTaskCompletion(){
     const task=tasks.find(item=>item.id===pendingKanbanCompletionId&&!item.deletedAt&&!item.completedAt);if(!task){closeKanbanTaskCompletionConfirm();return;}
     const returnDialog=$('kanbanCompletionConfirm').dataset.kanbanReturnDialog||$('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog||'';delete $('kanbanCompletionConfirmBtn').dataset.kanbanReturnDialog;const nextDate=toggleComplete(task.id,true);closeKanbanTaskCompletionConfirm();if(returnDialog==='task-dialog')closeTaskDialog();showTaskCompletionToast(nextDate);renderKanban();refreshMobileKanbanDialog();if(returnDialog&&returnDialog!=='task-dialog'&&$('kanbanColumnDialog').open)openKanbanColumnDialog(returnDialog);

@@ -638,3 +638,10 @@ body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-event-
 body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-badge{font-size:.52rem!important;}
 body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-item{background:#111827!important;color:var(--text)!important;}
 body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-reminder-today .kanban-reminder-item{background:#282414!important;color:#ffe0a1!important;}
+
+/* Mobile Kanban dialog: show complete task titles on multiple lines. */
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-task .task-main{min-width:0!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-task .task-title-row{align-items:flex-start!important;min-width:0!important;}
+body.view-mobile[data-page="tasks"] .mobile-kanban-dialog-content .kanban-task .task-open{display:block!important;width:100%!important;max-width:100%!important;max-height:none!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;-webkit-line-clamp:unset!important;-webkit-box-orient:initial!important;overflow-wrap:anywhere!important;word-break:normal!important;}
+/* Keep the completion confirmation in the mobile Kanban modal top layer. */
+#kanbanColumnDialog>.day-completion-confirm{z-index:10021!important;}
