@@ -770,3 +770,27 @@ body[data-theme="light"] .work-folder-card,body[data-theme="light"] .work-folder
 .finance-detail-sections{min-height:0;}
 .finance-bank-open:hover{background:var(--panel2);border-radius:9px;}
 @media(max-width:700px){.page.active{overscroll-behavior-y:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;}.finance-summary-dialog-head{grid-template-columns:auto minmax(0,1fr) auto auto;gap:4px}.finance-summary-dialog-head h2{font-size:.88rem}.finance-detail-dialog[open]{max-height:calc(100dvh - 24px);}}
+
+/* Native scrolling only: pages and dialogs own their overflow; no gesture interception. */
+.page.active,#settingsPage.active{overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;-webkit-overflow-scrolling:touch;}
+dialog[open]{overflow-x:hidden;overflow-y:auto;touch-action:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+.kanban-fullscreen-dialog[open]{overflow:hidden;display:flex;flex-direction:column;}
+.kanban-fullscreen-dialog .kanban-fullscreen-content{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;touch-action:auto!important;-webkit-overflow-scrolling:touch;}
+.kanban-fullscreen-dialog .kanban-reminder-section{display:grid;gap:10px;min-width:0;}
+.kanban-fullscreen-dialog .kanban-reminder-header{display:flex!important;flex-wrap:wrap;align-items:center!important;gap:10px!important;min-width:0;padding-bottom:8px;border-bottom:1px solid var(--line);}
+.kanban-fullscreen-dialog .kanban-reminder-heading{display:flex;align-items:center;gap:8px;flex:1 1 180px;min-width:0;font-weight:900;letter-spacing:.04em;}
+.kanban-fullscreen-dialog .kanban-reminder-header-actions{display:flex!important;align-items:center;gap:8px;flex:0 1 auto;margin-left:auto;}
+.kanban-fullscreen-dialog .kanban-reminder-row{display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;align-items:stretch!important;gap:8px!important;min-width:0;margin:0!important;}
+.kanban-fullscreen-dialog .kanban-reminder-item{display:flex!important;align-items:center;gap:8px;width:100%;min-width:0;min-height:44px;padding:8px 10px;text-align:left;}
+.kanban-fullscreen-dialog .kanban-reminder-title{min-width:0;overflow-wrap:anywhere;}
+.kanban-fullscreen-dialog .kanban-reminder-row .reminder-complete,.kanban-fullscreen-dialog .kanban-reminder-row .kanban-reminder-reopen,.kanban-fullscreen-dialog .kanban-reminder-row [data-google-task-done]{width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;margin:0!important;}
+.kanban-fullscreen-dialog .kanban-add-reminder{display:grid;place-items:center;flex:0 0 42px;width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important;padding:0!important;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--text);font-size:1.35rem!important;font-weight:850;line-height:1;cursor:pointer;}
+.kanban-fullscreen-dialog .kanban-add-reminder:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel2));}
+.kanban-fullscreen-dialog .kanban-reminders-month-toggle{min-height:38px;padding:7px 10px;font-size:.7rem;}
+.kanban-fullscreen-dialog .kanban-reminder-header-actions .kanban-sort-control select{min-height:38px;}
+@media(max-width:700px){.kanban-fullscreen-dialog[open]{overflow:hidden}.kanban-fullscreen-dialog .kanban-fullscreen-content{overflow:auto}.kanban-fullscreen-dialog .kanban-reminder-header{gap:8px!important}.kanban-fullscreen-dialog .kanban-reminder-header-actions{flex-wrap:wrap}.kanban-fullscreen-dialog .kanban-reminder-row{grid-template-columns:minmax(0,1fr) 42px!important}.kanban-fullscreen-dialog .kanban-reminder-row .reminder-complete,.kanban-fullscreen-dialog .kanban-reminder-row .kanban-reminder-reopen,.kanban-fullscreen-dialog .kanban-reminder-row [data-google-task-done]{width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important}}
+#kanbanColumnDialog.kanban-fullscreen-dialog{width:min(980px,calc(100vw - 40px));max-width:980px;max-height:90dvh;padding:18px;}
+.kanban-fullscreen-dialog .kanban-reminder-heading>span{margin-left:4px;padding:3px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);font-size:.72rem;line-height:1.1;}
+.kanban-fullscreen-dialog .kanban-calendar-choices{display:block;width:100%;}
+.kanban-fullscreen-dialog .kanban-calendar-choices #calendarFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+@media(max-width:700px){#kanbanColumnDialog.kanban-fullscreen-dialog{width:calc(100% - 16px);max-width:900px;max-height:calc(100dvh - 16px);height:calc(100dvh - 16px);padding:12px}.kanban-fullscreen-dialog .kanban-calendar-choices #calendarFilters{grid-template-columns:1fr}}
