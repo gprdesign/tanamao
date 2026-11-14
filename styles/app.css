@@ -655,3 +655,44 @@ body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-doing{grid-column:1;g
 body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-todo{grid-column:2;grid-row:3;}
 body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-blocked{grid-column:1;grid-row:4;}
 body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-done{grid-column:2;grid-row:4;}
+
+/* Mobile/desktop usability fixes requested in Nov 2026. */
+.mobile-kanban-tile-head{justify-content:flex-start!important;gap:9px!important;}
+.mobile-kanban-tile-head b{order:-1;color:var(--tile-accent,var(--accent))!important;border-color:var(--tile-accent,var(--accent))!important;background:color-mix(in srgb,var(--tile-accent,var(--accent)) 15%,var(--panel))!important;}
+.mobile-kanban-tile.is-events{--tile-accent:#78aaff;}
+.mobile-kanban-tile.is-reminders{--tile-accent:#ad8cff;}
+.mobile-kanban-tile.is-doing{--tile-accent:#ffc46b;}
+.mobile-kanban-tile.is-todo{--tile-accent:#73d6a2;}
+.mobile-kanban-tile.is-blocked{--tile-accent:#ff8b8b;}
+.mobile-kanban-tile.is-done{--tile-accent:#8299c6;}
+.finance-expense-day{border:0!important;border-radius:0!important;background:transparent!important;padding:0!important;}
+.finance-expense-day-rows{border:0!important;border-radius:0!important;background:transparent!important;padding:5px 0 0!important;box-shadow:none!important;}
+.finance-expense-day[open]>summary{border-color:transparent!important;background:transparent!important;}
+.finance-receive-btn{width:34px;min-width:34px;height:34px;border-radius:50%;color:#14532d;background:#dcfce7;border-color:#86c99c;font-weight:950;font-size:1rem;}
+.task-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.task-details-grid>.task-detail-title,.task-details-grid>.task-detail-content{grid-column:1/-1;}
+#settingsPage.active{display:flex;flex-direction:column;min-height:0;overflow-y:auto!important;overscroll-behavior:contain;}
+#settingsPage .settings-stack{flex:0 0 auto;min-height:max-content;}
+@media(max-width:700px){#settingsPage.active{height:100%;max-height:100%;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));}#settingsPage .settings-stack{padding-bottom:16px;}#taskDialog .task-details-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}#taskDialog .task-details-grid>.task-detail-title,#taskDialog .task-details-grid>.task-detail-content{grid-column:1/-1;}}
+
+.kanban-lane-tools{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.kanban-sort-control{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:.62rem;font-weight:800;}
+.kanban-sort-control select{max-width:112px;min-height:32px;padding:3px 7px;font-size:.65rem;}
+.kanban-lane-tools .kanban-add{flex:none;width:32px;min-width:32px;height:32px;min-height:32px;padding:0;font-size:1.2rem;}
+.finance-expense-day{border:0!important;border-radius:0!important;background:transparent!important;padding:0!important;}
+.finance-expense-day-rows{border:0!important;border-radius:0!important;background:transparent!important;padding:5px 0 0!important;box-shadow:none!important;}
+.finance-expense-day[open]>summary{border-color:transparent!important;background:transparent!important;}
+.finance-receive-btn{width:34px;min-width:34px;height:34px;border-radius:50%;color:#14532d;background:#dcfce7;border-color:#86c99c;font-weight:950;font-size:1rem;}
+#settingsPage .settings-stack{flex:0 0 auto;min-height:max-content;}
+@media(max-width:700px){#settingsPage.active{height:100%;max-height:100%;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));}#settingsPage .settings-stack{padding-bottom:16px;}#taskDialog .task-details-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}.kanban-sort-control span{display:none;}.kanban-sort-control select{max-width:94px;}}
+
+.mobile-kanban-tile-head{justify-content:flex-start!important;gap:9px!important;}
+.mobile-kanban-tile-head b{order:-1;color:var(--tile-accent,var(--accent))!important;border-color:var(--tile-accent,var(--accent))!important;background:color-mix(in srgb,var(--tile-accent,var(--accent)) 15%,var(--panel))!important;}
+.mobile-kanban-tile.is-events{--tile-accent:#78aaff}.mobile-kanban-tile.is-reminders{--tile-accent:#ad8cff}.mobile-kanban-tile.is-doing{--tile-accent:#ffc46b}.mobile-kanban-tile.is-todo{--tile-accent:#73d6a2}.mobile-kanban-tile.is-blocked{--tile-accent:#ff8b8b}.mobile-kanban-tile.is-done{--tile-accent:#8299c6}
+.finance-expense-day{border:0!important;border-radius:0!important;background:transparent!important;padding:0!important}.finance-expense-day-rows{border:0!important;border-radius:0!important;background:transparent!important;padding:5px 0 0!important;box-shadow:none!important}.finance-expense-day[open]>summary{border-color:transparent!important;background:transparent!important}
+.finance-receive-btn{width:34px;min-width:34px;height:34px;border-radius:50%;color:#14532d;background:#dcfce7;border-color:#86c99c;font-weight:950;font-size:1rem}
+.task-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.task-details-grid>.task-detail-title,.task-details-grid>.task-detail-content{grid-column:1/-1}
+#settingsPage.active{display:flex;flex-direction:column;min-height:0;overflow-y:auto!important;overscroll-behavior:contain}#settingsPage .settings-stack{flex:0 0 auto;min-height:max-content}
+.notes-archive-toolbar{display:flex;justify-content:flex-end;margin:0 0 8px}.kanban-event-section h4{display:flex;align-items:center;gap:7px}.kanban-event-section h4 .kanban-add{margin-left:auto}
+.kanban-reminder-row:has([data-google-task-done]){grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px}
+@media(max-width:700px){#settingsPage.active{height:100%;max-height:100%;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}#settingsPage .settings-stack{padding-bottom:16px}#taskDialog .task-details-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kanban-sort-control span{display:none}.kanban-sort-control select{max-width:94px}}
