@@ -751,3 +751,4 @@ body[data-theme="light"] .note-archived-badge{color:#7a4b05;background:#fff4d8;b
 @media(max-width:700px){.page.active{overflow-y:auto!important;touch-action:pan-y;-webkit-overflow-scrolling:touch;}#settingsPage.active{height:100%;max-height:100%;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px));}#settingsPage .settings-stack{padding-bottom:20px;}}
 .finance-upcoming-row-wrap .finance-receive-btn{display:grid!important;visibility:visible!important;opacity:1!important;place-items:center!important;}
 .note-card-controls{flex-wrap:wrap;align-items:flex-start;}
+.note-tags-dialog{width:min(520px,calc(100vw - 24px));max-height:min(80dvh,700px);overflow:auto}.note-tags-dialog .note-tag-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr));gap:8px}.note-tags-dialog .dialog-hint{margin:0 0 12px}

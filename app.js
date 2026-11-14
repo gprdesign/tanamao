@@ -2386,7 +2386,7 @@
     $('deleteNoteBtn').classList.toggle('hidden',!note);
     $('lockNoteBtn').classList.toggle('hidden',!note);
     $('noteTitle').value=note?.title || ''; $('noteContent').value=note?.content || '';if($('noteContentEditor'))$('noteContentEditor').innerHTML=markdownToRichNote(note?.content||'');
-    renderNoteTagChoices(note?.tagIds||[]);$('noteTagChoices').hidden=true;$('noteTagsToggle').textContent=`＋ TAGS${(note?.tagIds||[]).length?` (${note.tagIds.length})`:''}`;$('noteTagsToggle').setAttribute('aria-expanded','false');$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';renderLinkInputs('noteLinksList',noteLinks(note));
+    renderNoteTagChoices(note?.tagIds||[]);$('noteTagsToggle').textContent=`＋ TAGS${(note?.tagIds||[]).length?` (${note.tagIds.length})`:''}`;$('noteTagsToggle').setAttribute('aria-expanded','false');$('noteNewTagRow').hidden=true;$('noteNewTagToggle').hidden=false;$('noteNewTagToggle').setAttribute('aria-expanded','false');$('noteTagMessage').textContent='';renderLinkInputs('noteLinksList',noteLinks(note));
     showAppDialog($('noteDialog'));
   }
   function saveNote(event,close=true) {
@@ -3041,8 +3041,8 @@
   $('noteForm').addEventListener('submit',saveNote);
   $('noteForm').addEventListener('keydown',event=>handlePopupKeyboard(event,'note'));
   $('noteForm').addEventListener('input',()=>{noteDialogDirty=true;});$('noteContentEditor')?.addEventListener('input',syncRichNoteContent);$('noteContentEditor')?.addEventListener('keydown',event=>{const format=noteFormatShortcut(event);if(format){event.preventDefault();applyNoteFormat('noteContent',format);}});
-  $('noteForm').addEventListener('change',event=>{noteDialogDirty=true;if(event.target.closest('#noteTagChoices')){const count=$('noteTagChoices').querySelectorAll('input:checked').length;$('noteTagsToggle').textContent=`＋ TAGS${count?` (${count})`:''}`;}});
-  $('noteTagsToggle')?.addEventListener('click',()=>{const open=$('noteTagChoices').hidden;$('noteTagChoices').hidden=!open;$('noteTagsToggle').setAttribute('aria-expanded',String(open));});$('noteNewTagToggle').addEventListener('click',()=>{const open=$('noteNewTagRow').hidden;$('noteNewTagRow').hidden=!open;$('noteNewTagToggle').setAttribute('aria-expanded',String(open));if(open)$('noteNewTagName').focus();});
+  $('noteForm').addEventListener('change',()=>{noteDialogDirty=true;});$('noteTagChoices').addEventListener('change',()=>{noteDialogDirty=true;const count=$('noteTagChoices').querySelectorAll('input:checked').length;$('noteTagsToggle').textContent=`＋ TAGS${count?` (${count})`:''}`;});
+  $('noteTagsToggle')?.addEventListener('click',()=>{showAppDialog($('noteTagsDialog'));$('noteTagsToggle').setAttribute('aria-expanded','true');});$('closeNoteTagsDialog')?.addEventListener('click',()=>{$('noteTagsDialog').close();$('noteTagsToggle').setAttribute('aria-expanded','false');});$('noteTagsDialog')?.addEventListener('close',()=>$('noteTagsToggle').setAttribute('aria-expanded','false'));$('noteNewTagToggle').addEventListener('click',()=>{const open=$('noteNewTagRow').hidden;$('noteNewTagRow').hidden=!open;$('noteNewTagToggle').setAttribute('aria-expanded',String(open));if(open)$('noteNewTagName').focus();});
   $('noteNewTagAdd').addEventListener('click',createNoteTag);
   $('noteNewTagName').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();createNoteTag();}});
   $('noteLinkAddBtn').addEventListener('click',()=>{addLinkInput('noteLinksList');noteDialogDirty=true;});
