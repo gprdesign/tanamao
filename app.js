@@ -1011,7 +1011,7 @@
     return `<section class="kanban-column kanban-my-day" data-my-day-drop aria-label="Meu Dia"><header class="kanban-column-head"><h3>MEU DIA</h3><span>${items.length}</span>${kanbanLaneTools('myday')}</header><div class="kanban-column-list kanban-my-day-list" data-my-day-list>${cards||'<p class="kanban-empty my-day-empty">Arraste para cá as tarefas que você escolheu fazer hoje.</p>'}</div></section>`;
   }
   function renderKanbanDoneColumn(all){
-    const collapsed=document.body.classList.contains('view-mobile')?!userSettings.kanbanDoneMobileExpanded:!userSettings.kanbanDoneDialogOpen||(userSettings.kanbanCollapsedColumns||[]).includes('done'),done=kanbanSortTasks(all.filter(task=>!isReminderTask(task)&&task.completedAt),'done'),cards=done.map(task=>`<div class="kanban-task">${taskCard(task,{canMove:false,late:false,draggable:true})}</div>`).join('');
+    const collapsed=document.body.classList.contains('view-mobile')?!userSettings.kanbanDoneMobileExpanded:!userSettings.kanbanDoneDialogOpen||(userSettings.kanbanCollapsedColumns||[]).includes('done'),done=kanbanSortTasks(all.filter(task=>!isReminderTask(task)&&task.completedAt),'done'),cards=done.map(task=>`<div class="kanban-task">${taskCard(task,{canMove:true,late:false,draggable:true})}</div>`).join('');
     const collapseButton=document.body.classList.contains('view-mobile')?'':`<button class="kanban-collapse-btn" type="button" data-kanban-collapse="done" aria-expanded="${!collapsed}" aria-label="${collapsed?'Expandir':'Recolher'} feito">⌄</button>`;
     return `<section class="kanban-column kanban-done${collapsed?' is-collapsed':''}" data-kanban-column="done"><header class="kanban-column-head"><h3><button class="kanban-title-button" type="button" data-kanban-title="done">FEITO</button></h3><span>${done.length}</span>${kanbanLaneTools('done')}${collapseButton}</header><div class="kanban-column-list kanban-done-list" data-kanban-body="done"${collapsed?' hidden':''}>${cards||'<p class="kanban-empty">Nada concluído ainda.</p>'}</div></section>`;
   }
@@ -1773,7 +1773,7 @@
   }
   function renderNotes() {
     const archiveToggle=$('notesArchiveToggle');if(archiveToggle){archiveToggle.setAttribute('aria-pressed',String(showArchivedNotes));archiveToggle.textContent=showArchivedNotes?'VER NOTAS':'ARQUIVADAS';}
-    const active=visibleNotes('notes').filter(note=>{const archived=userSettings.archivedNoteIds.includes(note.id);return showArchivedNotes?archived:!archived;}).sort(noteOrder);
+    const active=visibleNotes('notes').filter(note=>{const archived=userSettings.archivedNoteIds.includes(note.id);return showArchivedNotes?archived:!archived||filterTagIds.length>0;}).sort(noteOrder);
     $('notesList').innerHTML=active.length ? active.map(note=>{
       const id=escapeHTML(note.id),tagsHtml=(note.tagIds||[]).map(tagId=>tags.find(tag=>tag.id===tagId&&!tag.deletedAt)).filter(Boolean).map(tag=>`<span class="note-tag-pill" style="border-color:${escapeHTML(tag.color)}66;color:${escapeHTML(tag.color)}">${escapeHTML(tag.name)}</span>`).join('');
       const title=note.title?`<h3 class="note-card-title">${escapeHTML(note.title)}</h3>`:'<span class="note-card-title-placeholder" aria-hidden="true"></span>';
