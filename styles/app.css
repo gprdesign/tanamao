@@ -696,3 +696,58 @@ body.view-mobile[data-page="tasks"] .mobile-kanban-tile.is-done{grid-column:2;gr
 .notes-archive-toolbar{display:flex;justify-content:flex-end;margin:0 0 8px}.kanban-event-section h4{display:flex;align-items:center;gap:7px}.kanban-event-section h4 .kanban-add{margin-left:auto}
 .kanban-reminder-row:has([data-google-task-done]){grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px}
 @media(max-width:700px){#settingsPage.active{height:100%;max-height:100%;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}#settingsPage .settings-stack{padding-bottom:16px}#taskDialog .task-details-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kanban-sort-control span{display:none}.kanban-sort-control select{max-width:94px}}
+
+/* Final UX refinements: date presets, archive browsing, and calendar selection */
+.date-quick-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.date-quick-actions button{min-height:30px;padding:5px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);font-size:.7rem;font-weight:850;letter-spacing:.035em;cursor:pointer}
+.date-quick-actions button:hover,.date-quick-actions button:focus-visible{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,var(--panel));outline:none}
+#calendarEventCreateDialog .calendar-create-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#calendarEventCreateDialog .calendar-create-grid>.field:first-child{grid-column:1/-1}
+#calendarEventCreateDialog form>.field,#googleTaskCreateDialog form>.field{min-width:0}
+.kanban-event-popup{display:grid;gap:14px;padding:0!important;border:0!important;background:transparent!important}
+.kanban-event-popup-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--panel)),var(--panel) 75%)}
+.kanban-event-popup-head h3{margin:4px 0;font-size:1.15rem;letter-spacing:.025em}
+.kanban-event-popup-head p{margin:0;color:var(--muted);font-size:.85rem}
+.kanban-event-popup-head .kanban-add{flex:0 0 44px;width:44px;height:44px;border-radius:13px;font-size:1.3rem}
+.kanban-calendar-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kanban-calendar-choices .calendar-filter-row{margin:0;min-height:58px;border-radius:12px;transition:border-color .15s,background .15s}
+.kanban-calendar-choices .calendar-filter-row:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+.kanban-event-popup .kanban-event-list{display:grid;gap:8px}
+.kanban-event-popup .kanban-event-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.note-archived-badge{display:inline-flex;align-items:center;justify-content:center;align-self:center;margin:0 6px 0 0;padding:4px 8px;border:1px solid #d19b45;border-radius:999px;background:color-mix(in srgb,#d19b45 16%,var(--panel));color:#efbf70;font-size:.62rem;font-weight:950;letter-spacing:.06em;white-space:nowrap}
+.archived-notes-dialog{width:min(1080px,calc(100vw - 24px));max-width:1080px;max-height:min(88dvh,900px);overflow:auto}
+.archived-notes-dialog .dialog-head{position:sticky;top:-18px;z-index:4;padding:8px 0 12px;background:var(--panel)}
+.archived-notes-dialog .note-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));align-items:start;gap:14px}
+.note-rich-editor{min-height:230px;max-height:55vh;overflow:auto;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;outline:none}
+.note-rich-editor:empty::before{content:attr(data-placeholder);color:var(--muted);pointer-events:none}
+.note-rich-editor:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+.note-rich-editor strong{font-weight:900}.note-rich-editor em{font-style:italic}.note-rich-editor u{text-decoration:underline;text-underline-offset:3px}
+#noteContentEditor[contenteditable="true"]{font:inherit}
+#noteTagsToggle{justify-self:start;min-width:90px}
+#noteTagChoices[hidden]{display:none!important}
+.finance-upcoming-row-wrap{display:grid;grid-template-columns:minmax(0,1fr) 36px;align-items:center;gap:7px}
+.finance-upcoming-row-wrap .finance-upcoming-row{min-width:0;width:100%}
+.finance-upcoming-row-wrap .finance-receive-btn{flex:none}
+.finance-upcoming-row{display:grid!important;grid-template-columns:72px minmax(0,1fr) auto;align-items:center;gap:12px;text-align:left}
+.finance-upcoming-title{min-width:0;overflow-wrap:anywhere}
+.finance-formula-note{margin:8px 0 16px}
+@media(max-width:700px){
+ #calendarEventCreateDialog .calendar-create-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .kanban-calendar-choices{grid-template-columns:1fr}
+ .kanban-event-popup-head{padding:12px}
+ .kanban-event-popup-head p{font-size:.75rem}
+ .finance-upcoming-row{grid-template-columns:52px minmax(0,1fr);gap:5px 10px}
+ .finance-upcoming-amount{grid-column:2}
+ .finance-upcoming-row-wrap{grid-template-columns:minmax(0,1fr) 34px}
+ .note-rich-editor{min-height:180px;max-height:46vh}
+ .archived-notes-dialog .note-list{grid-template-columns:1fr}
+}
+body[data-theme="light"] .note-archived-badge{color:#7a4b05;background:#fff4d8;border-color:#e3bd6f}
+
+/* Scroll containers must receive wheel and touch gestures on all input devices */
+.page.active,#settingsPage.active,.kanban-fullscreen-dialog[open],.archived-notes-dialog[open]{min-height:0;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+#settingsPage.active{height:100%;max-height:100%;overflow-y:auto!important;overflow-x:hidden!important;}
+#settingsPage .settings-stack{min-height:max-content;flex:0 0 auto;}
+@media(max-width:700px){.page.active{overflow-y:auto!important;touch-action:pan-y;-webkit-overflow-scrolling:touch;}#settingsPage.active{height:100%;max-height:100%;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px));}#settingsPage .settings-stack{padding-bottom:20px;}}
+.finance-upcoming-row-wrap .finance-receive-btn{display:grid!important;visibility:visible!important;opacity:1!important;place-items:center!important;}
+.note-card-controls{flex-wrap:wrap;align-items:flex-start;}
