@@ -862,3 +862,10 @@ body[data-view-mode="mobile"] .settings-stack{grid-template-columns:minmax(0,1fr
 body[data-layout-preference="pc"] .settings-stack{grid-template-columns:repeat(2,minmax(0,1fr));}
 body[data-layout-preference="pc"] .settings-stack>.settings-wide{grid-column:1/-1;}
 @media(max-width:700px){body.view-mobile #settingsPage .settings-stack{grid-template-columns:minmax(0,1fr)!important;}body[data-layout-preference="pc"] #settingsPage .settings-stack{grid-template-columns:repeat(2,minmax(0,1fr))!important;}body[data-layout-preference="pc"] #settingsPage .settings-stack>.settings-wide{grid-column:1/-1;}}
+
+/* Readable reminder text and states on light backgrounds in both layouts. */
+html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanbanBoard,.kanban-fullscreen-dialog) .kanban-reminder-title{color:#192438!important;opacity:1!important;}
+html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanbanBoard,.kanban-fullscreen-dialog) .kanban-reminder-overdue .kanban-reminder-item{background:#fee2e2!important;color:#7f1d1d!important;border-color:#e9a0a7!important;}
+html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanbanBoard,.kanban-fullscreen-dialog) .kanban-reminder-overdue .kanban-reminder-badge{background:#f9c8ce!important;color:#7f1d1d!important;border-color:#e9a0a7!important;}
+html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanbanBoard,.kanban-fullscreen-dialog) .kanban-reminder-today .kanban-reminder-item{background:#fff!important;color:#192438!important;border-color:#d4dce8!important;}
+html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanbanBoard,.kanban-fullscreen-dialog) .kanban-reminder-today .kanban-reminder-badge{background:#e7eef8!important;color:#192438!important;border-color:#cbd5e1!important;}
