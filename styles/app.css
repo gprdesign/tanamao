@@ -802,3 +802,8 @@ dialog[open]{overflow-x:hidden;overflow-y:auto;touch-action:auto!important;-webk
 body[data-theme="light"] #kanbanBoard .kanban-reminder-today .kanban-reminder-item,body[data-theme="light"] .kanban-fullscreen-dialog .kanban-reminder-today .kanban-reminder-item{background:#fff!important;color:#192438!important;border-color:#d4dce8!important}
 body[data-theme="light"] #kanbanBoard .kanban-reminder-today .kanban-reminder-badge,body[data-theme="light"] .kanban-fullscreen-dialog .kanban-reminder-today .kanban-reminder-badge{background:transparent!important;color:#192438!important;border-color:#cbd5e1!important}
 body[data-theme="light"] #kanbanBoard .kanban-reminder-overdue .kanban-reminder-item,body[data-theme="light"] .kanban-fullscreen-dialog .kanban-reminder-overdue .kanban-reminder-item{background:#fee2e2!important;color:#7f1d1d!important;border-color:#e9a0a7!important}
+
+/* Settings has one native scrollport below the fixed app header. */
+body[data-page="settings"]{overflow:hidden;}
+body[data-page="settings"] .wrap{display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;padding-bottom:0;}
+body[data-page="settings"] #settingsPage.active{flex:1 1 0;height:auto;max-height:none;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
