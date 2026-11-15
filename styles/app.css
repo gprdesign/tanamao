@@ -824,3 +824,72 @@ body[data-page="settings"] #settingsPage.active{flex:1 1 0;height:auto;max-heigh
 #settingsPage .settings-updates[open] summary{margin-bottom:8px;}
 #settingsPage .updates-list{font-size:.8rem;}
 @media(max-width:700px){#settingsPage .settings-stack{grid-template-columns:minmax(0,1fr);gap:8px;}#settingsPage .settings-stack>.settings-wide{grid-column:auto;}#settingsPage .settings-stack>.panel{padding:13px;}#settingsPage .calendar-sync-actions .btn,#settingsPage .form-actions .btn{min-height:42px;}}
+
+/* Approved light-theme and responsive-layout corrections. */
+body[data-theme="light"] :is(.app-dialog,.app-dialog[open]){background:#fff!important;color:#192438!important;border-color:#cbd5e1!important;}
+body[data-theme="light"] :is(.dialog-head,.kanban-fullscreen-head,.dashboard-day-events-dialog .dialog-head,.finance-summary-dialog-head){background:#fff!important;color:#192438!important;border-color:#d4dce8!important;}
+body[data-theme="light"] :is(.dialog-head h2,.kanban-fullscreen-head h2,.dashboard-day-events-dialog h2,.finance-summary-dialog-head h2){color:#192438!important;}
+body[data-theme="light"] :is(.kanban-event-section,.kanban-reminder-section,.kanban-reminder-section.kanban-quotes-section){background:#f5f8fd!important;color:#192438!important;border-color:#cbd5e1!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-my-day,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-my-day>.kanban-column-head{background:#fff7df!important;border-color:#e7cf87!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-doing,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-doing>.kanban-column-head{background:#edf3ff!important;border-color:#b8caef!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-todo,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-todo>.kanban-column-head{background:#eaf7ef!important;border-color:#afd7bb!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-blocked,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-blocked>.kanban-column-head{background:#fff1e5!important;border-color:#efc09a!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-done,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-done>.kanban-column-head{background:#f0f2f6!important;border-color:#cbd2de!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-events-reminders{background:#edf4ff!important;border-color:#b8ccef!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-events-reminders>.kanban-column-head{background:#e4eeff!important;color:#203c70!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-events{background:#eaf2ff!important;border-color:#a9c7f6!important;color:#1e3a68!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-reminders{background:#f2edff!important;border-color:#c7b4f3!important;color:#473071!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-doing{background:#fff4df!important;border-color:#e8c77f!important;color:#654b13!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-todo{background:#eaf7ef!important;border-color:#a9d5b5!important;color:#205a35!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-blocked{background:#fff0ec!important;border-color:#e7b1a7!important;color:#79362b!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-done{background:#f0f2f6!important;border-color:#c5cedb!important;color:#38465b!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile-head b{background:color-mix(in srgb,var(--tile-accent) 20%,white)!important;border-color:color-mix(in srgb,var(--tile-accent) 50%,white)!important;color:#192438!important;}
+body[data-theme="light"] .dashboard-week-agenda .dashboard-week-day{position:relative;z-index:0;min-width:0;isolation:isolate;}
+body[data-theme="light"] .dashboard-week-agenda .dashboard-week-day h3,body[data-theme="light"] .dashboard-week-agenda .dashboard-week-event,body[data-theme="light"] .dashboard-week-agenda .dashboard-week-free{min-width:0;color:#192438;}
+body[data-theme="light"] .dashboard-week-agenda .dashboard-week-day.is-current-day{background:#fff4dd!important;border-color:#d3a748!important;}
+body[data-theme="light"] .finance-budget-card.balance{background:#eaf2ff!important;border-color:#adc4ed!important;color:#1e3a68!important;}
+body[data-theme="light"] .finance-budget-card.daily{background:#eaf7ef!important;border-color:#a9d5b5!important;color:#205a35!important;}
+body[data-theme="light"] :is(.finance-budget-card.balance strong,.finance-budget-card.daily strong){color:inherit!important;}
+body[data-theme="light"] .finance-summary-card.income,body[data-theme="light"] .finance-entry.income{background:#eaf7ef!important;border-color:#a9d5b5!important;}
+body[data-theme="light"] .finance-summary-card.expense,body[data-theme="light"] .finance-entry.expense{background:#fff0ec!important;border-color:#e7b1a7!important;}
+body[data-theme="light"] .household-buckets-summary-card.saved{background:#eaf7ef!important;border-color:#a9d5b5!important;}
+body[data-theme="light"] .household-buckets-summary-card.missing{background:#fff4df!important;border-color:#e8c77f!important;}
+body[data-theme="light"] #kanbanBoard .kanban-task,body[data-theme="light"] .mobile-kanban-dialog-content .kanban-task{background:rgba(255,255,255,.78)!important;border-color:rgba(70,90,120,.2)!important;}
+@media(max-width:700px){body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-calendar-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto minmax(260px,1fr)!important;}body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-week-column{min-height:260px;}body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-week-agenda{grid-template-rows:repeat(var(--dashboard-week-days,7),minmax(46px,1fr));overflow-y:auto;overscroll-behavior:contain;}body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-week-agenda .dashboard-week-day{position:relative;z-index:0;min-height:46px;overflow:hidden;isolation:isolate;}}
+@media(max-width:700px){body[data-layout-preference="pc"] .app-header{flex:none;}body[data-layout-preference="pc"] .settings-stack{grid-template-columns:repeat(2,minmax(0,1fr));}body[data-layout-preference="pc"] .settings-stack>.settings-wide{grid-column:1/-1;}}
+
+/* Light theme: restore semantic card colors and accessible modal headers. */
+body[data-theme="light"] dialog[open]{background:#fff!important;color:#192438!important;border-color:#cbd5e1!important;}
+body[data-theme="light"] :is(.dialog-head,.kanban-fullscreen-head,.dashboard-day-events-dialog .dialog-head,.finance-summary-dialog-head){background:#fff!important;color:#192438!important;border-color:#d4dce8!important;}
+body[data-theme="light"] :is(.dialog-head h2,.kanban-fullscreen-head h2,.dashboard-day-events-dialog h2,.finance-summary-dialog-head h2){color:#192438!important;}
+body[data-theme="light"] :is(.kanban-event-section,.kanban-reminder-section,.kanban-reminder-section.kanban-quotes-section){background:#f5f8fd!important;color:#192438!important;border-color:#cbd5e1!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-my-day,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-my-day>.kanban-column-head{background:#fff7df!important;border-color:#e7cf87!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-doing,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-doing>.kanban-column-head{background:#edf3ff!important;border-color:#b8caef!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-todo,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-todo>.kanban-column-head{background:#eaf7ef!important;border-color:#afd7bb!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-blocked,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-blocked>.kanban-column-head{background:#fff1e5!important;border-color:#efc09a!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-done,body[data-theme="light"] #kanbanBoard .kanban-column.kanban-done>.kanban-column-head{background:#f0f2f6!important;border-color:#cbd2de!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-events-reminders{background:#edf4ff!important;border-color:#b8ccef!important;color:#192438!important;}
+body[data-theme="light"] #kanbanBoard .kanban-column.kanban-events-reminders>.kanban-column-head{background:#e4eeff!important;color:#203c70!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-events{background:#eaf2ff!important;border-color:#a9c7f6!important;color:#1e3a68!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-reminders{background:#f2edff!important;border-color:#c7b4f3!important;color:#473071!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-doing{background:#fff4df!important;border-color:#e8c77f!important;color:#654b13!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-todo{background:#eaf7ef!important;border-color:#a9d5b5!important;color:#205a35!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-blocked{background:#fff0ec!important;border-color:#e7b1a7!important;color:#79362b!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile.is-done{background:#f0f2f6!important;border-color:#c5cedb!important;color:#38465b!important;}
+body[data-theme="light"].view-mobile .mobile-kanban-tile-head b{background:color-mix(in srgb,var(--tile-accent) 20%,white)!important;border-color:color-mix(in srgb,var(--tile-accent) 50%,white)!important;color:#192438!important;}
+body[data-theme="light"] .finance-budget-card.balance{background:#eaf2ff!important;border-color:#adc4ed!important;color:#1e3a68!important;}
+body[data-theme="light"] .finance-budget-card.daily{background:#eaf7ef!important;border-color:#a9d5b5!important;color:#205a35!important;}
+body[data-theme="light"] :is(.finance-budget-card.balance strong,.finance-budget-card.daily strong){color:inherit!important;}
+body[data-theme="light"] .finance-summary-card.income,body[data-theme="light"] .finance-entry.income{background:#eaf7ef!important;border-color:#a9d5b5!important;}
+body[data-theme="light"] .finance-summary-card.expense,body[data-theme="light"] .finance-entry.expense{background:#fff0ec!important;border-color:#e7b1a7!important;}
+body[data-theme="light"] .household-buckets-summary-card.saved{background:#eaf7ef!important;border-color:#a9d5b5!important;}
+body[data-theme="light"] .household-buckets-summary-card.missing{background:#fff4df!important;border-color:#e8c77f!important;}
+body[data-theme="light"] #kanbanBoard .kanban-task,body[data-theme="light"] .mobile-kanban-dialog-content .kanban-task{background:rgba(255,255,255,.78)!important;border-color:rgba(70,90,120,.2)!important;}
+/* Keep seven mobile agenda cells in their own scrollport: no overlapping hit targets. */
+@media(max-width:700px){body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-calendar-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr)!important;min-height:0;}body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-week-column{min-height:0;}body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-week-agenda{grid-template-rows:repeat(var(--dashboard-week-days,7),minmax(42px,auto));overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;}body.view-mobile[data-page="dashboard"] #dashboardPage .dashboard-week-agenda .dashboard-week-day{position:relative;z-index:0;min-height:42px;overflow:hidden;isolation:isolate;}}
+/* Device layout follows the viewport unless Settings explicitly forces an override. */
+body[data-view-mode="mobile"] .settings-stack{grid-template-columns:minmax(0,1fr);}
+body[data-layout-preference="pc"] .settings-stack{grid-template-columns:repeat(2,minmax(0,1fr));}
+body[data-layout-preference="pc"] .settings-stack>.settings-wide{grid-column:1/-1;}
+
+@media(max-width:700px){body.view-mobile #settingsPage .settings-stack{grid-template-columns:minmax(0,1fr)!important;}body[data-layout-preference="pc"] #settingsPage .settings-stack{grid-template-columns:repeat(2,minmax(0,1fr))!important;}body[data-layout-preference="pc"] #settingsPage .settings-stack>.settings-wide{grid-column:1/-1;}}

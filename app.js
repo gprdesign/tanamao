@@ -14,7 +14,7 @@
   const FINANCE_EXIT_TAG_ID = 'flow-exit';
   const FINANCE_MONTH_KEY = 'tnm.weekly.financeMonth.v1';
   const LOG_RANGE_KEY = 'tnm.weekly.logsRange.v1';
-  const VIEW_MODE_KEY = 'tnm.weekly.viewMode.v1';
+  const VIEW_MODE_KEY = 'tnm.weekly.layoutPreference.v1';
   const USER_SETTINGS_KEY = 'tnm.weekly.userSettings.v1';
   const PRIVATE_VAULT_KEY = 'tnm.weekly.privateVault.v1';
   const PRIVATE_ROWS_KEY = 'tnm.weekly.privateRows.v1';
@@ -98,9 +98,10 @@
   let dashboardCountdownTimer=null;
   let dashboardClockTimer=null;
   let session = readStored(SESSION_KEY,null);
-  const storedViewMode=localStorage.getItem(VIEW_MODE_KEY);
-  const isAndroidDevice=/Android/i.test(navigator.userAgent||'');
-  let viewMode=storedViewMode==='pc'||storedViewMode==='mobile'?storedViewMode:(isAndroidDevice||(window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc');
+  const savedLayoutPreference=localStorage.getItem(VIEW_MODE_KEY);
+  let layoutPreference=['auto','pc','mobile'].includes(savedLayoutPreference)?savedLayoutPreference:'auto';
+  const compactViewportQuery=window.matchMedia('(max-width: 700px)');
+  let viewMode=layoutPreference==='auto'?(compactViewportQuery.matches?'mobile':'pc'):layoutPreference;
   const storedPage = localStorage.getItem(PAGE_KEY);
   const pageUrl=new URL(window.location.href),routeView=pageUrl.searchParams.get('view');
   if(routeView==='basecamp'){pageUrl.searchParams.delete('view');history.replaceState(null,'',pageUrl.pathname+pageUrl.search+pageUrl.hash);}
@@ -575,7 +576,7 @@
   }
   function applyTheme(){document.body.dataset.theme=userSettings.theme==='light'?'light':'dark';const meta=document.querySelector('meta[name=theme-color]');if(meta)meta.content=userSettings.theme==='light'?'#f4f6fa':'#0b1020';}
   function setTheme(theme){if(!['dark','light'].includes(theme)||userSettings.theme===theme)return;userSettings.theme=theme;saveUserSettings();applyTheme();renderSettings();}
-  function renderSettings() { renderCalendarSyncUI();renderGoogleTasksSettings();document.querySelectorAll('[data-theme-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeChoice===(userSettings.theme||'dark')))); }
+  function renderSettings() { renderCalendarSyncUI();renderGoogleTasksSettings();const layout=$('layoutPreference');if(layout)layout.value=layoutPreference;document.querySelectorAll('[data-theme-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeChoice===(userSettings.theme||'dark')))); }
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }
@@ -862,17 +863,17 @@
     }
     dialog.close();
   }
-  function syncViewModeSwitch() {
-    document.body.dataset.viewMode=viewMode;document.body.classList.toggle('view-mobile',viewMode==='mobile');
-    $('viewModePcBtn')?.setAttribute('aria-pressed',String(viewMode==='pc'));
-    $('viewModeMobileBtn')?.setAttribute('aria-pressed',String(viewMode==='mobile'));
+  function applyLayoutPreference(render=true) {
+    const nextMode=layoutPreference==='auto'?(compactViewportQuery.matches?'mobile':'pc'):layoutPreference;
+    const changed=nextMode!==viewMode;viewMode=nextMode;
+    document.body.dataset.layoutPreference=layoutPreference;document.body.dataset.viewMode=viewMode;document.body.classList.toggle('view-mobile',viewMode==='mobile');
+    if(render&&changed){if(currentPage==='home')setPage('tasks');else{updateNavIndicator(currentPage);if(currentPage==='tasks')renderTasks();if(currentPage==='dashboard')renderDashboard();}}
   }
-  function setViewMode(mode) {
-    if(!['pc','mobile'].includes(mode)||mode===viewMode)return;
-    viewMode=mode;localStorage.setItem(VIEW_MODE_KEY,viewMode);syncViewModeSwitch();
-    if(currentPage==='home'){setPage('tasks');return;}
-    updateNavIndicator(currentPage);if(currentPage==='tasks')renderTasks();if(currentPage==='dashboard')renderDashboard();
+  function setLayoutPreference(value) {
+    if(!['auto','pc','mobile'].includes(value))return;
+    layoutPreference=value;localStorage.setItem(VIEW_MODE_KEY,layoutPreference);applyLayoutPreference(true);renderSettings();
   }
+  function handleViewportLayoutChange(){if(layoutPreference==='auto')applyLayoutPreference(true);}
   function openFilterDialog() {
     $('tagMessage').textContent=''; $('newTagName').value='';
     renderFilterTagList(); showAppDialog($('filterDialog'));
@@ -3085,8 +3086,8 @@
   $('financeRecurrence').addEventListener('change',updateFinanceRecurrenceUI);
   $('closeFinanceDialog').addEventListener('click',()=>$('financeDialog').close());
   document.querySelectorAll('[data-theme-choice]').forEach(button=>button.addEventListener('click',()=>setTheme(button.dataset.themeChoice)));
-  $('viewModePcBtn').addEventListener('click',()=>setViewMode('pc'));
-  $('viewModeMobileBtn').addEventListener('click',()=>setViewMode('mobile'));
+  $('layoutPreference')?.addEventListener('change',event=>setLayoutPreference(event.target.value));
+  if(compactViewportQuery.addEventListener)compactViewportQuery.addEventListener('change',handleViewportLayoutChange);else compactViewportQuery.addListener(handleViewportLayoutChange);
   $('financeDeleteBtn').addEventListener('click',()=>deleteFinanceEntry($('financeId').value));
   $('financeStopSeriesBtn').addEventListener('click',()=>stopFinanceSeries($('financeId').value));
     $('notesDockAddBtn').addEventListener('click',()=>{if(privateNotesMode){if(privateNotesUnlocked)openPrivateNoteEditor();else showToast('Desbloqueie as Notas privadas primeiro.');}else openNoteDialog();});
@@ -3157,6 +3158,6 @@
   document.querySelectorAll('[data-close-calendar-create]').forEach(button=>button.addEventListener('click',()=>$('calendarEventCreateDialog').close()));document.querySelectorAll('[data-close-google-task]').forEach(button=>button.addEventListener('click',()=>$('googleTaskCreateDialog').close()));
   async function refreshGoogleTasks(){try{googleTasksCache=await loadGoogleTasks();if(currentPage==='tasks'){renderKanban();refreshMobileKanbanDialog();}}catch(error){console.warn('Google Tasks sync unavailable',error);}}
 
-    applyTheme();syncViewModeSwitch();attachDateQuickButtons();new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes)if(node.nodeType===1)attachDateQuickButtons(node);}).observe(document.body,{childList:true,subtree:true});renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();if(googleWriteScopesGranted&&calendarTokenIsValid())void refreshGoogleTasks();
+    applyTheme();applyLayoutPreference(false);attachDateQuickButtons();new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes)if(node.nodeType===1)attachDateQuickButtons(node);}).observe(document.body,{childList:true,subtree:true});renderAll(); setPage(currentPage); startAutomaticBackup(); startCalendarAutoSync(); void initializeAuth();if(googleWriteScopesGranted&&calendarTokenIsValid())void refreshGoogleTasks();
   try{if(sessionStorage.getItem('tnm.refresh.completed')==='1'){sessionStorage.removeItem('tnm.refresh.completed');showToast(session?.access_token?'TNM atualizado. Sincronização em andamento.':'TNM atualizado.',4000);}}catch{}
 })();
