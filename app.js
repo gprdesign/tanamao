@@ -2805,7 +2805,7 @@
     setAuthMessage('Você saiu. Os dados continuam neste aparelho e na conta.'); updateAuthUI();
   }
   async function refreshTasksFromCloud() {
-    if(document.visibilityState!=='visible'||!session?.user?.id||authBusy||syncInFlight||taskDialogDirty||$('taskDialog')?.open||taskPullInFlight||!CLOUD_READY)return false;
+    if(document.visibilityState!=='visible'||!session?.user?.id||realtimeConnected||authBusy||syncInFlight||taskDialogDirty||$('taskDialog')?.open||taskPullInFlight||!CLOUD_READY)return false;
     taskPullInFlight=true;
     try{
       const remoteRows=await fetchAll(`nmm_tasks?select=*&planner_version=eq.1&created_at=gte.${encodeURIComponent(RESET_CUTOFF)}`),remoteTasks=remoteRows.map(rowToTask).filter(Boolean),merged=mergeById(tasks,remoteTasks).map(normalizeTask).filter(Boolean);
@@ -2886,7 +2886,7 @@
   function startAutomaticBackup() {
     const last=readStored(AUTO_BACKUP_KEY,null), date=last?.createdAt?Date.parse(last.createdAt):0;
     if (!date||Date.now()-date>=AUTO_BACKUP_EVERY) createAutomaticBackup(false); else updateAutoBackupStatus(last.createdAt);
-    setInterval(()=>createAutomaticBackup(true),AUTO_BACKUP_EVERY);
+    setInterval(()=>createAutomaticBackup(false),AUTO_BACKUP_EVERY);
     setInterval(checkWeekRollover,60*1000);
     setInterval(()=>{void refreshFinanceCloudData();},5*60*1000);
     setInterval(()=>{if(document.visibilityState==='visible'&&session?.user?.id&&!realtimeConnected&&!authBusy){if(realtimeClient)scheduleRealtimeRefresh();else void refreshRealtimeSnapshot();}},30000);
