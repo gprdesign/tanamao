@@ -242,7 +242,7 @@
   function renderCalendarFilters(){
     const list=$('calendarFilters');if(!list)return;
     if(calendarTokenIsValid()&&!availableGoogleCalendars.length&&!calendarListLoadInProgress){calendarListLoadInProgress=true;setCalendarStatus('Carregando agendas autorizadas nesta aba…');void loadGoogleCalendars(googleCalendarAccessToken).catch(error=>{if(/401|unauthorized|invalid credentials/i.test(String(error?.message||'')))clearGoogleCalendarToken();setCalendarStatus(`Não consegui carregar as agendas: ${error?.message||'erro desconhecido'}`,true);}).finally(()=>{calendarListLoadInProgress=false;if(!calendarStatusFailed){const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null;setCalendarStatus(last&&!Number.isNaN(last.getTime())?`Última sincronização: ${last.toLocaleString('pt-BR')}. Toque em Sincronizar para atualizar.`:'Agendas carregadas. Toque em Sincronizar para atualizar.');}renderCalendarSyncUI();});return;}
-    if(!availableGoogleCalendars.length){list.innerHTML=`<p class="muted">${GOOGLE_CALENDAR_CLIENT_ID?'Conecte o Google Calendar para carregar as agendas.':'A configuração do Google Calendar está incompleta.'}</p>`;return;}
+    if(!availableGoogleCalendars.length){list.innerHTML='';return;}
     const selected=new Set(userSettings.calendarIds);
     list.innerHTML=availableGoogleCalendars.map(calendar=>{
       const meta=calendar.primary?'Agenda principal':calendar.accessRole==='owner'?'Sua agenda':calendar.accessRole==='reader'?'Compartilhada · leitura':'Compartilhada · edição';
@@ -251,9 +251,11 @@
   }
   function renderCalendarSyncUI(){
     const connect=$('calendarConnectBtn'),sync=$('calendarSyncBtn');if(!connect||!sync)return;
-    if(!calendarStatusMessage){
+    const needsAuth=Boolean(GOOGLE_CALENDAR_CLIENT_ID&&!calendarTokenIsValid()&&availableGoogleCalendars.length);
+    if(!calendarStatusMessage||(!calendarStatusFailed&&!calendarSyncInProgress&&needsAuth&&!calendarStatusMessage.startsWith('Autorização necessária nesta aba.'))){
       const last=calendarLastSyncAt?new Date(calendarLastSyncAt):null,valid=last&&!Number.isNaN(last.getTime());
-      setCalendarStatus(!GOOGLE_CALENDAR_CLIENT_ID?'Falta configurar a conexão OAuth do Google Calendar.':valid?`Última sincronização: ${last.toLocaleString('pt-BR')}. Toque em Sincronizar para atualizar.`:'Conecte sua conta para carregar os calendários.');
+      const lastLabel=valid?` Última sincronização: ${last.toLocaleString('pt-BR')}.`:'';
+      setCalendarStatus(!GOOGLE_CALENDAR_CLIENT_ID?'Falta configurar a conexão OAuth do Google Calendar.':calendarTokenIsValid()?`Google Calendar autorizado nesta aba.${lastLabel}`:needsAuth?`Autorização necessária nesta aba.${lastLabel} Conecte novamente para atualizar.`:`Conecte sua conta para carregar as agendas.${lastLabel}`);
     }
     connect.disabled=!GOOGLE_CALENDAR_CLIENT_ID;connect.textContent=calendarTokenIsValid()?'Atualizar agendas':'Conectar Google Calendar';
     sync.disabled=!GOOGLE_CALENDAR_CLIENT_ID||!userSettings.calendarIds.length||calendarSyncInProgress;sync.textContent=calendarSyncInProgress?'Sincronizando…':'Sincronizar agora';
@@ -573,7 +575,7 @@
   }
   function applyTheme(){document.body.dataset.theme=userSettings.theme==='light'?'light':'dark';const meta=document.querySelector('meta[name=theme-color]');if(meta)meta.content=userSettings.theme==='light'?'#f4f6fa':'#0b1020';}
   function setTheme(theme){if(!['dark','light'].includes(theme)||userSettings.theme===theme)return;userSettings.theme=theme;saveUserSettings();applyTheme();renderSettings();}
-  function renderSettings() { renderCalendarSyncUI();document.querySelectorAll('[data-theme-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeChoice===(userSettings.theme||'dark')))); }
+  function renderSettings() { renderCalendarSyncUI();renderGoogleTasksSettings();document.querySelectorAll('[data-theme-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeChoice===(userSettings.theme||'dark')))); }
   function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }

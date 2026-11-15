@@ -807,3 +807,20 @@ body[data-theme="light"] #kanbanBoard .kanban-reminder-overdue .kanban-reminder-
 body[data-page="settings"]{overflow:hidden;}
 body[data-page="settings"] .wrap{display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;padding-bottom:0;}
 body[data-page="settings"] #settingsPage.active{flex:1 1 0;height:auto;max-height:none;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;}
+
+/* Settings: readable, compact cards in PC and mobile modes. */
+#settingsPage .settings-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:10px;min-width:0;padding-bottom:12px;}
+#settingsPage .settings-stack>.panel{min-width:0;padding:14px 16px;}
+#settingsPage .settings-stack>.settings-wide{grid-column:1/-1;}
+#settingsPage .panel h3{margin:0 0 6px;font-size:1rem;}
+#settingsPage .panel p{margin:0 0 8px;line-height:1.4;overflow-wrap:anywhere;}
+#settingsPage .panel .status-text:empty{display:none;}
+#settingsPage .panel .form-actions,#settingsPage .calendar-sync-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0;}
+#settingsPage .calendar-sync-note{margin:8px 0 0!important;font-size:.77rem;}
+#settingsPage .calendar-filters:empty{display:none;}
+#settingsPage .calendar-filters:not(:empty){margin-top:10px;}
+#settingsPage .theme-choice-row{margin-top:8px;}
+#settingsPage .settings-updates summary{font-size:.94rem;font-weight:800;cursor:pointer;}
+#settingsPage .settings-updates[open] summary{margin-bottom:8px;}
+#settingsPage .updates-list{font-size:.8rem;}
+@media(max-width:700px){#settingsPage .settings-stack{grid-template-columns:minmax(0,1fr);gap:8px;}#settingsPage .settings-stack>.settings-wide{grid-column:auto;}#settingsPage .settings-stack>.panel{padding:13px;}#settingsPage .calendar-sync-actions .btn,#settingsPage .form-actions .btn{min-height:42px;}}
