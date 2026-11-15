@@ -1479,7 +1479,7 @@
     return changed;
   }
   function collectUpcomingFinanceIncome() {
-    const today=todayKey(),lastDay=addDays(today,30),candidates=finances.filter(entry=>!entry.deletedAt&&entry.kind==='income'&&entry.status==='planned'&&entry.date>=today&&entry.date<=lastDay).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
+    const today=todayKey(),currentMonth=today.slice(0,7),candidates=finances.filter(entry=>!entry.deletedAt&&entry.kind==='income'&&entry.status==='planned'&&entry.date>=today&&entry.date.slice(0,7)===currentMonth).sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'pt-BR'));
     const ids=new Set(),items=[];
     for(const entry of candidates){ids.add(String(entry.id));items.push(entry);}
     return {items,ids};
