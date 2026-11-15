@@ -938,3 +938,10 @@ body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-todo{background:#ea
 body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-blocked{background:#fff0ec!important;border-color:#e7b1a7!important;color:#79362b!important;}
 body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-done{background:#f0f2f6!important;border-color:#c5cedb!important;color:#38465b!important;}
 body[data-theme="light"] #kanbanBoard .mobile-kanban-tile .mobile-kanban-preview-line{color:#26354b!important;}
+/* Override the legacy three-column Kanban constraints when the responsive tiles are rendered. */
+body[data-view-mode="pc"][data-page="tasks"] #plannerKanbanView{display:flex!important;flex:1 1 auto!important;width:100%!important;height:auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;}
+body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard{display:block!important;flex:1 1 auto!important;width:100%!important;height:auto!important;max-height:none!important;min-width:0!important;overflow:visible!important;}
+body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{width:100%!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))!important;grid-template-rows:auto!important;grid-auto-rows:minmax(170px,1fr)!important;}
+body[data-theme="dark"] #kanbanBoard .mobile-kanban-tile,body:not([data-theme="light"]) #kanbanBoard .mobile-kanban-tile{background:#1b2439!important;border-color:#445579!important;color:#f4f6fb!important;}
+body[data-theme="dark"] #kanbanBoard .mobile-kanban-preview-line,body:not([data-theme="light"]) #kanbanBoard .mobile-kanban-preview-line{color:#e3e9f5!important;}
+body[data-theme="dark"] #kanbanBoard .mobile-kanban-preview-more,body[data-theme="dark"] #kanbanBoard .mobile-kanban-preview-empty,body:not([data-theme="light"]) #kanbanBoard .mobile-kanban-preview-more,body:not([data-theme="light"]) #kanbanBoard .mobile-kanban-preview-empty{color:#c4cfe0!important;}
