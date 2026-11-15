@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=72">
+  <link rel="stylesheet" href="./styles/app.css?v=73">
 </head>
 <body>
   <script>(()=>{let preference='auto';try{preference=localStorage.getItem('tnm.weekly.layoutPreference.v1')||'auto';}catch{}if(!['auto','pc','mobile'].includes(preference))preference='auto';const mode=preference==='auto'?((window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc'):preference;document.body.dataset.layoutPreference=preference;document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -62,7 +62,7 @@
     <dialog id="dashboardEventPickerDialog" class="app-dialog dashboard-event-picker-dialog" aria-labelledby="dashboardEventPickerTitle"><div class="dialog-head"><h2 id="dashboardEventPickerTitle">Escolha um evento</h2><button class="btn ghost small" id="dashboardEventPickerClose" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione um evento futuro da agenda principal. Essa escolha fica salva no seu TNM.</p><div id="dashboardEventPickerList" class="dashboard-event-picker-list"></div><div class="form-actions dialog-save-actions"><button class="btn" id="dashboardEventPickerClear" type="button">Limpar escolha</button></div></dialog>
 
     <section id="financePage" class="page" aria-label="Finanças">
-      <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p><h2>FINANÇAS</h2></div></div>
+      <div class="page-heading"><div><p class="eyebrow">FLUXO DE CAIXA</p></div></div>
       <div class="finance-topbar"><div class="finance-month-title"><span aria-hidden="true">🗓️</span><strong id="financeMonthLabel" aria-live="polite"></strong></div><div class="finance-month-toolbar"><button class="btn ghost small" id="financePrevMonth" type="button" aria-label="Mês anterior">‹ <span class="finance-month-label-wide">VOLTAR</span></button><button class="btn ghost small" id="financeNextMonth" type="button" aria-label="Próximo mês"><span class="finance-month-label-wide">AVANÇAR</span> ›</button></div><button class="btn primary finance-new-entry" id="financeAddBtn" type="button"><span aria-hidden="true">＋</span> NOVO LANÇAMENTO</button></div>
       <section class="finance-budget-grid" aria-label="Saldo e valor diário">
         <article class="finance-budget-card balance"><span>SALDO ATUAL EM CONTA</span><strong id="financeAccountBalance">Aguardando saldo</strong><small id="financeBalanceUpdated">O Radar ainda não recebeu saldo.</small></article>
@@ -158,9 +158,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=335'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=336'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=370',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=372',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>

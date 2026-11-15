@@ -869,3 +869,72 @@ html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanba
 html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanbanBoard,.kanban-fullscreen-dialog) .kanban-reminder-overdue .kanban-reminder-badge{background:#f9c8ce!important;color:#7f1d1d!important;border-color:#e9a0a7!important;}
 html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanbanBoard,.kanban-fullscreen-dialog) .kanban-reminder-today .kanban-reminder-item{background:#fff!important;color:#192438!important;border-color:#d4dce8!important;}
 html body[data-theme="light"][data-theme="light"][data-theme="light"] :is(#kanbanBoard,.kanban-fullscreen-dialog) .kanban-reminder-today .kanban-reminder-badge{background:#e7eef8!important;color:#192438!important;border-color:#cbd5e1!important;}
+
+/* Final cross-screen theme and density corrections from the user screenshots. */
+html{font-size:16px!important;}
+body[data-theme="light"] .note-card,body[data-theme="light"] .archived-notes-dialog,body[data-theme="light"] .archived-notes-dialog[open],body[data-theme="light"] .archived-notes-dialog .dialog-head{background:#fff!important;color:#192438!important;}
+body[data-theme="light"] .note-card .note-card-title,body[data-theme="light"] .note-card .note-card-body,body[data-theme="light"] .note-card .note-card-body p,body[data-theme="light"] .note-card p,body[data-theme="light"] .archived-notes-dialog .note-card .note-card-title,body[data-theme="light"] .archived-notes-dialog .note-card p{color:#192438!important;opacity:1!important;}
+body[data-theme="light"] .note-card .note-card-body p,body[data-theme="light"] .note-card .note-card-content--titleless,body[data-theme="light"] .archived-notes-dialog .note-card p{font-size:.92rem!important;line-height:1.45!important;font-weight:500!important;}
+body[data-theme="light"] .note-card .note-card-title,body[data-theme="light"] .archived-notes-dialog .note-card .note-card-title{font-size:1rem!important;font-weight:850!important;}
+body[data-theme="light"] .archived-notes-dialog .note-card{background:#fff!important;border-color:#d4dce8!important;box-shadow:0 7px 20px #24344d1a!important;}
+body[data-theme="light"] .note-card .note-links-preview,body[data-theme="light"] .note-card .note-links-preview a,body[data-theme="light"] .note-card .note-tags-preview{color:#315db7!important;opacity:1!important;}
+body[data-theme="light"] .note-menu-popover,body[data-theme="light"] .note-menu-popover .menu-action{background:#fff!important;color:#192438!important;}
+body[data-theme="light"] .archived-notes-dialog .dialog-head h2{color:#192438!important;}
+body[data-theme="light"] #refreshSyncBtn,body[data-theme="light"] #mainNavDockToggle{background:#fff!important;color:#26364d!important;border:1px solid #c4cfde!important;box-shadow:0 4px 14px #1c2a3c24!important;backdrop-filter:blur(10px);}
+body[data-theme="light"] #notesDock{background:transparent!important;border:0!important;box-shadow:none!important;}
+body[data-theme="light"] #notesDock .subdock-add-note{background:#fff!important;border:1px solid #cbd5e1!important;color:#192438!important;box-shadow:0 3px 12px #23344c1c!important;}
+body[data-theme="light"] #financePage .finance-budget-card.balance{background:#e8f0ff!important;border-color:#a9c0ed!important;color:#1f3f78!important;}
+body[data-theme="light"] #financePage .finance-budget-card.daily{background:#e6f6ec!important;border-color:#a5d3b2!important;color:#1d5c34!important;}
+body[data-theme="light"] #financePage .finance-budget-card strong{font-size:1rem!important;font-weight:950!important;color:#163976!important;}
+body[data-theme="light"] #financePage .finance-budget-card.daily strong{color:#14532d!important;}
+body[data-theme="light"] #financePage .finance-upcoming{background:#fff!important;border-color:#d4dce8!important;color:#192438!important;}
+body[data-theme="light"] #financePage .finance-upcoming-row{background:#edf3fc!important;border-color:#c6d3e5!important;color:#192438!important;}
+body[data-theme="light"] #financePage .finance-upcoming-date{color:#475569!important;}
+body[data-theme="light"] #financePage .finance-upcoming-title{color:#192438!important;font-weight:850!important;}
+body[data-theme="light"] #financePage .finance-upcoming-amount{color:#14532d!important;font-weight:950!important;}
+body[data-theme="light"] #financePage .finance-summary-card.balance{background:#e8f0ff!important;border-color:#a9c0ed!important;}
+body[data-theme="light"] #financePage .finance-summary-card.income{background:#e6f6ec!important;border-color:#a5d3b2!important;}
+body[data-theme="light"] #financePage .finance-summary-card.expense{background:#ffeded!important;border-color:#e8b6b6!important;}
+body[data-theme="light"] #financePage .finance-summary-card span,body[data-theme="light"] #financePage .finance-summary-card small{color:#34445c!important;opacity:1!important;}
+body[data-theme="light"] #financePage .finance-summary-card.balance strong{color:#193e7f!important;font-weight:950!important;}
+body[data-theme="light"] #financePage .finance-summary-card.income strong{color:#14532d!important;font-weight:950!important;}
+body[data-theme="light"] #financePage .finance-summary-card.expense strong{color:#8f2020!important;font-weight:950!important;}
+body[data-theme="light"] #financePage .finance-budget-card.balance>span,body[data-theme="light"] #financePage .finance-budget-card.daily>span{color:#34445c!important;}
+body[data-theme="light"] .household-bucket-toggle:not(.is-paid){background:#dcfce7!important;border:1px solid #86c99c!important;color:#14532d!important;font-weight:850!important;}
+body[data-theme="light"] .household-bucket-toggle.is-paid{background:#fee2e2!important;border:1px solid #e9a0a7!important;color:#8a1c27!important;font-weight:850!important;}
+body[data-theme="light"] .finance-receive-btn{background:#dcfce7!important;border:1px solid #86c99c!important;color:#14532d!important;}
+body[data-theme="light"] .finance-status-pill.planned{background:#fee2e2!important;border-color:#e9a0a7!important;color:#8a1c27!important;}
+body[data-theme="light"] .finance-status-pill.realized{background:#dcfce7!important;border-color:#86c99c!important;color:#14532d!important;}
+body[data-theme="light"] #financeSummaryDialog,body[data-theme="light"] #financeSummaryDialog[open]{background:#fff!important;color:#192438!important;border-color:#cbd5e1!important;}
+body[data-theme="light"] #financeSummaryDialog .dialog-head{background:#fff!important;color:#192438!important;}
+body[data-theme="light"] #financeSummaryDialog .dialog-head h2{color:#192438!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-detail-section{background:#f5f8fc!important;border-color:#d4dce8!important;color:#192438!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-detail-section[data-kind="planned"] h3{color:#193e7f!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-detail-section[data-kind="income"] h3{color:#14532d!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-detail-section[data-kind="expense"] h3{color:#8f2020!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-bank-row{background:#fff!important;border:1px solid #d4dce8!important;color:#192438!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-bank-open,body[data-theme="light"] #financeSummaryDialog .finance-bank-open strong,body[data-theme="light"] #financeSummaryDialog .finance-bank-open time{color:#192438!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-bank-amount{font-weight:950!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-bank-row.income .finance-bank-amount{color:#14532d!important;}
+body[data-theme="light"] #financeSummaryDialog .finance-bank-row.expense .finance-bank-amount{color:#8f2020!important;}
+/* GERAL uses one seven-tile dashboard on PC and mobile; viewport controls its density. */
+#kanbanBoard:has(.mobile-kanban-dashboard){display:block!important;}
+#kanbanBoard .mobile-kanban-dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));grid-auto-rows:minmax(160px,1fr);gap:12px;min-width:0;min-height:0;}
+#kanbanBoard .mobile-kanban-tile{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:10px;min-width:0;min-height:150px;padding:14px;border:1px solid #cbd5e1;border-radius:14px;background:#fff;color:#192438;text-align:left;cursor:pointer;box-shadow:0 3px 12px #24344d12;}
+#kanbanBoard .mobile-kanban-myday{grid-column:auto!important;grid-row:auto!important;}
+#kanbanBoard .mobile-kanban-tile-head{display:flex;align-items:center;justify-content:flex-start;gap:10px;}
+#kanbanBoard .mobile-kanban-tile-head strong{font-size:.9rem;font-weight:900;}
+#kanbanBoard .mobile-kanban-tile-head b{display:grid;place-items:center;min-width:32px;height:32px;border:1px solid #cbd5e1;border-radius:50%;font-size:.9rem;}
+#kanbanBoard .mobile-kanban-preview{display:grid;gap:5px;min-width:0;overflow:hidden;}
+#kanbanBoard .mobile-kanban-preview-line{overflow:hidden;color:#334155;font-size:.9rem;line-height:1.35;text-overflow:ellipsis;white-space:nowrap;}
+#kanbanBoard .mobile-kanban-preview-more,#kanbanBoard .mobile-kanban-preview-empty{color:#59677b;font-size:.8rem;}
+@media(max-width:700px){body.view-mobile[data-page="tasks"] #tasksPage.active{overflow-y:auto!important;}body.view-mobile[data-page="tasks"] #kanbanBoard{height:auto!important;min-height:100%!important;grid-template-columns:1fr!important;grid-template-rows:auto!important;overflow:visible!important;}body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,minmax(105px,1fr));grid-auto-rows:auto;gap:7px;min-height:calc(100dvh - 175px);}body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-myday{grid-column:1/-1!important;}body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile{min-height:0;padding:9px;gap:6px;}body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-preview-line{font-size:.72rem;}}
+@media(min-width:701px){body[data-page="tasks"] #tasksPage.active{overflow-y:auto!important;}body[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{grid-auto-rows:minmax(180px,1fr);}}
+body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-events{background:#eaf2ff!important;border-color:#a9c7f6!important;color:#1e3a68!important;}
+body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-reminders{background:#f2edff!important;border-color:#c7b4f3!important;color:#473071!important;}
+body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.mobile-kanban-myday{background:#fff7df!important;border-color:#e7cf87!important;color:#5e4816!important;}
+body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-doing{background:#fff4df!important;border-color:#e8c77f!important;color:#654b13!important;}
+body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-todo{background:#eaf7ef!important;border-color:#a9d5b5!important;color:#205a35!important;}
+body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-blocked{background:#fff0ec!important;border-color:#e7b1a7!important;color:#79362b!important;}
+body[data-theme="light"] #kanbanBoard .mobile-kanban-tile.is-done{background:#f0f2f6!important;border-color:#c5cedb!important;color:#38465b!important;}
+body[data-theme="light"] #kanbanBoard .mobile-kanban-tile .mobile-kanban-preview-line{color:#26354b!important;}
