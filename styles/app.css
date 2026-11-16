@@ -960,3 +960,18 @@ body[data-page="notes"] #normalNotesView,
 body[data-page="notes"] #privateNotesView{padding-bottom:calc(145px + env(safe-area-inset-bottom,0px))!important;}
 body.view-mobile[data-page="tasks"] .wrap{padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))!important;}
 body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]){overflow:auto!important;}
+
+/* Task editor: title/tag first row, checklist spanning rows 2–5. */
+#taskDialog .task-details-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto auto auto auto auto!important;gap:10px!important;align-items:start!important;}
+#taskDialog .task-detail-title{grid-column:1!important;grid-row:1!important;}
+#taskDialog .task-primary-tag{grid-column:2!important;grid-row:1!important;position:relative;min-width:0;}
+#taskDialog .task-primary-tag select{width:calc(100% - 64px)!important;display:inline-block!important;}
+#taskDialog .task-tags-toggle{width:60px!important;padding-inline:2px!important;vertical-align:top;}
+#taskDialog .task-extra-tags-field{position:absolute;z-index:4;top:100%;right:0;max-height:40vh;overflow:auto;width:min(320px,calc(100vw - 40px));padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:0 12px 30px #0004;}
+#taskDialog .task-detail-date{grid-column:1!important;grid-row:2!important;}
+#taskDialog .task-detail-recurrence{grid-column:1!important;grid-row:3!important;}
+#taskDialog .task-detail-content{grid-column:1!important;grid-row:4!important;}
+#taskDialog .task-detail-links{grid-column:1!important;grid-row:5!important;}
+#taskDialog .task-checklist{grid-column:2!important;grid-row:2 / span 4!important;width:100%;height:100%;margin:0!important;overflow:auto;}
+#taskDialog .task-checklist-list{max-height:none!important;}
+@media(max-width:700px){#taskDialog .task-details-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;}#taskDialog .task-checklist{min-width:0;}#taskDialog .task-checklist-head{flex-wrap:wrap;}#taskDialog .task-checklist-row{min-width:0;}}
