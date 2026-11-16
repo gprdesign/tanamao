@@ -1037,3 +1037,6 @@ body[data-page="dashboard"] .week-planner-mount .task-card--compact .task-open{w
 @media(max-width:700px){body[data-page="dashboard"] .week-planner-mount #weekGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:auto!important}.day-live-event-head{flex-wrap:wrap}body[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(115px,auto)!important}}
 
 body[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact{align-self:start!important;min-height:58px!important;width:100%!important}
+/* Explicitly override legacy five-slot mobile/desktop dock rules. */
+html body.view-mobile .main-nav,html body:not(.view-mobile) .main-nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+html body.view-mobile .nav-indicator,html body:not(.view-mobile) .nav-indicator{width:calc((100% - 22px)/3)!important}
