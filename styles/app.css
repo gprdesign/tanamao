@@ -1040,3 +1040,8 @@ body[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact{align-self:s
 /* Explicitly override legacy five-slot mobile/desktop dock rules. */
 html body.view-mobile .main-nav,html body:not(.view-mobile) .main-nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
 html body.view-mobile .nav-indicator,html body:not(.view-mobile) .nav-indicator{width:calc((100% - 22px)/3)!important}
+/* Keep primary tag label and its two controls aligned on all view modes. */
+html body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-primary-tag{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto 42px!important;align-items:end!important;gap:5px!important}
+html body[data-view-mode] #taskDialog #taskForm .task-primary-tag>label{grid-column:1 / -1!important;grid-row:1!important;text-align:left!important;justify-self:start!important}
+html body[data-view-mode] #taskDialog #taskForm .task-primary-tag>select{grid-column:1!important;grid-row:2!important;width:100%!important}
+html body[data-view-mode] #taskDialog #taskForm .task-primary-tag>.task-tags-toggle{grid-column:2!important;grid-row:2!important;align-self:end!important}
