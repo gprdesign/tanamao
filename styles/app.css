@@ -975,3 +975,19 @@ body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]){overflow:au
 #taskDialog .task-checklist{grid-column:2!important;grid-row:2 / span 4!important;width:100%;height:100%;margin:0!important;overflow:auto;}
 #taskDialog .task-checklist-list{max-height:none!important;}
 @media(max-width:700px){#taskDialog .task-details-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;}#taskDialog .task-checklist{min-width:0;}#taskDialog .task-checklist-head{flex-wrap:wrap;}#taskDialog .task-checklist-row{min-width:0;}}
+
+/* Override the old PC editor grid: avoid overlapping fields. */
+body[data-view-mode] #taskDialog #taskForm{display:block!important;}
+body[data-view-mode] #taskDialog #taskForm .task-details-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto auto auto auto auto!important;gap:10px!important;align-items:start!important;}
+body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-title{grid-column:1!important;grid-row:1!important;}
+body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-primary-tag{grid-column:2!important;grid-row:1!important;}
+body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-date{grid-column:1!important;grid-row:2!important;}
+body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-recurrence{grid-column:1!important;grid-row:3!important;}
+body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-content{grid-column:1!important;grid-row:4!important;min-height:0!important;}
+body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-links{grid-column:1!important;grid-row:5!important;}
+body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-checklist{grid-column:2!important;grid-row:2 / 6!important;min-width:0!important;}
+body[data-view-mode] #taskDialog #taskForm .task-primary-tag{display:grid!important;grid-template-columns:minmax(0,1fr) auto;column-gap:5px;align-items:end;}
+body[data-view-mode] #taskDialog #taskForm .task-primary-tag>label{grid-column:1 / -1;}
+body[data-view-mode] #taskDialog #taskForm .task-primary-tag>select{width:100%!important;min-width:0!important;}
+body[data-view-mode] #taskDialog #taskForm .task-tags-toggle{width:auto!important;white-space:nowrap;}
+body[data-view-mode] #taskDialog #taskForm .task-extra-tags-field{grid-column:1 / -1;}
