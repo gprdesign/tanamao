@@ -668,7 +668,7 @@
   function setWeek(key) {
     weekStart=startOfWeek(key);
     localStorage.setItem(WEEK_KEY,weekStart);
-    renderTasks();
+    renderTasks();if($('weekLabelTop'))$('weekLabelTop').textContent=formatWeekRange(weekStart);
   }
   function jumpToCurrentWeek() {
     setWeek(todayKey());
@@ -690,7 +690,7 @@
   }
   function plannerDockButton(){return $('plannerBasecampSwitch')||$('plannerNavLabel')?.closest('.nav-btn')||null;}
   function isDockButtonSelected(button,page=currentPage){
-    if(button===plannerDockButton())return page==='home'||page==='tasks';
+    if(button===plannerDockButton())return ['home','tasks','finance','notes'].includes(page);
     return button.dataset.page===page;
   }
   function updateNavIndicator(page=currentPage) {
@@ -715,11 +715,14 @@
       if(active&&previous!==page){node.style.setProperty('--page-shift',newIndex>=oldIndex?'14px':'-14px');node.classList.remove('page-enter');void node.offsetWidth;node.classList.add('page-enter');}
     });
     document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{if(isDockButtonSelected(button,page))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
-    const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent=page==='home'?'BASECAMP':'GERAL';
+    const plannerLabel=$('plannerNavLabel');if(plannerLabel)plannerLabel.textContent='CENTRAL';
     updateNavIndicator(page);renderFilterButton();
+    const weekBoard=$('weekBoard'),weekView=$('plannerWeekView'),weekMount=$('weekPlannerMount');
+    if(page==='dashboard'){if(weekBoard.parentElement!==weekMount)weekMount.append(weekBoard);renderTasks();$('weekLabelTop').textContent=formatWeekRange(weekStart);}
+    else if(weekBoard.parentElement!==weekView)weekView.append(weekBoard);
     if(page==='home'){renderHome();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
     if(page==='tasks'){renderTasks();setPlannerSubpage('kanban',false);}
-    if(page==='dashboard'){renderDashboard();if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
+    if(page==='dashboard'){if(calendarTokenIsValid()&&userSettings.calendarIds.length&&!calendarSyncInProgress)void syncGoogleCalendar(false);}
     if(page==='finance'){renderFinancePage();void refreshFinanceCloudData();}
     if(page==='notes'){renderNotes();renderNotesMode();}
     if(page==='settings'){updateAuthUI();renderSettings();}
@@ -978,8 +981,8 @@
       const action=task.completedAt?`<button class=\"kanban-reminder-reopen kanban-complete-btn reminder-complete is-completed\" type=\"button\" data-toggle-complete-task=\"${escapeHTML(task.id)}\" data-complete=\"false\" aria-pressed=\"true\" aria-label=\"Reabrir ${escapeHTML(task.title)}\" title=\"Reabrir lembrete\">✓</button>`:`<button class=\"kanban-complete-btn reminder-complete\" type=\"button\" data-kanban-complete=\"${escapeHTML(task.id)}\" aria-pressed=\"false\" aria-label=\"Concluir ${escapeHTML(task.title)}\" title=\"Concluir lembrete\">✓</button>`;
       return `<div class=\"kanban-reminder-row kanban-reminder-${kind}${task.completedAt?' is-completed':''}\"><button class=\"kanban-reminder-item\" type=\"button\" data-edit-task=\"${escapeHTML(task.id)}\" aria-label=\"Abrir lembrete: ${escapeHTML(task.title)}\"><span class=\"kanban-reminder-badge\">${label}</span>${repeat}<span class=\"kanban-reminder-title\">${escapeHTML(task.title)}</span></button>${action}</div>`;
     };
-    const eventItems=[['HOJE',today],['AMANHÃ',tomorrow]].flatMap(([label,date])=>kanbanSortTasks(getCalendarEventsForDate(date),'events').map(item=>{const time=calendarEventTimeLabel(item),url=googleCalendarDayUrl(date),completed=calendarEventIsCompleted(item);return `<div class="kanban-event-row${completed?' is-completed':''}"><a class="kanban-event-item" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${escapeHTML(item.title)} no Google Calendar em ${escapeHTML(formatDate(date,{weekday:'long',day:'2-digit',month:'long',year:'numeric'}))}"><span class="kanban-event-day">${label}</span><span class="kanban-event-time">${time?escapeHTML(time):'DIA TODO'}</span><span class="kanban-event-title">${escapeHTML(item.title)}</span></a>${calendarEventCompleteButton(item)}</div>`;}));
-    if(!eventItems.length){const nextEvent=getUpcomingCalendarEvents()[0];if(nextEvent){const eventDate=nextEvent.allDay?String(nextEvent.startAt).slice(0,10):dateKey(new Date(nextEvent.startAt)),daysAway=Math.max(0,Math.round((dateAtNoon(eventDate)-dateAtNoon(today))/86400000)),dayLabel=dateAtNoon(eventDate).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}),time=calendarEventTimeLabel(nextEvent),url=googleCalendarDayUrl(eventDate),completed=calendarEventIsCompleted(nextEvent);eventItems.push(`<div class="kanban-event-row kanban-next-event-row${completed?' is-completed':''}"><a class="kanban-event-item kanban-next-event" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" aria-label="Próximo evento: ${escapeHTML(nextEvent.title)}, ${escapeHTML(dayLabel)}, ${time?escapeHTML(time):'dia todo'}, daqui a ${daysAway} dias"><span class="kanban-event-day">${escapeHTML(dayLabel)}</span><span class="kanban-event-time">${time?escapeHTML(time):'DIA TODO'}</span><span class="kanban-event-title">${escapeHTML(nextEvent.title)}</span><span class="kanban-next-event-countdown">DAQUI A ${daysAway} ${daysAway===1?'DIA':'DIAS'}</span></a>${calendarEventCompleteButton(nextEvent)}</div>`);}}
+    const eventItems=[['HOJE',today],['AMANHÃ',tomorrow]].flatMap(([label,date])=>kanbanSortTasks(getCalendarEventsForDate(date).filter(event=>!calendarEventIsCompleted(event)),'events').map(item=>{const time=calendarEventTimeLabel(item),url=googleCalendarDayUrl(date),completed=calendarEventIsCompleted(item);return `<div class="kanban-event-row${completed?' is-completed':''}"><a class="kanban-event-item" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${escapeHTML(item.title)} no Google Calendar em ${escapeHTML(formatDate(date,{weekday:'long',day:'2-digit',month:'long',year:'numeric'}))}"><span class="kanban-event-day">${label}</span><span class="kanban-event-time">${time?escapeHTML(time):'DIA TODO'}</span><span class="kanban-event-title">${escapeHTML(item.title)}</span></a>${calendarEventCompleteButton(item)}</div>`;}));
+    if(!eventItems.length){const nextEvent=getUpcomingCalendarEvents().find(event=>!calendarEventIsCompleted(event));if(nextEvent){const eventDate=nextEvent.allDay?String(nextEvent.startAt).slice(0,10):dateKey(new Date(nextEvent.startAt)),daysAway=Math.max(0,Math.round((dateAtNoon(eventDate)-dateAtNoon(today))/86400000)),dayLabel=dateAtNoon(eventDate).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}),time=calendarEventTimeLabel(nextEvent),url=googleCalendarDayUrl(eventDate),completed=calendarEventIsCompleted(nextEvent);eventItems.push(`<div class="kanban-event-row kanban-next-event-row${completed?' is-completed':''}"><a class="kanban-event-item kanban-next-event" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" aria-label="Próximo evento: ${escapeHTML(nextEvent.title)}, ${escapeHTML(dayLabel)}, ${time?escapeHTML(time):'dia todo'}, daqui a ${daysAway} dias"><span class="kanban-event-day">${escapeHTML(dayLabel)}</span><span class="kanban-event-time">${time?escapeHTML(time):'DIA TODO'}</span><span class="kanban-event-title">${escapeHTML(nextEvent.title)}</span><span class="kanban-next-event-countdown">DAQUI A ${daysAway} ${daysAway===1?'DIA':'DIAS'}</span></a>${calendarEventCompleteButton(nextEvent)}</div>`);}}
     const reminderItems=[...kanbanSortTasks(reminderTasks,'reminders').map(reminderItem),...kanbanSortTasks((googleTasksCache||[]).filter(item=>{const due=String(item.due||'').slice(0,10);return Boolean(due&&due<=today);}), 'reminders').map(item=>{const due=String(item.due||'').slice(0,10),late=due<today;return `<div class=\"kanban-reminder-row kanban-reminder-${late?'overdue':due===today?'today':'future'}\"><button class=\"kanban-reminder-item\" type=\"button\" data-google-task-id=\"${escapeHTML(item.id)}\" aria-label=\"Lembrete Google Tasks: ${escapeHTML(item.title)}\"><span class=\"kanban-reminder-badge\">${late?'ATRASADO':due===today?'HOJE':due?escapeHTML(formatDate(due,{day:'2-digit',month:'2-digit'})):'SEM DATA'}</span><span class=\"kanban-reminder-title\">${escapeHTML(item.title)}</span></button><button class=\"kanban-complete-btn reminder-complete\" type=\"button\" data-google-task-done=\"${escapeHTML(item.id)}\" aria-label=\"Concluir ${escapeHTML(item.title)} no Google Tasks\" title=\"Concluir\">✓</button></div>`;})];
     const quoteTag=tags.find(tag=>!tag.deletedAt&&String(tag.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleUpperCase('pt-BR')==='ORCAMENTOS');
     const quoteTasks=tasks.filter(task=>!task.deletedAt&&!task.completedAt&&quoteTag&&task.tagId===quoteTag.id).sort(taskOrder);
@@ -2933,6 +2936,7 @@
     if(button.dataset.page==='tasks'){userSettings.plannerSubpage='kanban';saveUserSettings();setPage('tasks');return;}
     setPage(button.dataset.page);
   });
+  $('tasksPage').addEventListener('click',event=>{const card=event.target.closest('[data-central-page]');if(card)setPage(card.dataset.centralPage);});
   const mainNavDock=document.querySelector('.main-nav'),mainNavDockToggle=$('mainNavDockToggle');
   function setMainNavDockHidden(hidden){document.body.classList.toggle('nav-dock-hidden',hidden);if(mainNavDockToggle){mainNavDockToggle.textContent=hidden?'↑':'↓';mainNavDockToggle.setAttribute('aria-label',hidden?'Mostrar dock':'Ocultar dock');mainNavDockToggle.title=hidden?'Mostrar dock':'Ocultar dock';mainNavDockToggle.setAttribute('aria-expanded',String(!hidden));}try{localStorage.setItem('tnm.weekly.navDockHidden',hidden?'1':'0');}catch{}}
   if(mainNavDock&&mainNavDockToggle){setMainNavDockHidden(localStorage.getItem('tnm.weekly.navDockHidden')==='1');mainNavDockToggle.addEventListener('click',()=>setMainNavDockHidden(!document.body.classList.contains('nav-dock-hidden')));}
@@ -3017,6 +3021,7 @@
     node.addEventListener('dragover',handleDragOver);
     node.addEventListener('drop',handleDrop);
   }
+  $('weekPrevTop').addEventListener('click',()=>setWeek(addDays(weekStart,-7)));$('weekNextTop').addEventListener('click',()=>setWeek(addDays(weekStart,7)));$('weekAddTop').addEventListener('click',()=>openTaskDialog());
   $('prevWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,-7)));
   $('nextWeekBtn').addEventListener('click',()=>setWeek(addDays(weekStart,7)));
   $('planningBtn').addEventListener('click',()=>togglePlannerSection('planning'));

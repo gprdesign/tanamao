@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=80">
+  <link rel="stylesheet" href="./styles/app.css?v=81">
 </head>
 <body>
   <script>(()=>{let preference='auto';try{preference=localStorage.getItem('tnm.weekly.layoutPreference.v1')||'auto';}catch{}if(!['auto','pc','mobile'].includes(preference))preference='auto';const mode=preference==='auto'?((window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc'):preference;document.body.dataset.layoutPreference=preference;document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -39,7 +39,7 @@
 
     <section id="tasksPage" class="page active" aria-label="Planner de tarefas">
       <nav id="kanbanMobileNav" class="kanban-mobile-nav" aria-label="Navegação do Kanban"><button type="button" data-kanban-jump="events" aria-current="true">AGENDA | DIA</button><button type="button" data-kanban-jump="doing">FAZENDO</button><button type="button" data-kanban-jump="todo">A FAZER</button><button type="button" data-kanban-jump="blocked">TRAVADO</button><button type="button" data-kanban-jump="done">FEITO</button></nav>
-      <div id="plannerKanbanView" class="planner-kanban-view"><div class="kanban-board" id="kanbanBoard" aria-label="Quadro Kanban"></div></div>
+      <section class="central-tools" aria-label="Outras funções do TNM"><button class="central-tool-card" type="button" data-central-page="finance"><strong>FINANÇAS</strong><small>Saldo e lançamentos</small></button><button class="central-tool-card" type="button" data-central-page="notes"><strong>NOTAS</strong><small>Notas e arquivos</small></button></section><div id="plannerKanbanView" class="planner-kanban-view"><div class="kanban-board" id="kanbanBoard" aria-label="Quadro Kanban"></div></div>
       <div id="plannerWeekView" class="planner-week-view" hidden>
       <div class="planner-section-buttons">
         <button class="planner-section-btn planning-box" id="planningBtn" type="button" aria-expanded="false" aria-controls="planningPanel">Planejar <span id="unplannedCount">0</span></button>
@@ -54,9 +54,7 @@
       <div id="kanbanCompletionConfirm" class="day-completion-confirm" role="alertdialog" aria-modal="true" aria-labelledby="kanbanCompletionText" hidden><span id="kanbanCompletionText" class="day-completion-confirm-text">Concluir esta tarefa?</span><div id="kanbanCompletionChecklistWarning" class="day-completion-checklist-warning" hidden><strong>Checklist ainda em aberto:</strong><ul id="kanbanCompletionChecklistItems"></ul></div><div class="day-completion-confirm-actions"><button class="btn ghost small" id="kanbanCompletionCancelBtn" type="button">CANCELAR</button><button class="btn small confirm-yes" id="kanbanCompletionConfirmBtn" type="button">CONCLUIR</button></div></div>
     </section>
 
-    <section id="dashboardPage" class="page dashboard-page" aria-label="Relógio, evento escolhido e próximos eventos">
-      <div class="dashboard-calendar-layout" aria-label="Relógio, evento escolhido e agenda da semana"><div class="dashboard-left-column" id="dashboardCountdowns" aria-live="polite" aria-label="Relógio e evento escolhido"></div><div class="dashboard-week-column" aria-label="Agenda da semana"><div class="dashboard-week-column-heading">AGENDA DA SEMANA</div><div id="dashboardWeekAgenda" class="dashboard-week-agenda"></div></div></div>
-    </section>
+    <section id="dashboardPage" class="page dashboard-page" aria-label="Planner semanal"><div class="week-page-heading"><h2>SEMANA</h2><div class="week-page-controls"><button class="btn small" id="weekPrevTop" type="button" aria-label="Semana anterior">‹</button><strong id="weekLabelTop"></strong><button class="btn small" id="weekNextTop" type="button" aria-label="Próxima semana">›</button><button class="btn primary small" id="weekAddTop" type="button">＋ TAREFA</button></div></div><div id="weekPlannerMount" class="week-planner-mount"></div><div hidden><div id="dashboardCountdowns"></div><div id="dashboardWeekAgenda"></div></div></section>
 
     <dialog id="dashboardDayEventsDialog" class="app-dialog dashboard-day-events-dialog" aria-labelledby="dashboardDayEventsTitle"><div class="dialog-head"><h2 id="dashboardDayEventsTitle">Detalhes do dia</h2><button class="btn ghost small" id="dashboardDayEventsClose" type="button" aria-label="Fechar">✕</button></div><div id="dashboardDayEventsList" class="dashboard-day-events-list"></div></dialog>
     <dialog id="dashboardEventPickerDialog" class="app-dialog dashboard-event-picker-dialog" aria-labelledby="dashboardEventPickerTitle"><div class="dialog-head"><h2 id="dashboardEventPickerTitle">Escolha um evento</h2><button class="btn ghost small" id="dashboardEventPickerClose" type="button" aria-label="Fechar">✕</button></div><p class="dialog-hint">Selecione um evento futuro da agenda principal. Essa escolha fica salva no seu TNM.</p><div id="dashboardEventPickerList" class="dashboard-event-picker-list"></div><div class="form-actions dialog-save-actions"><button class="btn" id="dashboardEventPickerClear" type="button">Limpar escolha</button></div></dialog>
@@ -115,14 +113,7 @@
 
   <button id="refreshSyncBtn" class="refresh-sync-btn refresh-sync-action" type="button" aria-label="Atualizar o TNM" title="Atualizar o TNM"><span aria-hidden="true">↻</span></button>
 
-  <nav class="main-nav" aria-label="Navegação principal">
-    <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
-    <button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"></rect><path d="M9.5 4.5v15M14.5 4.5v15M4.5 9.5h15M4.5 14.5h15"></path></svg></span><span id="plannerNavLabel">GERAL</span></button>
-    <button class="nav-btn" type="button" data-page="notes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8.5 8h7M8.5 12h7M8.5 16h7"></path></svg></span><span>NOTAS</span></button>
-    <button class="nav-btn" type="button" data-page="dashboard" aria-label="Calendário"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="5" width="17" height="16" rx="2"></rect><path d="M7.5 3v4M16.5 3v4M3.5 9.5h17M7.5 13h3M13.5 13h3M7.5 16.5h3M13.5 16.5h3"></path></svg></span><span>CAL</span></button>
-    <button class="nav-btn" type="button" data-page="finance"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 8.5V7a2 2 0 0 1 2-2h11"></path><rect x="3.5" y="8" width="17" height="12" rx="2"></rect><path d="M3.5 11h17M15 14h5"></path><circle cx="15.5" cy="14" r=".7"></circle></svg></span><span>FINANÇAS</span></button>
-    <button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>CONFIGS</span></button>
-  </nav>
+  <nav class="main-nav" aria-label="Navegação principal"><span class="nav-indicator" id="navIndicator" aria-hidden="true"></span><button class="nav-btn" type="button" data-page="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>CONFIGS</span></button><button class="nav-btn" id="plannerBasecampSwitch" type="button" data-page="tasks" aria-current="page"><span class="nav-icon" aria-hidden="true">▦</span><span id="plannerNavLabel">CENTRAL</span></button><button class="nav-btn" type="button" data-page="dashboard" aria-label="Semana"><span class="nav-icon" aria-hidden="true">▦</span><span>SEMANA</span></button></nav>
   <button id="mainNavDockToggle" class="main-nav-dock-toggle" type="button" aria-label="Ocultar dock" aria-expanded="true" title="Ocultar dock">↓</button>
 
   <dialog id="workFolderDialog" class="app-dialog work-folder-dialog"><div class="dialog-head"><h2 id="workFolderDialogTitle">Pasta</h2><button class="btn ghost small" id="closeWorkFolderDialog" type="button" aria-label="Fechar">✕</button></div><div class="work-folder-dialog-actions"><button class="btn primary small" id="workFolderAddTask" type="button">＋ TAREFA</button></div><div id="workFolderTasks" class="work-folder-task-list"></div></dialog>
@@ -158,9 +149,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=339'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=340'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=380',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=381',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
