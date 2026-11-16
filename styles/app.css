@@ -948,3 +948,15 @@ body[data-theme="dark"] #kanbanBoard .mobile-kanban-preview-more,body[data-theme
 /* Notes: keep the add action without restoring the full-width utility strip. */
 body[data-page="notes"] #notesDock,body.view-mobile[data-page="notes"] #notesDock{width:auto!important;max-width:calc(100% - 120px)!important;min-height:0!important;height:auto!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;}
 body[data-page="notes"] #notesDock .subdock-add-note,body.view-mobile[data-page="notes"] #notesDock .subdock-add-note{flex:0 0 auto!important;width:auto!important;min-width:112px!important;min-height:42px!important;height:42px!important;padding:0 18px!important;border:1px solid var(--line)!important;border-radius:12px!important;background:var(--panel)!important;color:var(--text)!important;box-shadow:0 3px 12px #23344c1c!important;}
+
+/* Remove the phantom week dock and unused reserved gutter in Notes/GERAL. */
+body[data-page="tasks"] #weekDock,
+body.view-mobile[data-page="tasks"] #weekDock,
+body[data-view-mode="pc"][data-page="tasks"] #weekDock{display:none!important;}
+body[data-page="notes"] .wrap,
+body.view-mobile[data-page="notes"] .wrap{padding-bottom:0!important;}
+body[data-page="notes"] #notesPage.active{min-height:0;overflow:hidden!important;padding-bottom:0!important;}
+body[data-page="notes"] #normalNotesView,
+body[data-page="notes"] #privateNotesView{padding-bottom:calc(145px + env(safe-area-inset-bottom,0px))!important;}
+body.view-mobile[data-page="tasks"] .wrap{padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))!important;}
+body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]){overflow:auto!important;}
