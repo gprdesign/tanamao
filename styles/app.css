@@ -1135,3 +1135,24 @@ body[data-view-mode="pc"][data-page="dashboard"] .week-planner-mount #weekGrid>.
 body[data-view-mode="pc"][data-page="dashboard"] .week-drop-zone{min-width:0!important;}
 body[data-page="dashboard"] .week-planner-mount #weekGrid [data-week-drop]{touch-action:manipulation;}
 @media(max-width:700px){body.view-mobile[data-page="dashboard"] .week-planner-mount #weekGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:none!important;grid-auto-rows:minmax(150px,auto)!important;}.week-drop-zone{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto minmax(88px,auto);min-height:0;}.week-drop-zone h3{grid-column:1/-1;}}
+
+/* Weekly action destinations occupy the same eighth cell as a day card. */
+body[data-page="dashboard"] .week-planner-mount #weekGrid>.week-drop-zone{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto repeat(3,minmax(50px,1fr));gap:7px;min-width:0;min-height:220px;height:100%;padding:10px;border:1px dashed var(--accent);border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--panel));}
+body[data-page="dashboard"] .week-drop-zone h3{margin:0;color:var(--muted);font-size:.67rem;letter-spacing:.1em;}
+body[data-page="dashboard"] .week-drop-zone button{display:grid;align-content:center;gap:3px;width:100%;min-width:0;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);text-align:left;}
+body[data-page="dashboard"] .week-drop-zone button strong{font-size:.68rem;letter-spacing:.04em;}
+body[data-page="dashboard"] .week-drop-zone button span{color:var(--muted);font-size:.61rem;}
+body[data-page="dashboard"] .week-drop-zone [data-week-drop="remove-date"]{border-color:#a14b58;background:color-mix(in srgb,#a93445 13%,var(--panel));}
+body[data-page="dashboard"] .week-drop-zone [data-week-drop="next-week"]{border-color:#8a6a2e;background:color-mix(in srgb,#c09227 13%,var(--panel));}
+body[data-page="dashboard"] .week-drop-zone [data-week-drop="plan-date"]{border-color:#5576c2;background:color-mix(in srgb,#4269c2 13%,var(--panel));}
+body[data-page="dashboard"] .week-drop-zone button.drop-active{outline:2px dashed var(--accent);outline-offset:1px;}
+@media(max-width:700px){body.view-mobile[data-page="dashboard"] .week-planner-mount #weekGrid>.week-drop-zone{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto minmax(88px,auto);min-height:0;height:auto;}.week-drop-zone h3{grid-column:1/-1;}}
+/* Identical card structure for Google and local reminders; accessible reorder handles. */
+.kanban-fullscreen-dialog .kanban-google-reminder-row{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--panel2);}
+.kanban-fullscreen-dialog .kanban-google-reminder-row>.task-card{width:100%;min-width:0;}
+.kanban-fullscreen-dialog .kanban-reminder-row .reminder-grip{display:grid!important;place-items:center!important;min-width:32px!important;width:32px!important;min-height:38px!important;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);cursor:grab;touch-action:none;}
+.kanban-fullscreen-dialog .kanban-reminder-row.drop-active{outline:2px dashed var(--accent);outline-offset:2px;}
+.kanban-fullscreen-dialog .kanban-google-reminder-row.kanban-reminder-overdue>.task-card{background:#2a1822;border-color:#8f3e50;color:#ffe1e4;}
+.kanban-fullscreen-dialog .kanban-google-reminder-row.kanban-reminder-today>.task-card{background:#282414;border-color:#8a6a2e;color:#fff;}
+body[data-theme="light"] .kanban-fullscreen-dialog .kanban-google-reminder-row.kanban-reminder-overdue>.task-card{background:#fee2e2!important;border-color:#e9a0a7!important;color:#7f1d1d!important;}
+body[data-theme="light"] .kanban-fullscreen-dialog .kanban-google-reminder-row.kanban-reminder-today>.task-card{background:#fff7ed!important;border-color:#fdba74!important;color:#7c2d12!important;}
