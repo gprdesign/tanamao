@@ -1169,3 +1169,60 @@ body[data-theme="light"] .kanban-fullscreen-dialog .kanban-google-reminder-row.k
 body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-content{grid-column:1/-1!important;grid-row:3!important;}
 body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-checklist{grid-column:1/-1!important;grid-row:4!important;}
 body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-attachments-links{grid-column:1/-1!important;grid-row:5!important;}
+
+/* Requested compact reminder cards and stable actions. */
+.kanban-fullscreen-dialog .kanban-reminder-row.kanban-task,.kanban-fullscreen-dialog .kanban-google-reminder-row{grid-template-columns:minmax(0,1fr)!important;}
+.kanban-fullscreen-dialog .kanban-reminder-row.kanban-task .task-card{width:100%;min-width:0;}
+.kanban-fullscreen-dialog .kanban-reminder-row.kanban-task .task-actions{display:flex;align-items:center;gap:6px;}
+.kanban-fullscreen-dialog .reminder-popup-menu{position:relative;flex:none;}
+.kanban-fullscreen-dialog .reminder-popup-menu>summary{display:grid;place-items:center;width:40px;height:40px;min-width:40px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);font-weight:900;cursor:pointer;}
+.kanban-fullscreen-dialog .reminder-popup-menu .task-menu-popover{z-index:100;min-width:188px;}
+.kanban-fullscreen-dialog .reminder-popup-menu .menu-action{width:100%;text-align:left;}
+.kanban-fullscreen-dialog .reminder-popup-menu .menu-complete{color:#43c17c!important;}
+.kanban-fullscreen-dialog .reminder-popup-menu .menu-edit{color:#f1c75b!important;}
+.kanban-fullscreen-dialog .reminder-popup-menu .menu-delete{color:#ff7c88!important;}
+.kanban-fullscreen-dialog .reminder-snooze-options{display:grid;gap:2px;padding-left:9px;}
+.kanban-fullscreen-dialog .reminder-snooze-options[hidden]{display:none!important;}
+.kanban-reminder-dock{position:sticky;z-index:5;bottom:0;flex:0 0 auto;display:flex;justify-content:center;gap:9px;padding:10px max(10px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(12px);}
+.kanban-reminder-dock .btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 13px;border-radius:12px;font-size:.72rem;font-weight:850;white-space:nowrap;}
+.kanban-reminder-dock .btn strong{font-size:1.1rem;}
+@media(max-width:390px){.kanban-reminder-dock{gap:6px;padding-inline:6px}.kanban-reminder-dock .btn{gap:5px;padding:7px;font-size:.62rem;}}
+/* Calendar chooser is always rendered in the events popup, not just in Settings. */
+.kanban-calendar-choices{display:grid!important;gap:8px;}
+.kanban-calendar-choices #calendarFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.kanban-calendar-choices [data-connect-calendar]{justify-self:start;}
+@media(max-width:700px){.kanban-calendar-choices #calendarFilters{grid-template-columns:1fr;}}
+/* Completed event checkbox: strong green contrast, not pale white-on-mint. */
+.calendar-event-complete.is-completed,.kanban-complete-btn.calendar-event-complete.is-completed{background:#86d8a5!important;border-color:#287948!important;color:#123e25!important;opacity:1!important;box-shadow:inset 0 0 0 1px #287948;}
+.kanban-event-row.is-completed .calendar-event-complete{opacity:1!important;}
+/* Four dock items: refresh uses the same integrated nav style; reserve clear page space. */
+html body.view-mobile .main-nav,html body:not(.view-mobile) .main-nav{grid-template-columns:repeat(4,minmax(0,1fr))!important;padding:6px!important;gap:3px!important;}
+html body.view-mobile .main-nav .nav-btn,html body:not(.view-mobile) .main-nav .nav-btn{min-width:0!important;padding:7px 3px!important;gap:3px!important;font-size:clamp(.52rem,2.2vw,.7rem)!important;}
+.main-nav .dock-refresh .nav-icon{font-size:1.1rem;line-height:1;}
+.refresh-sync-btn,.main-nav-dock-toggle{display:none!important;}
+.main-nav{padding-right:6px!important;}
+body:not(.nav-dock-hidden) .page.active{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))!important;}
+@media(max-width:700px){body.view-mobile[data-page="tasks"] #tasksPage.active{overflow-y:auto!important;padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))!important;}body.view-mobile[data-page="tasks"] #kanbanBoard{height:auto!important;min-height:0!important;overflow:visible!important;}body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{height:auto!important;min-height:0!important;grid-template-rows:none!important;grid-auto-rows:minmax(120px,auto)!important;padding-bottom:14px!important;}.main-nav{bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;}}
+/* The FEITO tile only needs the title line, never a full card-height slot. */
+body[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact{align-self:start!important;justify-self:stretch!important;min-height:48px!important;height:max-content!important;width:100%!important;padding:8px 12px!important;gap:0!important;}
+body[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact .mobile-kanban-tile-head{min-height:30px!important;}
+body[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact .mobile-kanban-preview{display:none!important;}
+/* Keep Central figures readable on narrow screens without text touching the numbers. */
+.central-summary-preview{gap:5px!important;overflow:hidden!important;}
+.central-metric{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:4px!important;min-width:0!important;}
+.central-metric b{min-width:0!important;font-size:clamp(.52rem,2.05vw,.65rem)!important;line-height:1.16!important;overflow-wrap:anywhere!important;}
+.central-metric strong{font-size:clamp(.57rem,2.25vw,.7rem)!important;line-height:1.12!important;white-space:nowrap!important;}
+body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-finance .mobile-kanban-preview,body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-notes .mobile-kanban-preview{display:grid!important;overflow:hidden!important;}
+
+/* Android/WebView file chooser: keep input mounted and non-display:none so native chooser opens from tap. */
+.drive-attachments input[type="file"][data-drive-input]{position:fixed!important;left:0!important;top:0!important;width:1px!important;height:1px!important;min-width:1px!important;min-height:1px!important;margin:0!important;padding:0!important;opacity:.01!important;overflow:hidden!important;clip-path:inset(50%)!important;pointer-events:none!important;}
+
+/* Strong overrides over historic dock/tile rules. */
+html body.view-mobile .nav-indicator,html body:not(.view-mobile) .nav-indicator{width:calc((100% - 30px)/4)!important;}
+html body[data-view-mode][data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact{display:flex!important;align-self:start!important;justify-self:stretch!important;height:48px!important;min-height:48px!important;max-height:48px!important;overflow:hidden!important;padding:8px 10px!important;}
+html body[data-view-mode][data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact .mobile-kanban-tile-head{min-height:28px!important;height:28px!important;}
+html body[data-view-mode][data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact .mobile-kanban-tile-head b{min-width:24px!important;width:24px!important;height:24px!important;}
+html body.view-mobile[data-page="tasks"] #tasksPage.active{padding-bottom:calc(116px + env(safe-area-inset-bottom,0px))!important;}
+html body.view-mobile[data-page="tasks"] #kanbanBoard{padding-bottom:16px!important;}
+html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{padding-bottom:16px!important;}
+html body.view-mobile .refresh-sync-btn,html body.view-mobile .main-nav-dock-toggle{display:none!important;}
