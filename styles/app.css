@@ -1226,3 +1226,40 @@ html body.view-mobile[data-page="tasks"] #tasksPage.active{padding-bottom:calc(1
 html body.view-mobile[data-page="tasks"] #kanbanBoard{padding-bottom:16px!important;}
 html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{padding-bottom:16px!important;}
 html body.view-mobile .refresh-sync-btn,html body.view-mobile .main-nav-dock-toggle{display:none!important;}
+
+
+/* Popup de EVENTOS: corrigir a opacidade legada e dar hierarquia visual mais clara. */
+.kanban-fullscreen-dialog .kanban-event-section,
+.kanban-fullscreen-dialog .kanban-event-section *{opacity:1!important;filter:none!important;}
+.kanban-fullscreen-dialog .kanban-event-popup{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-content:start!important;gap:14px!important;min-height:0!important;overflow:visible!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-event-popup-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important;padding:15px 18px!important;border:1px solid color-mix(in srgb,var(--accent) 36%,var(--line))!important;border-radius:16px!important;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 16%,var(--panel2)),var(--panel2) 72%)!important;}
+.kanban-fullscreen-dialog .kanban-event-popup-head .eyebrow{color:var(--accent)!important;font-weight:850!important;letter-spacing:.08em!important;}
+.kanban-fullscreen-dialog .kanban-event-popup-head h3{margin:4px 0!important;color:var(--text)!important;font-weight:850!important;}
+.kanban-fullscreen-dialog .kanban-event-popup-head p{margin:0!important;color:var(--muted)!important;}
+.kanban-fullscreen-dialog .kanban-event-popup-head .kanban-add{flex:none!important;width:44px!important;height:44px!important;min-width:44px!important;border-radius:12px!important;}
+.kanban-fullscreen-dialog .kanban-calendar-choices{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;padding:2px 0!important;}
+.kanban-fullscreen-dialog .kanban-calendar-choices .calendar-filter-row{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important;min-height:54px!important;padding:10px 12px!important;border:1px solid var(--line)!important;border-radius:12px!important;background:var(--panel2)!important;color:var(--text)!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-calendar-choices .calendar-filter-row:has(input:checked){border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 13%,var(--panel2))!important;}
+.kanban-fullscreen-dialog .kanban-calendar-choices .calendar-filter-row span,.kanban-fullscreen-dialog .kanban-calendar-choices .calendar-filter-row small{color:var(--text)!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-calendar-choices .calendar-filter-row small{color:var(--muted)!important;}
+.kanban-fullscreen-dialog .kanban-event-popup .kanban-event-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:start!important;gap:9px!important;overflow:visible!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-event-popup .kanban-event-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:stretch!important;gap:8px!important;min-width:0!important;padding:8px!important;border:1px solid var(--line)!important;border-radius:13px!important;background:var(--panel2)!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-event-popup .kanban-event-item{display:grid!important;grid-template-columns:auto auto minmax(0,1fr)!important;align-items:center!important;gap:7px 10px!important;min-width:0!important;padding:4px!important;border:0!important;background:transparent!important;color:var(--text)!important;line-height:1.35!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-event-popup .kanban-event-day,.kanban-fullscreen-dialog .kanban-event-popup .kanban-event-time{color:var(--accent)!important;font-weight:800!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-event-popup .kanban-event-title{min-width:0!important;color:var(--text)!important;font-weight:700!important;overflow-wrap:anywhere!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-event-popup .kanban-empty{grid-column:1/-1!important;margin:0!important;padding:14px!important;border:1px dashed var(--line)!important;border-radius:12px!important;color:var(--muted)!important;text-align:center!important;opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-event-row.is-completed .kanban-event-item,.kanban-fullscreen-dialog .kanban-event-row.is-completed .kanban-event-item *{opacity:1!important;}
+.kanban-fullscreen-dialog .kanban-event-row.is-completed .kanban-event-title{text-decoration:line-through!important;color:var(--muted)!important;}
+@media(max-width:700px){.kanban-fullscreen-dialog .kanban-calendar-choices,.kanban-fullscreen-dialog .kanban-event-popup .kanban-event-list{grid-template-columns:minmax(0,1fr)!important}.kanban-fullscreen-dialog .kanban-event-popup-head{padding:12px!important}}
+
+/* Mesma alça e retorno visual do arraste em todos os popups de tarefas. */
+.kanban-fullscreen-dialog .task-touch-handle{display:grid!important;place-items:center!important;flex:none!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;border:1px solid var(--line)!important;border-radius:9px!important;background:var(--panel)!important;color:var(--text)!important;cursor:grab!important;touch-action:none!important;} .kanban-fullscreen-dialog .mobile-kanban-dialog-content .task-touch-handle{display:grid!important;place-items:center!important;flex:none!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;border:1px solid var(--line)!important;border-radius:9px!important;background:var(--panel)!important;color:var(--text)!important;cursor:grab!important;touch-action:none!important;}
+.kanban-fullscreen-dialog .mobile-kanban-dialog-content .task-touch-handle:active{cursor:grabbing!important;}
+.kanban-fullscreen-dialog .mobile-kanban-dialog-content [data-touch-drag-task].drag-armed{color:var(--accent)!important;transform:scale(1.06)!important;}
+.kanban-fullscreen-dialog .task-card.is-dragging{opacity:.55!important;outline:2px dashed var(--accent)!important;outline-offset:2px!important;}
+.kanban-fullscreen-dialog .drop-active{outline:2px solid var(--accent)!important;outline-offset:2px!important;}
+.kanban-fullscreen-dialog .mobile-kanban-dialog-content .task-card.is-dragging{opacity:.55!important;outline:2px dashed var(--accent)!important;outline-offset:2px!important;}
+.kanban-fullscreen-dialog .mobile-kanban-dialog-content .drop-active{outline:2px solid var(--accent)!important;outline-offset:2px!important;}
+
+/* Padronização global solicitada: uma família tipográfica e um tamanho para toda a interface. */
+html body :is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard),html body :is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard)::before,html body :is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard)::after{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:14px!important;}
