@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=88">
+  <link rel="stylesheet" href="./styles/app.css?v=89">
 </head>
 <body>
   <script>(()=>{let preference='auto';try{preference=localStorage.getItem('tnm.weekly.layoutPreference.v1')||'auto';}catch{}if(!['auto','pc','mobile'].includes(preference))preference='auto';const mode=preference==='auto'?((window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc'):preference;document.body.dataset.layoutPreference=preference;document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -158,6 +158,6 @@
       const src='./app.js?v=347'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=391',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=392',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
