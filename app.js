@@ -2068,7 +2068,7 @@
     $('taskForm').reset();$('taskExtraTagsPanel').hidden=true;$('taskTagsToggle').setAttribute('aria-expanded','false');$('taskTagsToggle').textContent='＋ TAG';
     $('taskId').value=task ? task.id : '';
     $('taskDialogTitle').textContent=task ? 'Editar tarefa' : 'Nova tarefa';
-    $('taskTitle').value=task?.title || '';$('taskContent').value=task?.content || '';if($('taskContentFoldBody'))$('taskContentFoldBody').hidden=true;if($('taskContentToggle')){$('taskContentToggle').hidden=false;$('taskContentToggle').textContent=task?.content?'＋ Ver conteúdo':'＋ Conteúdo';$('taskContentToggle').setAttribute('aria-expanded','false');}renderTaskChecklist(task?.subtasks||[]);
+    $('taskTitle').value=task?.title || '';$('taskContent').value=task?.content || '';renderTaskChecklist(task?.subtasks||[]);
     renderTaskTagOptions(task?.tagId || filterTagIds[0] || localStorage.getItem(LAST_TAG_KEY) || 'vida');renderTaskTagChoices(task?.id||'',task?getTaskTagIds(task):[filterTagIds[0]||'vida']);
     $('executionDate').value=task?.executionDate || suggestedDate || '';setLinkAttachment('task',task?.link||'');void renderDriveAttachments('task',task?.id||'');
     const recurrence=task?.recurrence||null;$('taskRecurrence').value=recurrence?.frequency||'';$('recurrenceInterval').value=String(recurrence?.interval||1);$('recurrenceUntil').value=recurrence?.until||'';
@@ -3092,7 +3092,7 @@
   $('taskChecklistList').addEventListener('dragover',handleTaskChecklistDragOver);
   $('taskChecklistList').addEventListener('drop',handleTaskChecklistDrop);
   $('taskChecklistList').addEventListener('keydown',event=>{if(event.target.matches('[data-task-checklist-text]')&&event.key==='Enter'&&!(event.ctrlKey||event.metaKey)&&!event.shiftKey){event.preventDefault();event.stopPropagation();addTaskChecklistItem();}});
-  $('taskTagsToggle').addEventListener('click',()=>{const panel=$('taskExtraTagsPanel'),expanded=panel.hidden;panel.hidden=!expanded;$('taskTagsToggle').setAttribute('aria-expanded',String(expanded));$('taskTagsToggle').textContent=expanded?'− TAGS':'＋ TAG';if(expanded)panel.querySelector('input')?.focus();});$('taskContentToggle')?.addEventListener('click',()=>{const body=$('taskContentFoldBody'),opening=body.hidden;body.hidden=!opening;$('taskContentToggle').hidden=false;$('taskContentToggle').textContent=opening?'− Ocultar conteúdo':'＋ Ver conteúdo';$('taskContentToggle').setAttribute('aria-expanded',String(opening));if(opening)$('taskContent')?.focus();taskDialogDirty=true;});
+  $('taskTagsToggle').addEventListener('click',()=>{const panel=$('taskExtraTagsPanel'),expanded=panel.hidden;panel.hidden=!expanded;$('taskTagsToggle').setAttribute('aria-expanded',String(expanded));$('taskTagsToggle').textContent=expanded?'− TAGS':'＋ TAG';if(expanded)panel.querySelector('input')?.focus();});
   $('taskRecurrence').addEventListener('change',()=>updateTaskRecurrenceUI(true));
   $('taskLinkToggle').addEventListener('click',()=>toggleLinkAttachment('task'));
   $('taskLinkRemove').addEventListener('click',()=>clearLinkAttachment('task'));
