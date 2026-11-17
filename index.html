@@ -11,7 +11,7 @@
   <link rel="icon" href="./favicon.png" type="image/png" sizes="48x48">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <title>Tá na mão! | Kanban</title>
-  <link rel="stylesheet" href="./styles/app.css?v=91">
+  <link rel="stylesheet" href="./styles/app.css?v=92">
 </head>
 <body>
   <script>(()=>{let preference='auto';try{preference=localStorage.getItem('tnm.weekly.layoutPreference.v1')||'auto';}catch{}if(!['auto','pc','mobile'].includes(preference))preference='auto';const mode=preference==='auto'?((window.matchMedia?.('(max-width: 700px)').matches||false)?'mobile':'pc'):preference;document.body.dataset.layoutPreference=preference;document.body.dataset.viewMode=mode;document.body.classList.toggle('view-mobile',mode==='mobile');})();</script>
@@ -149,15 +149,16 @@
 
   <dialog id="globalSearchDialog" class="app-dialog" aria-labelledby="globalSearchTitle"><div class="dialog-head"><h2 id="globalSearchTitle">Busca global</h2><button class="btn ghost small" id="closeGlobalSearchBtn" type="button" aria-label="Fechar busca">✕</button></div><form id="globalSearchForm" class="global-search-form"><input id="globalSearchInput" type="search" autocomplete="off" placeholder="Buscar em todo o TNM…" aria-label="Buscar em todo o TNM"><button class="btn primary" type="submit">BUSCAR</button><button class="btn ghost" id="globalSearchClearBtn" type="button">LIMPAR</button></form><p id="globalSearchCount" class="global-search-count" aria-live="polite">Digite e aperte Enter</p><div id="globalSearchResults" aria-live="polite"><p class="global-search-empty">Digite o que quer encontrar e aperte Enter.</p></div></dialog>
   <dialog id="globalSearchDetailDialog" class="app-dialog"><div class="dialog-head"><h2 id="globalSearchDetailTitle">Resultado</h2><button class="btn ghost small" id="closeGlobalSearchDetailBtn" type="button" aria-label="Fechar resultado">✕</button></div><p id="globalSearchDetailBody"></p></dialog>
+  <dialog id="drivePreviewDialog" class="app-dialog drive-preview-dialog" aria-label="Pré-visualização do anexo"><div class="dialog-head"><h2 id="drivePreviewTitle">Arquivo</h2><div class="drive-preview-head-actions"><button class="btn small" id="drivePreviewDownload" type="button">Baixar</button><button class="btn ghost small" id="drivePreviewClose" type="button" aria-label="Fechar pré-visualização">✕</button></div></div><div id="drivePreviewBody" class="drive-preview-body"></div></dialog>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="./config.js?v=3" defer></script>
   <script src="https://accounts.google.com/gsi/client" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     { const refresh=new URLSearchParams(location.search).get('tnm_refresh');
-      const src='./app.js?v=347'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
+      const src='./app.js?v=348'+(refresh?'&tnm_asset='+encodeURIComponent(refresh):'');
       document.write('<script src="'+src+'" defer><\/script>'); }
   </script>
-  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=394',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
+  <script>if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js?v=395',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});</script>
 </body>
 </html>
