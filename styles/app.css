@@ -1108,3 +1108,8 @@ body[data-view-mode="pc"][data-page="dashboard"] .week-planner-mount #weekGrid>.
 body[data-view-mode="pc"][data-page="dashboard"] #dashboardPage.active{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important;}
 body.view-mobile[data-page="dashboard"] #dashboardPage.active{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))!important;}
 body.view-mobile[data-page="dashboard"] .week-planner-mount #weekGrid{padding-bottom:0!important;}
+/* Balance nine Central cards in three complete rows; keep Feito compact. */
+body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{grid-template-columns:repeat(12,minmax(0,1fr))!important;grid-template-rows:repeat(3,minmax(0,1fr))!important;grid-auto-rows:minmax(0,1fr)!important;}
+body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard>.mobile-kanban-tile{grid-column:span 4!important;}
+body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard>.mobile-kanban-tile.is-compact{grid-column:span 2!important;}
+body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard>.mobile-kanban-tile.is-finance,body[data-view-mode="pc"][data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard>.mobile-kanban-tile.is-notes{grid-column:span 5!important;}
