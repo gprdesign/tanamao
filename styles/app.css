@@ -998,22 +998,31 @@ body[data-view-mode] #taskDialog #taskForm .task-extra-tags-field{grid-column:1 
 
 /* Compact 3-button dock; reminder cards share budget styling. */
 .main-nav{width:min(520px,calc(100% - 32px))!important;padding-right:6px!important}.main-nav .nav-btn{flex:1 1 0!important;min-width:0!important}.tnm-reminder-card{display:grid!important;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:4px}.tnm-reminder-card .task-card{min-width:0}.tnm-reminder-card .task-actions{display:none}.reminder-grip{display:grid;place-items:center;border:0;background:transparent;color:var(--muted);font-size:1.2rem;cursor:grab;touch-action:none;min-height:42px}.reminder-grip:active{cursor:grabbing}.tnm-reminder-card>.reminder-complete{position:static!important}
-/* Editor: date and repeat side by side, then full-width content, links and checklist. */
-body[data-view-mode] #taskDialog #taskForm .task-details-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto!important;align-items:start!important;gap:10px 12px!important}
+/* Task popup order: title/tag, date/repeat, expandable content, checklist, combined links/files. */
+body[data-view-mode] #taskDialog #taskForm .task-details-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto auto auto auto auto!important;align-items:start!important;gap:10px 12px!important}
 body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-title{grid-column:1!important;grid-row:1!important}
 body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-primary-tag{grid-column:2!important;grid-row:1!important}
 body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-date{grid-column:1!important;grid-row:2!important}
 body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-recurrence{grid-column:2!important;grid-row:2!important}
-body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-content{grid-column:1 / -1!important;grid-row:3!important;min-height:0!important}
-body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-detail-links{grid-column:1 / -1!important;grid-row:4!important}
-body[data-view-mode] #taskDialog #taskForm .task-details-grid>.task-checklist{grid-column:1 / -1!important;grid-row:5!important;height:auto!important;max-height:none!important;overflow:visible!important}
-body[data-view-mode] #taskDialog #taskForm .task-details-grid>.field{display:flex!important;flex-direction:column;justify-content:flex-start;min-width:0;gap:5px!important}
+body[data-view-mode] #taskDialog #taskForm .task-checklist{grid-column:1/-1!important;grid-row:4!important;width:100%!important;max-height:none!important;height:auto!important;overflow:visible!important;}
+body[data-view-mode] #taskDialog #taskForm .task-attachments-links{grid-column:1/-1!important;grid-row:5!important;min-width:0;}
 body[data-view-mode] #taskDialog #taskForm .task-primary-tag{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:5px!important}
-body[data-view-mode] #taskDialog #taskForm .task-primary-tag>label{grid-column:1/-1;min-height:1.4em}
+body[data-view-mode] #taskDialog #taskForm .task-primary-tag>label{grid-column:1/-1}
+body[data-view-mode] #taskDialog #taskForm .task-tags-toggle{background:#f1c75b!important;border-color:#d4a82e!important;color:#27200b!important;font-weight:850!important}
 body[data-view-mode] #taskDialog #taskForm .task-detail-title>label,body[data-view-mode] #taskDialog #taskForm .task-detail-date>label,body[data-view-mode] #taskDialog #taskForm .task-detail-recurrence>label{min-height:1.4em}
 body[data-view-mode] #taskDialog #taskForm :is(.task-primary-tag select,.task-detail-title input,.task-detail-date input,.task-detail-recurrence select,.task-tags-toggle){min-height:42px!important;height:42px!important;margin:0!important}
 body[data-view-mode] #taskDialog #taskForm .task-detail-content textarea{width:100%!important;min-height:100px!important}
 body[data-view-mode] #taskDialog #taskForm .task-checklist-list{max-height:none!important;overflow:visible!important}
+.task-content-fold{display:grid;gap:8px}.task-content-fold>button,.task-content-toggle-bottom{justify-self:start}.task-content-fold-body[hidden]{display:none!important}.task-attachment-buttons{display:flex;align-items:center;gap:7px}.task-attachments-links .drive-attachment-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.task-attachments-links .task-link-row{margin-top:9px}
+#taskDialogCompleteBtn:not(.hidden){background:#17794d!important;border-color:#21895a!important;color:#fff!important}
+body[data-view-mode] #taskDialog .task-dialog-actions{justify-content:space-between}
+@media(max-width:700px){body[data-view-mode] #taskDialog #taskForm .task-details-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important}body[data-view-mode] #taskDialog #taskForm .task-checklist,body[data-view-mode] #taskDialog #taskForm .task-attachments-links{grid-column:1/-1!important}body[data-view-mode] #taskDialog #taskForm .task-checklist-head{flex-wrap:wrap}}
+/* Clear summary labels on Central's new finance and notes tiles. */
+.central-summary-preview{display:grid!important;align-content:start;gap:4px!important;overflow:auto!important;}
+.central-metric{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0;}
+.central-metric b{font-size:.62rem!important;line-height:1.15;color:inherit;opacity:.84;}
+.central-metric strong{font-size:.68rem!important;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;}
+body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-finance .mobile-kanban-preview,body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-notes .mobile-kanban-preview{display:grid!important;overflow:auto!important;}
 /* Central tiles, compact Feito and equally spaced dock. */
 body .main-nav{grid-template-columns:repeat(3,minmax(0,1fr))!important;justify-content:stretch!important}
 #kanbanBoard .mobile-kanban-tile.is-finance{--tile-accent:#57d692}
