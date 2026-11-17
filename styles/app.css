@@ -1454,7 +1454,6 @@ html body :where(.main-nav,.week-dock,#notesDock,.planner-subdock,.kanban-remind
 html body :where(.main-nav,.week-dock,#notesDock,.planner-subdock,.kanban-reminder-dock,.kanban-events-dock) :where(button,.btn,.nav-btn){min-width:0!important;max-width:100%!important;overflow-wrap:anywhere!important;}
 @media(max-width:700px){
  html body :where(.task-attachment-buttons,.work-folders-head,.week-page-heading,.week-page-controls,.finance-summary-dialog-head,.finance-summary-actions,.notes-mode-tabs,.planner-subdock,.kanban-card-controls,.kanban-lane-tools){flex-wrap:wrap!important;}
- html body :where(.main-nav,.planner-subdock,.week-dock,#notesDock,.kanban-reminder-dock,.kanban-events-dock){left:max(4px,env(safe-area-inset-left,0px))!important;right:max(4px,env(safe-area-inset-right,0px))!important;width:auto!important;max-width:none!important;}
 }
 
 /* Edit task: shortcuts go directly after date/repetition and before content. */
