@@ -1262,4 +1262,90 @@ html body.view-mobile .refresh-sync-btn,html body.view-mobile .main-nav-dock-tog
 .kanban-fullscreen-dialog .mobile-kanban-dialog-content .drop-active{outline:2px solid var(--accent)!important;outline-offset:2px!important;}
 
 /* Padronização global solicitada: uma família tipográfica e um tamanho para toda a interface. */
-html body :is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard),html body :is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard)::before,html body :is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard):is(*,#tnm-global-type-standard)::after{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:14px!important;}
+/* Restore the app's responsive type scale: one font family, no global fixed-size override. */
+/* Make the Central dashboard content-height driven; reserve only the real dock clearance. */
+@media(max-width:700px){
+ html body.view-mobile[data-page="tasks"] #tasksPage.active{display:block!important;flex:none!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:4px 4px calc(96px + env(safe-area-inset-bottom,0px))!important;}
+ html body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]){display:block!important;flex:none!important;height:auto!important;min-height:0!important;overflow:visible!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard:has(.mobile-kanban-dashboard){display:block!important;flex:none!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:0!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{display:grid!important;flex:none!important;width:100%!important;height:auto!important;min-height:0!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:none!important;grid-auto-rows:minmax(116px,auto)!important;align-content:start!important;align-items:stretch!important;gap:7px!important;padding:0 0 12px!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile{height:auto!important;min-height:116px!important;max-height:none!important;overflow:hidden!important;padding:9px!important;gap:7px!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-myday{grid-column:1/-1!important;min-height:112px!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact{height:48px!important;min-height:48px!important;max-height:48px!important;align-self:start!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-finance,html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-notes{min-height:126px!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-finance .mobile-kanban-preview,html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-notes .mobile-kanban-preview{overflow:hidden!important;}
+}
+@media(max-width:360px){html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{gap:5px!important}html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile{padding:7px!important}}
+
+/* Three task date shortcuts occupy one shared row after the date and recurrence fields. */
+#taskDialog .task-details-grid>.task-date-quick-actions{grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;width:100%!important;margin:0!important;}
+#taskDialog .task-date-quick-actions button{min-width:0!important;min-height:36px!important;padding:6px 8px!important;white-space:nowrap!important;}
+
+/* Checklist metadata and comments always align under the checklist text, not the drag/checkbox columns. */
+#taskDialog .task-checklist-row{grid-template-columns:32px 20px minmax(0,1fr) 36px!important;align-items:start!important;min-width:0!important;}
+#taskDialog .task-checklist-row .task-checklist-item-meta,
+#taskDialog .task-checklist-row .task-checklist-comments,
+#taskDialog .task-checklist-row .task-checklist-comment-editor{grid-column:3/-1!important;min-width:0!important;width:100%!important;}
+#taskDialog .task-checklist-row .task-checklist-item-meta{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:4px 8px!important;line-height:1.35!important;overflow-wrap:anywhere!important;}
+#taskDialog .task-checklist-row .task-checklist-item-meta time{white-space:nowrap!important;}
+#taskDialog .task-checklist-row .task-checklist-comments{display:grid!important;gap:6px!important;}
+#taskDialog .task-checklist-row .task-checklist-comment{display:grid!important;gap:4px!important;min-width:0!important;padding:8px 10px!important;}
+#taskDialog .task-checklist-row .task-checklist-comment p{margin:0!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:normal!important;}
+#taskDialog .task-checklist-row .task-checklist-comment time{display:block!important;margin:0!important;white-space:nowrap!important;}
+#taskDialog .task-checklist-row .task-checklist-comment-editor{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:start!important;gap:7px!important;padding:0!important;}
+#taskDialog .task-checklist-row .task-checklist-comment-editor summary{grid-column:1/-1!important;display:block!important;min-width:0!important;line-height:1.4!important;overflow-wrap:anywhere!important;}
+#taskDialog .task-checklist-row .task-checklist-comment-editor textarea{grid-column:1/-1!important;display:block!important;width:100%!important;min-width:0!important;min-height:64px!important;height:64px!important;resize:vertical!important;}
+#taskDialog .task-checklist-row .task-checklist-comment-editor button{grid-column:1/-1!important;justify-self:start!important;min-height:36px!important;}
+
+/* Client folder cards become wide, compact, two-column tiles with name and task count. */
+#taskDialog .task-details-grid{align-items:start!important;}
+.work-folder-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr))!important;gap:9px!important;}
+.work-folder-card{aspect-ratio:2/1!important;min-height:92px!important;}
+.work-folder-open{justify-content:center!important;gap:7px!important;padding:12px 44px 12px 13px!important;}
+.work-folder-open .work-folder-icon{top:50%!important;left:auto!important;right:10px!important;width:26px!important;height:26px!important;transform:translateY(-50%)!important;font-size:1rem!important;opacity:.75;}
+.work-folder-open strong{display:-webkit-box!important;-webkit-box-orient:vertical!important;-webkit-line-clamp:2!important;max-height:2.6em!important;line-height:1.3!important;overflow:hidden!important;}
+.work-folder-open>span:last-child{font-size:.82rem!important;}
+.work-folder-menu{top:7px!important;right:7px!important;}
+.work-folder-menu summary{width:34px!important;height:34px!important;}
+.work-folder-task{grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;}
+.work-folder-task .task-card{width:100%!important;}
+.work-folder-task-destination{grid-template-columns:auto minmax(0,1fr)!important;align-items:center!important;}
+@media(max-width:700px){.work-folder-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.work-folder-card{aspect-ratio:2/1!important;min-height:88px!important}.work-folder-open{padding:10px 40px 10px 10px!important}.work-folder-open strong{font-size:.95rem!important}.work-folder-open>span:last-child{font-size:.84rem!important}.work-folder-menu summary{width:32px!important;height:32px!important}}
+
+/* Event calendars live in a responsive footer dock, collapsed until requested. */
+.kanban-events-dock{position:sticky!important;z-index:8!important;bottom:0!important;flex:none!important;display:flex!important;justify-content:center!important;min-width:0!important;padding:9px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left))!important;border-top:1px solid var(--line)!important;background:color-mix(in srgb,var(--panel) 96%,transparent)!important;backdrop-filter:blur(12px);}
+.kanban-events-calendar-details{position:relative!important;display:flex!important;justify-content:center!important;min-width:0!important;width:min(100%,340px)!important;}
+.kanban-events-calendar-toggle{display:flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;width:100%!important;min-height:44px!important;padding:8px 14px!important;border:1px solid var(--line)!important;border-radius:12px!important;background:var(--panel2)!important;color:var(--text)!important;cursor:pointer!important;list-style:none!important;font-weight:850!important;}
+.kanban-events-calendar-toggle::-webkit-details-marker{display:none!important;}
+.kanban-events-calendar-details[open] .kanban-events-calendar-toggle{border-color:var(--accent)!important;color:var(--accent)!important;}
+.kanban-events-calendar-details .kanban-calendar-choices{position:absolute!important;left:0!important;bottom:calc(100% + 8px)!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:6px!important;width:min(100%,340px)!important;max-height:min(42dvh,340px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding:8px!important;border:1px solid var(--line)!important;border-radius:14px!important;background:var(--panel)!important;box-shadow:0 10px 28px #0005!important;}
+.kanban-events-calendar-details:not([open]) .kanban-calendar-choices{display:none!important;}
+.kanban-events-calendar-details .calendar-filter-row{min-height:48px!important;padding:8px 10px!important;}
+.kanban-events-calendar-details #calendarFilters{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:6px!important;}
+.kanban-fullscreen-dialog:has(.kanban-event-popup)>.kanban-fullscreen-content{padding-bottom:12px!important;}
+@media(max-width:400px){.kanban-events-calendar-details{width:100%!important}.kanban-events-calendar-toggle{min-height:42px!important}}
+
+/* Both Kanban popup docks automatically wrap/stack their actions at any viewport width. */
+.kanban-reminder-dock{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:stretch!important;justify-content:stretch!important;gap:clamp(5px,1.5vw,10px)!important;width:100%!important;min-width:0!important;padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left))!important;}
+.kanban-reminder-dock .btn{display:flex!important;flex:1 1 0!important;min-width:0!important;max-width:none!important;min-height:44px!important;height:auto!important;padding:8px clamp(5px,2vw,12px)!important;gap:clamp(4px,1.2vw,8px)!important;white-space:normal!important;overflow-wrap:anywhere!important;text-align:center!important;line-height:1.2!important;}
+.kanban-reminder-dock .btn span{min-width:0!important;}
+@media(max-width:330px){.kanban-reminder-dock{grid-template-columns:minmax(0,1fr)!important}.kanban-reminder-dock .btn{width:100%!important}}
+
+/* The date row and popups keep their usable 14px sizing, while existing hierarchy styles remain intact. */
+#taskDialog .task-date-quick-actions button{font-size:.76rem!important;}
+.kanban-fullscreen-dialog .kanban-fullscreen-head h2{font-family:inherit!important;}
+
+
+/* Restore vertical layout without stretching every Kanban row or adding excessive blank dock clearance. */
+@media(max-width:700px){
+ html body.view-mobile[data-page="tasks"] #tasksPage.active{display:block!important;flex:none!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:4px 4px calc(82px + env(safe-area-inset-bottom,0px))!important;}
+ html body.view-mobile[data-page="tasks"] #plannerKanbanView:not([hidden]){display:block!important;flex:none!important;height:auto!important;min-height:0!important;overflow:visible!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard:has(.mobile-kanban-dashboard){display:block!important;flex:none!important;width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:0!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{display:grid!important;flex:none!important;width:100%!important;height:auto!important;min-height:calc(100dvh - 215px)!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:auto auto auto auto minmax(156px,1fr)!important;grid-auto-rows:auto!important;align-content:stretch!important;align-items:stretch!important;gap:7px!important;padding:0 0 8px!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile{height:auto!important;min-height:116px!important;max-height:none!important;overflow:hidden!important;padding:9px!important;gap:7px!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-myday{grid-column:1/-1!important;min-height:112px!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-compact{height:48px!important;min-height:48px!important;max-height:48px!important;align-self:start!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-finance,html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-notes{min-height:156px!important;height:100%!important;}
+ html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-finance .mobile-kanban-preview,html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile.is-notes .mobile-kanban-preview{overflow:hidden!important;}
+}
+@media(max-width:360px){html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-dashboard{gap:5px!important}html body.view-mobile[data-page="tasks"] #kanbanBoard .mobile-kanban-tile{padding:7px!important}}
