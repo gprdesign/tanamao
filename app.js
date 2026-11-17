@@ -90,6 +90,8 @@
   let googleCalendarAccessTokenExpiresAt=0;
   try{const cached=JSON.parse(sessionStorage.getItem(GOOGLE_CALENDAR_TOKEN_KEY)||'null');if(cached?.accessToken&&Number(cached.expiresAt)>Date.now()+60000){googleCalendarAccessToken=String(cached.accessToken);googleCalendarAccessTokenExpiresAt=Number(cached.expiresAt);}}catch{}
   let calendarSyncInProgress=false;
+  let calendarSyncStartedAt=0;
+  let calendarSyncRunId=0;
   let calendarListLoadInProgress=false;
   let calendarStatusMessage='';
   let calendarStatusFailed=false;
@@ -267,15 +269,19 @@
     if(!GOOGLE_CALENDAR_CLIENT_ID)return Promise.reject(new Error('Client ID do Google Calendar não configurado.'));
     const oauth=window.google?.accounts?.oauth2;if(!oauth)return Promise.reject(new Error('O serviço de autorização do Google não carregou. Atualize a página e tente novamente.'));
     return new Promise((resolve,reject)=>{
+      let settled=false;const finish=(error,token)=>{if(settled)return;settled=true;clearTimeout(timer);if(error)reject(error);else resolve(token);};
+      const timer=setTimeout(()=>finish(new Error('O Google não respondeu à autorização em 45 segundos. Confira a janela de login e tente novamente.')),45000);
       const client=oauth.initTokenClient({client_id:GOOGLE_CALENDAR_CLIENT_ID,scope:'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/tasks',callback:response=>{
-        if(response?.error||!response?.access_token){clearGoogleCalendarToken();reject(new Error(response?.error_description||response?.error||'Autorização do Google não concluída.'));return;}
-        googleCalendarAccessToken=String(response.access_token);googleCalendarAccessTokenExpiresAt=Date.now()+Math.max(60,Number(response.expires_in)||3600)*1000;persistGoogleCalendarToken();resolve(googleCalendarAccessToken);
-      },error_callback:error=>reject(new Error(error?.message||'A janela de autorização foi fechada.'))});
-      try{client.requestAccessToken({prompt:googleWriteScopesGranted?'':'consent'});}catch(error){reject(error);}
+        if(response?.error||!response?.access_token){clearGoogleCalendarToken();finish(new Error(response?.error_description||response?.error||'Autorização do Google não concluída.'));return;}
+        googleCalendarAccessToken=String(response.access_token);googleCalendarAccessTokenExpiresAt=Date.now()+Math.max(60,Number(response.expires_in)||3600)*1000;persistGoogleCalendarToken();finish(null,googleCalendarAccessToken);
+      },error_callback:error=>finish(new Error(error?.message||'A janela de autorização foi fechada.'))});
+      try{client.requestAccessToken({prompt:googleWriteScopesGranted?'':'consent'});}catch(error){finish(error);}
     });
   }
   async function googleCalendarApi(url,token,options={}){
-    const response=await fetch(url,{...options,headers:{Authorization:`Bearer ${token}`,Accept:'application/json',...(options.headers||{})}});let data={};try{data=await response.json();}catch{}
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);let response;
+    try{response=await fetch(url,{...options,signal:controller.signal,headers:{Authorization:`Bearer ${token}`,Accept:'application/json',...(options.headers||{})}});}catch(error){if(error?.name==='AbortError')throw new Error('A chamada ao Google Calendar passou de 20 segundos. Tente sincronizar de novo.');throw error;}finally{clearTimeout(timeout);}
+    let data={};try{data=await response.json();}catch{}
     if(!response.ok){if(response.status===401)clearGoogleCalendarToken();throw new Error(data.error?.message||`Google API respondeu ${response.status}.`);}
     return data;
   }
@@ -301,21 +307,22 @@
     return events;
   }
   async function syncGoogleCalendar(interactive=false){
-    if(calendarSyncInProgress)return;
+    if(calendarSyncInProgress){if(Date.now()-calendarSyncStartedAt<75000)return;calendarSyncInProgress=false;setCalendarStatus('A tentativa anterior ficou presa e foi liberada. Iniciando uma nova sincronização…',true);}
+
     if(!GOOGLE_CALENDAR_CLIENT_ID){setCalendarStatus('Falta configurar a conexão OAuth do Google Calendar.',true);return;}
     if(!userSettings.calendarIds.length){setCalendarStatus(availableGoogleCalendars.length?'Marque pelo menos uma agenda para sincronizar.':'Conecte o Google Calendar para carregar as agendas.');renderCalendarSyncUI();return;}
-    calendarSyncInProgress=true;renderCalendarSyncUI();
+    calendarSyncInProgress=true;calendarSyncStartedAt=Date.now();const currentRun=++calendarSyncRunId;renderCalendarSyncUI();
     try{
       let token=calendarTokenIsValid()?googleCalendarAccessToken:'';
       if(!token){if(!interactive){setCalendarStatus('Autorização expirada. Toque em “Sincronizar agora” para reconectar.');return;}token=await requestGoogleCalendarAccessToken();}
       if(!availableGoogleCalendars.length)await loadGoogleCalendars(token);
       const selected=userSettings.calendarIds.map(id=>availableGoogleCalendars.find(calendar=>calendar.id===id)).filter(Boolean);
       if(!selected.length){setCalendarStatus('Nenhuma agenda selecionada para sincronizar.');return;}
-      const batches=await Promise.all(selected.map(calendar=>fetchGoogleCalendarEvents(token,calendar))),events=batches.flat();
+      let syncTimeoutId;const batches=await Promise.race([Promise.all(selected.map(calendar=>fetchGoogleCalendarEvents(token,calendar))),new Promise((_,reject)=>{syncTimeoutId=setTimeout(()=>reject(new Error('A sincronização do Calendar passou de 60 segundos e foi interrompida.')),60000);})]).finally(()=>clearTimeout(syncTimeoutId)),events=batches.flat();
       setCalendarEvents(events);calendarLastSyncAt=nowISO();localStorage.setItem(CALENDAR_SYNC_META_KEY,JSON.stringify(calendarLastSyncAt));
       setCalendarStatus(`Sincronizado às ${new Date(calendarLastSyncAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${getUpcomingCalendarEvents().length} eventos nos próximos 12 meses.`);
     }catch(error){setCalendarStatus(`Não consegui sincronizar: ${error?.message||'erro desconhecido'}`,true);}
-    finally{calendarSyncInProgress=false;renderCalendarSyncUI();if(currentPage==='dashboard')renderDashboard();}
+    finally{if(currentRun===calendarSyncRunId){calendarSyncInProgress=false;calendarSyncStartedAt=0;}renderCalendarSyncUI();if(currentPage==='dashboard')renderDashboard();}
   }
   async function connectGoogleCalendar(){
     if(!GOOGLE_CALENDAR_CLIENT_ID){setCalendarStatus('Falta configurar a conexão OAuth do Google Calendar.',true);return;}
@@ -335,7 +342,7 @@
   }
   function startCalendarAutoSync(){
     if(calendarAutoSyncTimer)return;
-    calendarAutoSyncTimer=window.setInterval(()=>{if(document.visibilityState!=='visible'||!userSettings.calendarIds.length||calendarSyncInProgress)return;if(calendarTokenIsValid())void syncGoogleCalendar(false);else if(googleCalendarAccessToken)setCalendarStatus('A autorização expirou. Toque em Sincronizar para reconectar.');},15*60*1000);
+    calendarAutoSyncTimer=window.setInterval(()=>{if(document.visibilityState!=='visible'||!userSettings.calendarIds.length)return;if(calendarSyncInProgress&&Date.now()-calendarSyncStartedAt<75000)return;if(calendarTokenIsValid())void syncGoogleCalendar(false);else {if(googleCalendarAccessToken)clearGoogleCalendarToken();setCalendarStatus('A autorização expirou. Toque em Conectar Google Calendar para reconectar.');}},15*60*1000);
   }
   function normalizeTag(value) {
     if (!value || typeof value !== 'object' || !String(value.id || '').trim() || !String(value.name || '').trim()) return null;
@@ -581,9 +588,16 @@
   let driveAccessToken='',driveExpiresAt=0,driveEmail='',driveBusy=false;
   function driveAuthorized(){return Boolean(driveAccessToken&&driveExpiresAt>Date.now()+30000)}
   function renderDriveSettings(){const status=$('driveConnectionStatus'),connect=$('driveConnectBtn'),disconnect=$('driveDisconnectBtn');if(status)status.textContent=driveAuthorized()?`Google Drive conectado nesta aba como ${driveEmail||'conta selecionada'}.`:driveEmail?`Última conta escolhida: ${driveEmail}. Conecte novamente para anexar.`:'Conecte uma conta do Drive, independente do Calendário.';if(connect)connect.textContent=driveAuthorized()?'Trocar conta do Drive':'Conectar / escolher conta do Drive';if(disconnect)disconnect.hidden=!driveEmail&&!driveAuthorized();}
-  function connectDriveAccount(){if(!GOOGLE_CALENDAR_CLIENT_ID){showToast('A conexão Google do TNM precisa estar configurada para autorizar o Drive.',5000);return;}const oauth=window.google?.accounts?.oauth2;if(!oauth){showToast('O Google ainda está carregando. Tente novamente.');return;}const client=oauth.initTokenClient({client_id:GOOGLE_CALENDAR_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email',include_granted_scopes:false,callback:async response=>{if(response?.error||!response?.access_token){showToast(`Não consegui conectar o Drive: ${response?.error_description||response?.error||'autorização cancelada'}`,5000);return;}driveAccessToken=response.access_token;driveExpiresAt=Date.now()+Math.max(60,Number(response.expires_in)||3600)*1000;try{const who=await driveApi('https://www.googleapis.com/oauth2/v2/userinfo');driveEmail=String(who.email||'conta Google selecionada');}catch{driveEmail='conta Google selecionada';}renderDriveSettings();showToast(`Drive conectado: ${driveEmail}.`,4000);},error_callback:error=>showToast(`Conexão cancelada: ${error?.message||'Google Drive'}`,4000)});client.requestAccessToken({prompt:'select_account'});}
+  function connectDriveAccount(){
+    if(!GOOGLE_CALENDAR_CLIENT_ID){showToast('A conexão Google do TNM precisa estar configurada para autorizar o Drive.',5000);return;}
+    const oauth=window.google?.accounts?.oauth2;if(!oauth){showToast('O serviço Google ainda não carregou. Atualize o TNM e tente novamente.',5000);return;}
+    const status=$('driveConnectionStatus');if(status)status.textContent='Aguardando autorização do Google Drive…';let timer=0,settled=false;
+    const finish=(message,ok=false)=>{if(settled)return;settled=true;clearTimeout(timer);if(status)status.textContent=message;if(ok)showToast(message,4000);else showToast(message,6000);renderDriveSettings();};
+    timer=setTimeout(()=>finish('O Google não respondeu à autorização do Drive. Recarregue a página e tente novamente.'),45000);
+    try{const client=oauth.initTokenClient({client_id:GOOGLE_CALENDAR_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.file',include_granted_scopes:true,callback:response=>{if(response?.error||!response?.access_token){const code=String(response?.error||'');finish(code==='access_denied'?'O Google negou o acesso. A conta pode não estar autorizada para este app; confira se ela foi adicionada aos usuários de teste do OAuth.':`Não consegui conectar o Drive: ${response?.error_description||code||'autorização não concluída'}`);return;}driveAccessToken=String(response.access_token);driveExpiresAt=Date.now()+Math.max(60,Number(response.expires_in)||3600)*1000;driveEmail='conta Google escolhida';finish('Drive autorizado nesta aba. Conta separada do Calendar.',true);},error_callback:error=>finish(`Não consegui abrir a autorização do Drive: ${error?.message||'a janela foi fechada'}`)});client.requestAccessToken({prompt:'select_account consent'});}catch(error){finish(`Não consegui iniciar a autorização: ${error?.message||error}`);}
+  }
   function disconnectDrive(){driveAccessToken='';driveExpiresAt=0;driveEmail='';renderDriveSettings();showToast('A conexão do Drive foi removida desta aba.');}
-  async function driveApi(url,options={}){if(!driveAuthorized())throw new Error('Conecte o Google Drive em Configurações.');const response=await fetch(url,{...options,headers:{Authorization:`Bearer ${driveAccessToken}`,...(options.headers||{})}});let result={};try{result=await response.json();}catch{}if(!response.ok)throw new Error(result.error?.message||`Google Drive respondeu ${response.status}.`);return result;}
+  async function driveApi(url,options={}){if(!driveAuthorized())throw new Error('Conecte o Google Drive em Configurações.');const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);let response;try{response=await fetch(url,{...options,signal:controller.signal,headers:{Authorization:`Bearer ${driveAccessToken}`,...(options.headers||{})}});}catch(error){if(error?.name==='AbortError')throw new Error('A chamada ao Drive passou de 25 segundos. Tente novamente.');throw error;}finally{clearTimeout(timeout);}let result={};try{result=await response.json();}catch{}if(!response.ok){if(response.status===401){driveAccessToken='';driveExpiresAt=0;renderDriveSettings();}const reason=result.error?.message||`Google Drive respondeu ${response.status}.`;if(response.status===403)throw new Error(`O Google bloqueou a permissão do Drive (${reason}). Confira se a API Google Drive está ativada no projeto OAuth e se a conta escolhida pode usar o app.`);throw new Error(reason);}return result;}
   async function driveFolder(){const q=encodeURIComponent("name='TNM Anexos' and mimeType='application/vnd.google-apps.folder' and trashed=false"),found=await driveApi(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&pageSize=5`);if(found.files?.[0]?.id)return found.files[0].id;const made=await driveApi('https://www.googleapis.com/drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'TNM Anexos',mimeType:'application/vnd.google-apps.folder'})});if(!made.id)throw new Error('Não consegui criar a pasta TNM Anexos.');return made.id;}
   function driveScopeKey(scope,id){return `${scope}:${id}`}
   function driveItemId(scope){return scope==='task'?$('taskId').value:scope==='note'?$('noteId').value:scope==='finance'?$('financeId').value:$('privateNoteId').value}
