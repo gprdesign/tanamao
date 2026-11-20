@@ -1279,7 +1279,7 @@
     renderTasks();
   }
   function globalSearchNormalize(value){return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');}
-  function globalSearchDate(value){if(!value)return '';const date=new Date(value);return Number.isFinite(date.getTime())?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}):String(value);}
+  function globalSearchDate(value){if(!value)return '';const text=String(value),date=/^\d{4}-\d{2}-\d{2}$/.test(text)?dateAtNoon(text):new Date(value);return date&&Number.isFinite(date.getTime())?date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}):text;}
   function globalSearchRun(rawQuery){
     const query=globalSearchNormalize(String(rawQuery||'').trim()),terms=query.split(/\s+/).filter(Boolean),groups=new Map();if(!query)return groups;
     const add=(kind,label,item,fields,summary='',openKind='',openId='')=>{const text=globalSearchNormalize(fields.filter(Boolean).join(' '));if(!terms.every(term=>text.includes(term)))return;const row={kind,label,title:String(item.title||label||''),summary:String(summary||''),meta:String(item.meta||''),openKind,openId:String(openId||'')};if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(row);};
