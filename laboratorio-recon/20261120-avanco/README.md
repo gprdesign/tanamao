@@ -1,0 +1,9 @@
+# Rascunho integrado atualizado: NÃO PUBLICAR
+
+Base: branch correcoes-laboratorio-20261120 no commit e8ac3b73f52768ddc9048bd1abf64f00510939c0. Concatenar integrado.patch.gz.b64.part1 a part6, decodificar base64 e descomprimir gzip. SHA-256 do patch: ef49c7c34692ce5502ee5eeb98a8c69481b234290322056360bc57f751946d83. Aplicar o patch sobre a base indicada, sem aplicar o patch integrado antigo separadamente. Ele inclui o rascunho anterior e alterações experimentais de sync, inspeção de backup, recorrência e testes.
+
+NÃO APTO a produção: dados locais entre abas e contas e clientes antigos continuam inseguros; não há migração legada segura nem CAS para todas as entidades; restauração está desativada; finanças não são transacionais; CAS SQL está bloqueado e não testado. O teste de concorrência financeira passa ao reproduzir a perda de depósito existente. Recorrência com modelo experimental ainda requer validação e estratégia para séries legadas.
+
+Testes sintéticos: node --check app.js; node --check task-sync.js; node --test tests/*.js tests/*.cjs; 49 testes passaram. Isso não prova segurança. Não houve teste PostgreSQL, integração real, navegador desktop/celular ou deploy. Nenhum dado real foi usado ou alterado. Ver AGENT-SYNC-REPORT.md e docs/finance-backup-analysis.md no patch.
+
+Próximos passos: resolver isolamento entre contas e abas, clientes antigos, migração, CAS em todas as entidades, restore e finanças transacionais. Validar em Postgres descartável com RLS, falhas, concorrência e idempotência, integração e navegador desktop e celular, apenas com dados fictícios. Publicar somente após eliminar os riscos; depois verificar Pages, arquivos servidos e layouts.
