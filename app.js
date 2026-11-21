@@ -175,7 +175,7 @@
   }
   function resetOldBrowserData() {
     if (localStorage.getItem(RESET_KEY) === 'done') return;
-    for (const key of LEGACY_KEYS) localStorage.removeItem(key);
+    // Preserve old local data; never automatically delete the only remaining copy.
     localStorage.setItem(RESET_KEY,'done');
   }
   function validTagColor(value) { return /^#[0-9a-f]{6}$/i.test(String(value || '')); }
@@ -1295,7 +1295,7 @@
       const tag=tags.find(item=>item.id===log.tagId&&!item.deletedAt),locked=Boolean(log.isLocked),decrypted=locked&&unlockedLogIds.has(String(log.id))?getDecryptedPrivateLog(log.id):null,content=locked?(decrypted?.content||''):String(log.content||'');
       add('Logs','Log',{title:content||'Registro trancado',meta:[globalSearchDate(log.createdAt),tag?.name||'',locked?'Privado':''].filter(Boolean).join(' · ')},[content,tag?.name,globalSearchDate(log.createdAt),locked&&decrypted?'registro privado trancado':''],content,'log',log.id);
     }
-    for(const log of privateLogs.filter(item=>item&&item.id&&!logs.some(row=>String(row.id)===String(item.id)))){add('Logs','Log privado',{title:String(log.content||'Log privado'),meta:[globalSearchDate(log.createdAt),'Privado'].join(' · ')},[log.content,globalSearchDate(log.createdAt)],log.content,'private-log',log.id);}
+    for(const log of privateLogs.filter(item=>item&&item.id&&unlockedLogIds.has(String(item.id))&&!logs.some(row=>String(row.id)===String(item.id)))){add('Logs','Log privado',{title:String(log.content||'Log privado'),meta:[globalSearchDate(log.createdAt),'Privado'].join(' · ')},[log.content,globalSearchDate(log.createdAt)],log.content,'private-log',log.id);}
     for(const entry of finances.filter(item=>item&&!item.deletedAt)){const tag=tags.find(item=>item.id===entry.tagId&&!item.deletedAt),flow=entry.kind==='income'?'ENTRADA':'SAÍDA',status=entry.status==='realized'?'Realizado':'Previsto',amount=financeMoney(entry.amount),occurrence=entry.installmentCount?`Parcela ${entry.occurrenceNumber}/${entry.installmentCount}`:entry.recurrence?'Recorrente':'';add('Finanças','Lançamento',{title:entry.title,meta:[globalSearchDate(entry.date),flow,status,amount,occurrence,tag?.name].filter(Boolean).join(' · ')},[entry.title,entry.kind,flow,status,entry.date,globalSearchDate(entry.date),amount,entry.amount,occurrence,tag?.name],'', 'finance',entry.id);}
     for(const item of bankTransactions.filter(row=>row&&!row.isDeleted&&!row.deletedAt)){const title=item.displayName||item.description||'Movimentação bancária',amount=financeMoney(item.amount),flow=item.direction==='income'?'Entrada':'Saída';add('Extrato bancário','Movimentação',{title,meta:[globalSearchDate(item.occurredAt),flow,amount,item.account||''].filter(Boolean).join(' · ')},[title,item.description,item.displayName,item.direction,flow,item.amount,amount,item.occurredAt,globalSearchDate(item.occurredAt),item.account,item.sourceMessageId],'');}
     for(const event of calendarEvents.map(normalizeCalendarEvent).filter(Boolean)){const day=event.allDay?event.startAt.slice(0,10):dateKey(new Date(event.startAt)),date=globalSearchDate(day),time=event.allDay?'Dia todo':calendarEventTimeLabel(event);add('Eventos','Evento',{title:event.title,meta:[date,time,event.location].filter(Boolean).join(' · ')},[event.title,date,day,time,event.location,event.url],'','calendar',day);}
@@ -1313,7 +1313,8 @@
     if(!total){container.innerHTML='<p class="global-search-empty">Nada encontrado. Confira a palavra ou tente outra busca.</p>';return;}
     container.innerHTML=[...groups].map(([kind,rows])=>`<details class="global-search-group" open><summary>${escapeHTML(kind)} <span>${rows.length}</span></summary><div class="global-search-group-items">${rows.map((row,index)=>`<article class="global-search-result"><button class="global-search-open" type="button" data-global-open="${escapeHTML(row.openKind||'detail')}" data-id="${escapeHTML(row.openId)}" data-date="${escapeHTML(row.openId)}" data-group="${escapeHTML(kind)}" data-index="${index}"><strong>${escapeHTML(row.title)}</strong><span aria-hidden="true">↗</span></button><small>${escapeHTML(row.meta)}</small>${row.summary?`<p>${escapeHTML(row.summary)}</p>`:''}</article>`).join('')}</div></details>`).join('');
   }
-  function openGlobalSearch(){const dialog=$('globalSearchDialog');if(!dialog.open)showAppDialog(dialog);requestAnimationFrame(()=>{$('globalSearchInput').focus();$('globalSearchInput').select();});}
+  function invalidateGlobalSearchPrivateData(){const results=$('globalSearchResults'),count=$('globalSearchCount'),body=$('globalSearchDetailBody'),title=$('globalSearchDetailTitle'),detail=$('globalSearchDetailDialog');if(results)results.innerHTML='';if(count)count.textContent='';if(body)body.textContent='';if(title)title.textContent='';if(detail?.open)detail.close();}
+  function openGlobalSearch(){const dialog=$('globalSearchDialog');renderGlobalSearchResults();if(!dialog.open)showAppDialog(dialog);requestAnimationFrame(()=>{$('globalSearchInput').focus();$('globalSearchInput').select();});}
   function handleGlobalSearchOpen(event){const button=event.target.closest('[data-global-open]');if(!button)return;const kind=button.dataset.globalOpen,id=button.dataset.id,date=button.dataset.date;$('globalSearchDialog').close();if(kind==='task'){setPage('tasks');setPlannerSubpage('kanban',false);openTaskDialog(id);return;}if(kind==='note'){setPage('notes');setNotesMode('public');openNoteDialog(id);return;}if(kind==='private-note'){if(!privateNotesUnlocked){showToast('Desbloqueie o cofre para abrir esta nota.');return;}setPage('notes');setNotesMode('private');openPrivateNoteEditor(id);return;}if(kind==='finance'){setPage('finance');openFinanceDialog(id);return;}if(kind==='calendar'&&isDateKey(date)){setPage('tasks');setPlannerSubpage('kanban',false);setWeek(date);openDayDialog(date);return;}const results=globalSearchRun($('globalSearchInput').value),row=results.get(button.dataset.group)?.[Number(button.dataset.index)];if(row){$('globalSearchDetailTitle').textContent=row.label||button.dataset.group;$('globalSearchDetailBody').textContent=[row.title,row.meta,row.summary].filter(Boolean).join('\n\n');showAppDialog($('globalSearchDetailDialog'));}}
   function renderAll() { renderTasks(); renderHome(); renderDashboard(); renderNotes(); renderLogs(); renderFinancePage(); renderNotesMode(); }
   function dashboardClockText(now=new Date()){
@@ -1761,7 +1762,7 @@
       return;
     }
     if(action==='unlock'){void unlockLog(id);return;}
-    if(action==='hide'){unlockedLogIds.delete(id);renderLogs();}
+    if(action==='hide'){unlockedLogIds.delete(id);invalidateGlobalSearchPrivateData();renderLogs();}
   }
   function handleLogTagChange(event) {
     const select=event.target.closest('[data-log-tag-select]');if(!select)return;
@@ -1810,7 +1811,7 @@
   }
   async function lockPrivateNotes() {
     if(privateNoteDirty){const saved=await savePrivateNote({preventDefault(){}},false,true);if(!saved)return false;}
-    privateCryptoKey=null;privateNotes=[];privateLogs=[];unlockedLogIds.clear();privateNotesUnlocked=false;privateNoteDirty=false;privateHiddenAt=0;setPrivateStatus('Cofre bloqueado.');
+    privateCryptoKey=null;privateNotes=[];privateLogs=[];unlockedLogIds.clear();privateNotesUnlocked=false;privateNoteDirty=false;privateHiddenAt=0;invalidateGlobalSearchPrivateData();setPrivateStatus('Cofre bloqueado.');
     const form=$('privateNoteForm');if(form){form.reset();form.hidden=true;}
     if($('privateNoteId'))$('privateNoteId').value='';renderPrivateNotes();renderLogs();return true;
   }
