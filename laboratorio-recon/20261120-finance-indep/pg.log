@@ -1,0 +1,23 @@
+PASS 40 concurrent deposits serialize without lost updates
+PASS concurrent idempotent retries return same original result; charge once
+PASS same key with changed payload rejected
+PASS lost response can be recovered with stable ID
+PASS payment atomically debits and marks paid
+PASS reopen returns exactly recorded debit
+PASS no-debit payment and reopen do not change balance
+PASS partial deduction records actual available balance
+PASS retry returns original partial result without repeating deduction
+PASS reopen restores only 47 actually deducted after intervening deposit
+PASS overdraw and malformed amounts rejected
+PASS failure on final insert rolls back wallet and bill
+PASS failed reopen rolls back both credit and status
+PASS reopen succeeds after rollback
+PASS RLS isolates owner rows
+PASS direct lab-table writes and unauthenticated call blocked; second owner untouched
+PASS concurrent payment requests debit a bill at most once
+PASS reopening concurrently-paid bill returns its debit
+PASS concurrent withdrawals permit only one when funds are insufficient for both
+PASS changed confirmed deduction fails atomically
+PASS concurrent pay uses only confirmed debit
+PASS concurrent confirmation preserves funds
+All disposable PostgreSQL checks passed.

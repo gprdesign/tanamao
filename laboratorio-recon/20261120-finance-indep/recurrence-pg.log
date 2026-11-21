@@ -1,0 +1,10 @@
+PASS 10 concurrent retries create one next occurrence and replay result
+PASS same ID cannot be reused with different payload
+PASS stale rule revision does not mutate occurrence
+PASS concurrent distinct completions create exactly one successor
+PASS until boundary ends recurrence
+PASS owner isolation by RLS
+PASS direct writes and unauthenticated calls rejected
+PASS deleted occurrence never silently resurrected
+PASS injected failure rolls back completion and successor
+All disposable PostgreSQL recurrence checks passed.
