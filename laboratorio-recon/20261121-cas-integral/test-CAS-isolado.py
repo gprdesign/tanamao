@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Never contacts a real DB: initializes fresh postgres, local unix socket only."""
-import getpass, json, os, pathlib, subprocess, tempfile
+import base64, gzip, hashlib, getpass, json, os, pathlib, subprocess, tempfile
 H=pathlib.Path(__file__).resolve().parent
 ROOT=H.parents[1]; BIN=pathlib.Path(os.environ.get('PG_BIN','/usr/lib/postgresql/17/bin'))
 env={k:v for k,v in os.environ.items() if not k.startswith('PG')}
@@ -19,7 +19,9 @@ with tempfile.TemporaryDirectory(prefix='tnm-cas-integral-') as tmp:
   sql('''create table public.nmm_bank_transactions (owner_id uuid not null references auth.users(id), transaction_key text not null, occurred_at timestamptz not null, description text not null default '', display_name text not null default '', direction text not null, amount numeric not null, account text not null default '', source_message_id text not null default '', source_consulted_at timestamptz, is_internal_transfer boolean not null default false, planner_version smallint not null default 1, updated_at timestamptz not null default now(), primary key(owner_id,transaction_key)); alter table public.nmm_bank_transactions enable row level security; grant select,insert,update on public.nmm_bank_transactions to authenticated;''')
   # Legacy rows migrate intact; dangerous grants and definer are planted before cutover.
   sql(f"insert into public.nmm_tags(owner_id,id,name,color,planner_version) values ('{a}','old','antes','#123456',1); create function public.old_rpc() returns void language sql security definer as $$update public.nmm_tags set name='bypass'$$; grant execute on function public.old_rpc() to authenticated;")
-  draft=(H/'migration-CAS-LAB.sql').read_text(); stop="DO $$ BEGIN RAISE EXCEPTION 'LAB ONLY: migration disabled'; END $$;"
+  packed=(H/'migration-CAS-LAB.sql.gz.b64').read_bytes()
+  raw=gzip.decompress(base64.b64decode(packed)); assert hashlib.sha256(raw).hexdigest()=='c4a28b0758494c6be97064664bd0038224e7b03486f8afa93b9ed91b54f2d9d8'
+  draft=raw.decode(); stop="DO $$ BEGIN RAISE EXCEPTION 'LAB ONLY: migration disabled'; END $$;"
   assert draft.count(stop)==1 and sql(draft,False).returncode!=0
   mig=draft.replace(stop,'-- unlocked only in isolated disposable PostgreSQL')
   sql('grant inherited to authenticated; grant update(name) on public.nmm_tags to inherited;')
