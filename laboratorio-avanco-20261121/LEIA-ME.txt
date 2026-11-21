@@ -1,0 +1,1 @@
+INCOMPLETO, NAO PUBLICAR. Patches independentes base 712ea0a, concatenar partes em ordem e decodificar base64/gzip. Financeiro bloqueia certas operacoes e requer validacao backend; isolamento nao integrado e sincronizacao bloqueada. Nunca aplicar SQL em dados reais sem validacao e migracao/rollback seguros.
