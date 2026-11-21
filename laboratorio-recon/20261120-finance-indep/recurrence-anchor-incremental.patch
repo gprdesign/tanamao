@@ -1,0 +1,31 @@
+--- a/app.js
++++ b/app.js
+@@ -720,8 +720,11 @@
+       next=addDays(rule.anchorDate,steps*rule.interval);if(next<=baseDate)next=addDays(next,rule.interval);
+     }else if(rule.frequency==='weekly'){
+       const anchorWeek=startOfWeek(rule.anchorDate),limit=rule.interval*7+7;
++      // A weekly rule cannot generate before its anchor; jump forward instead of
++      // scanning a bounded window that might never reach a distant anchor.
++      const scanFrom=baseDate<rule.anchorDate?addDays(rule.anchorDate,-1):baseDate;
+       for(let offset=1;offset<=limit;offset++){
+-        const candidate=addDays(baseDate,offset),weekDelta=(dateOrdinal(startOfWeek(candidate))-dateOrdinal(anchorWeek))/7;
++        const candidate=addDays(scanFrom,offset),weekDelta=(dateOrdinal(startOfWeek(candidate))-dateOrdinal(anchorWeek))/7;
+         if(weekDelta>=0&&weekDelta%rule.interval===0&&rule.weekdays.includes(getIsoWeekday(candidate))){next=candidate;break;}
+       }
+     }else if(rule.frequency==='monthly'){
+--- a/tests/restore-recur-inventory.test.cjs
++++ b/tests/restore-recur-inventory.test.cjs
+@@ -21,6 +21,13 @@
+  assert.equal(next('2024-02-29','yearly','2024-02-29',1,'2025-02-27'),null);
+  next=recurrence('2025-02-28');assert.equal(next('2024-02-29','yearly','2024-02-29'),'2026-02-28');
+ });
++test('weekly skips before anchor and reaches a distant future anchor',()=>{
++ const next=recurrence('2024-01-01');
++ // Anchor is a Wednesday; Monday of that week is before it.
++ assert.equal(next('2024-01-01','weekly','2025-01-08',1,null,[1,3]),'2025-01-08');
++ assert.equal(next('2024-01-01','weekly','2025-01-08',2,null,[1]),'2025-01-20');
++ assert.equal(next('2024-01-01','weekly','2025-01-08',1,'2025-01-07',[3]),null);
++});
+ test('daily and weekly remain correctly anchored',()=>{
+  const next=recurrence('2024-02-01');assert.equal(next('2024-01-31','daily','2024-01-31',2),'2024-02-02');
+  assert.equal(next('2024-01-29','weekly','2024-01-29',1,null,[1,5]),'2024-02-02');
