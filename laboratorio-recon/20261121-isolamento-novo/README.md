@@ -1,0 +1,3 @@
+# Laboratório isolado — NÃO PUBLICAR
+
+A branch guarda patch independente, sem deploy nem dados reais. Base do patch: 13be6b3d4d162bd8cf02336dca02f13b441b83e7. Concatenar patch.b64.part1 a part6 em ordem numérica, decodificar base64 e descomprimir gzip. SHA-256 do patch descomprimido: 0b94aaa1108e85e4ebe55d7f9f89cb0cd3eade244b7855940adf2c7c2e9d9445. Aplicar após git apply --check SOMENTE numa cópia isolada da base; não nesta branch, pois já existe o relatório ADVANCE-20261121.md. O patch inclui a cópia do laboratório da branch lab-isolamento-seguro-20261120-2131 e a prévia com testes novos. Leia ADVANCE-20261121.md e ADVANCE-20261120.md no patch. Falta isolamento real, restauração funcional e backend seguro; NÃO usar em produção.
