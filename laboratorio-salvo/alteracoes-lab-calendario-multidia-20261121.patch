@@ -1,0 +1,91 @@
+diff --git a/app.js b/app.js
+index 0dd4f68..1cfe86a 100644
+--- a/app.js
++++ b/app.js
+@@ -225,7 +225,13 @@
+   function calendarEventIsPast(event){const today=todayKey();if(event.allDay)return event.endAt?event.endAt<=today:event.startAt<today;const end=Date.parse(event.endAt||event.startAt);return Number.isFinite(end)&&end<=Date.now();}
+   function calendarEventClass(event,date){return calendarEventIsPast(event)||(date&&date<todayKey())?' is-past':'';}
+   function calendarEventOrder(a,b){return Number(calendarEventIsCompleted(a))-Number(calendarEventIsCompleted(b))||String(a.startAt).localeCompare(String(b.startAt))||String(a.title).localeCompare(String(b.title),'pt-BR');}
+-  function getCalendarEventsForDate(date){return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>!calendarEventIsDismissed(event)&&(event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt)))===date).sort(calendarEventOrder);}
++  // Google Calendar all-day end dates are exclusive; absent/invalid ends represent just the start day.
++  function allDayEventIncludesDate(event,date){
++    const start=String(event.startAt||'').slice(0,10),end=String(event.endAt||'').slice(0,10);
++    if(!isDateKey(start)||!isDateKey(date))return false;
++    return date>=start&&(isDateKey(end)&&end>start?date<end:date===start);
++  }
++  function getCalendarEventsForDate(date){return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>!calendarEventIsDismissed(event)&&(event.allDay?allDayEventIncludesDate(event,date):dateKey(new Date(event.startAt))===date)).sort(calendarEventOrder);}
+   function calendarEventTimeLabel(event){if(event.allDay)return '';const date=new Date(event.startAt);return Number.isFinite(date.getTime())?date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';}
+   function googleCalendarDayUrl(dateKeyValue){if(!isDateKey(dateKeyValue))return '';const [year,month,day]=dateKeyValue.split('-').map(Number),path=`calendar/u/0/r/day/${year}/${month}/${day}`,ua=navigator.userAgent||'';return `https://calendar.google.com/${path}`;}
+   function getUpcomingCalendarEvents(){const today=todayKey(),now=Date.now();return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>!calendarEventIsDismissed(event)&&(event.allDay?event.startAt>=today:Date.parse(event.startAt)>=now)).sort(calendarEventOrder);}
+@@ -1322,7 +1328,7 @@
+   }
+   function dashboardCountdownLabel(event,now=Date.now()){
+     const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));
+-    if(event.allDay&&date===todayKey())return 'HOJE';
++    if(event.allDay&&allDayEventIncludesDate(event,dateKey(new Date(now))))return 'HOJE';
+     const target=event.allDay?new Date(`${date}T00:00:00`).getTime():Date.parse(event.startAt);
+     const remaining=Math.max(0,Math.floor((target-now)/1000)),days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60),seconds=remaining%60;
+     const pad=value=>String(value).padStart(2,'0');
+@@ -1338,12 +1344,12 @@
+   function dashboardEventStartTime(event){if(event.allDay)return 'DIA TODO';return new Date(event.startAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false});}
+   function dashboardWeekEventsMarkup(){
+     const today=todayKey(),days=Array.from({length:7},(_,i)=>addDays(today,i));
+-    return days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder),current=day===today,previewLimit=viewMode==='mobile'?1:2,visibleEvents=dayEvents.slice(0,previewLimit),moreCount=Math.max(0,dayEvents.length-visibleEvents.length);return `<section class="dashboard-week-day dashboard-week-day-clickable${current?' is-current-day':''}" data-dashboard-week-day="${escapeHTML(day)}" role="button" tabindex="0" aria-label="Ver ${dayEvents.length} evento${dayEvents.length===1?'':'s'} de ${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}"><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?visibleEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong></div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}${moreCount?`<p class="dashboard-week-more">+${moreCount} evento${moreCount===1?'':'s'} · toque para ver todos</p>`:''}</section>`;}).join('');
++    return days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;return event.allDay?allDayEventIncludesDate(event,day):dateKey(new Date(event.startAt))===day;}).sort(calendarEventOrder),current=day===today,previewLimit=viewMode==='mobile'?1:2,visibleEvents=dayEvents.slice(0,previewLimit),moreCount=Math.max(0,dayEvents.length-visibleEvents.length);return `<section class="dashboard-week-day dashboard-week-day-clickable${current?' is-current-day':''}" data-dashboard-week-day="${escapeHTML(day)}" role="button" tabindex="0" aria-label="Ver ${dayEvents.length} evento${dayEvents.length===1?'':'s'} de ${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}"><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?visibleEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong></div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}${moreCount?`<p class="dashboard-week-more">+${moreCount} evento${moreCount===1?'':'s'} · toque para ver todos</p>`:''}</section>`;}).join('');
+   }
+   function openDashboardDayEvents(day){
+     if(!isDateKey(day))return;const dialog=$('dashboardDayEventsDialog'),title=$('dashboardDayEventsTitle'),list=$('dashboardDayEventsList');if(!dialog||!title||!list)return;
+     title.textContent=formatDate(day,{weekday:'long',day:'2-digit',month:'long'});
+-    const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder);
++    const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;return event.allDay?allDayEventIncludesDate(event,day):dateKey(new Date(event.startAt))===day;}).sort(calendarEventOrder);
+     list.innerHTML=dayEvents.length?dayEvents.map(event=>{const info=String(event.location||'').trim(),description=String(event.description||'').trim(),time=event.allDay?'Dia todo':`${dashboardEventStartTime(event)}${event.endAt?`–${new Date(event.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false})}`:''}`;return `<article class="dashboard-day-event" data-day-countdown-event="${escapeHTML(event.id)}"><div class="dashboard-day-event-heading"><time>${escapeHTML(time)}</time><strong>${escapeHTML(event.title)}</strong></div><div class="dashboard-day-event-countdown" data-day-event-countdown>${escapeHTML(dashboardCountdownLabel(event))}</div>${info?`<p><b>Local:</b> ${escapeHTML(info)}</p>`:''}${description?`<p><b>Descrição:</b> ${escapeHTML(description)}</p>`:''}</article>`;}).join(''):'<p class="dashboard-week-free">Tempo livre...</p>';
+     showAppDialog(dialog);
+   }
+diff --git a/tests/calendar-allday.test.js b/tests/calendar-allday.test.js
+new file mode 100644
+index 0000000..d3f9fc8
+--- /dev/null
++++ b/tests/calendar-allday.test.js
+@@ -0,0 +1,42 @@
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const vm = require('node:vm');
++const path = require('node:path');
++const src = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
++const helpers = src.slice(src.indexOf('  function isDateKey('), src.indexOf('  function todayKey('));
++const allDay = src.slice(src.indexOf('  function allDayEventIncludesDate('), src.indexOf('  function calendarEventTimeLabel('));
++const normalize = src.slice(src.indexOf('  function normalizeCalendarEvent('), src.indexOf('  function calendarEventIsPast('));
++const countdown = src.slice(src.indexOf('  function dashboardCountdownLabel('), src.indexOf('  function dashboardEventDateTime('));
++const context = vm.createContext({ normalizeLink: () => '', calendarEventIsDismissed: e => e.id === 'dismissed', calendarEventOrder: () => 0, calendarEvents: [] });
++vm.runInContext(`${helpers}\n${allDay}\n${normalize}\n${countdown}`, context);
++for (const zone of ['America/Sao_Paulo', 'UTC', 'Pacific/Kiritimati', 'America/Los_Angeles']) {
++  test(`all-day range is start-inclusive and end-exclusive in ${zone}`, () => {
++    process.env.TZ = zone;
++    const event = {startAt:'2026-12-31',endAt:'2027-01-03'};
++    assert.equal(context.allDayEventIncludesDate(event, '2026-12-30'), false);
++    assert.equal(context.allDayEventIncludesDate(event, '2026-12-31'), true);
++    assert.equal(context.allDayEventIncludesDate(event, '2027-01-01'), true);
++    assert.equal(context.allDayEventIncludesDate(event, '2027-01-02'), true);
++    assert.equal(context.allDayEventIncludesDate(event, '2027-01-03'), false);
++    assert.equal(context.allDayEventIncludesDate({startAt:'2026-11-24'}, '2026-11-24'), true);
++    assert.equal(context.allDayEventIncludesDate({startAt:'2026-11-24',endAt:'2026-11-24'}, '2026-11-25'), false);
++    assert.equal(context.allDayEventIncludesDate({startAt:'2026-02-30'}, '2026-02-30'), false);
++  });
++}
++test('day list includes a continuing all-day event, excludes dismissed events and handles timed local dates', () => {
++  process.env.TZ = 'America/Sao_Paulo';
++  context.calendarEvents = [
++    {id:'multi',summary:'Viagem',start:{date:'2026-11-23'},end:{date:'2026-11-26'}},
++    {id:'dismissed',summary:'Oculto',start:{date:'2026-11-23'},end:{date:'2026-11-26'}},
++    {id:'timed',summary:'Reunião',start:{dateTime:'2026-11-25T01:00:00Z'}},
++  ];
++  assert.deepEqual(Array.from(context.getCalendarEventsForDate('2026-11-24'), e => e.id), ['multi','timed']);
++  assert.deepEqual(Array.from(context.getCalendarEventsForDate('2026-11-25'), e => e.id), ['multi']);
++  assert.equal(context.getCalendarEventsForDate('2026-11-26').length, 0);
++});
++test('ongoing all-day event is marked HOJE based on supplied clock', () => {
++  process.env.TZ = 'America/Sao_Paulo';
++  const e={allDay:true,startAt:'2026-11-23',endAt:'2026-11-26'};
++  assert.equal(context.dashboardCountdownLabel(e, new Date('2026-11-24T15:00:00-03:00').getTime()), 'HOJE');
++});
