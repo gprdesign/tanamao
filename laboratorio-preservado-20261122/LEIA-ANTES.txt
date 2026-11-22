@@ -1,0 +1,6 @@
+LABORATORIOS INDEPENDENTES - NAO PUBLICAR NEM APLICAR NO SUPABASE REAL
+Base 712ea0a69c49297e676a3f0b0a25843022169579. Concatenar partes na ordem numerica, decodificar base64 e descompactar gzip para recuperar cada patch; verificar SHA256. Nao combinar sem auditoria e testes. Exclusoes: config.js financeiro (para nao copiar credenciais); criar configuracao ficticia restrita a loopback antes de testar; capturas visuais nao incluidas. Financas bloqueia funcoes e navegador falhou, sessao nao teve validacao ponta a ponta, migracao entidades tem trava e pode quebrar financas; runner visual falhou intermitentemente. Dados ficticios somente.
+financas: 8 partes; SHA256 patch descompactado: c88b86c8e9076dc159b0d771786c8620ca69ce2359e3d8925a98b9f5d4d67905
+sessao: 7 partes; SHA256 patch descompactado: 4cd8cce574b2a126154241412800abc5fe1f09664825776c4759830bb8c89811
+entidades: 9 partes; SHA256 patch descompactado: 1642d4f137d357a2a58b9588198439374df828d8f4e2a5f890d6fcce88d20a01
+calendario: 1 partes; SHA256 patch descompactado: fc1c3981a51cc97513ab94212aa39b7c3d6f8b56fa602c4d060a62ca78d5fe49
