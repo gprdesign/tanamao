@@ -1,0 +1,1 @@
+# NAO PUBLICAR. Patch em partes 00 a 06, concatenar na ordem, decodificar base64 e descompactar gzip. Aplicar ao commit 4f64f5a3c1a2e050fd8610821baa0fe6fbd530a6. Arvore local originada no commit 8e453e202cdfd1ec7b2baaebfa78ded8b026b768. Sincronizacao remota e restauracao continuam bloqueadas; integracao incompleta. O patch nao e o app ativo nesta branch.
