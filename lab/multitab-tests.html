@@ -1,0 +1,53 @@
+<!doctype html><meta charset="utf-8"><title>Teste sintético multiaba</title><pre id="out">RUNNING</pre><script src="multitab-fence.js"></script><script>
+(async()=>{
+ const out=document.getElementById('out'), lines=[]; let other,db1,db2;
+ const ok=(x,m)=>{if(!x)throw Error(m);lines.push('PASS '+m)};
+ const reject=async(p,m)=>{try{await p}catch(e){lines.push('PASS '+m);return}throw Error('Não rejeitou: '+m)};
+ try{
+  other=window.open('multitab-worker.html','synthetic_second_tab');
+  if(!other) throw Error('Segunda aba bloqueada');
+  for(let i=0;i<100 && !other.TnmMultiTabLab;i++)await new Promise(r=>setTimeout(r,50));
+  if(!other.TnmMultiTabLab)throw Error('Segunda aba não carregou');
+  ok(other!==window && other.document!==document,'duas abas e documentos distintos');
+  const name='synthetic-'+crypto.randomUUID(), lib=TnmMultiTabLab;
+  db1=await lib.open(indexedDB,name); db2=await other.TnmMultiTabLab.open(other.indexedDB,name);
+  const a=lib.controller(db1), b=other.TnmMultiTabLab.controller(db2);
+  await reject(lib.open(indexedDB,'dados-reais'),'recusa nome de banco não sintético');
+  await reject(a.read('tasks'),'sem sessão nenhum acesso');
+  const first=await a.transition('A'); await b.adopt('A');
+  ok(first.generation===1,'primeira geração persistida');
+  await a.compareAndSet('tasks',0,JSON.stringify({task:'A1'}));
+  ok(JSON.parse((await b.read('tasks')).json).task==='A1','segunda aba lê partição A');
+  const races=await Promise.allSettled([a.compareAndSet('tasks',1,'{"task":"A2"}'),b.compareAndSet('tasks',1,'{"task":"A3"}')]);
+  ok(races.filter(x=>x.status==='fulfilled').length===1 && races.filter(x=>x.status==='rejected'&&x.reason.name==='Stale').length===1,'CAS entre abas: uma gravação e um conflito');
+  const change=await b.transition('B'); ok(change.generation===2,'troca B incrementa geração compartilhada');
+  await reject(a.read('tasks'),'outra aba antiga não lê após troca confirmada');
+  await reject(a.compareAndSet('tasks',2,'{"task":"errada"}'),'outra aba antiga não grava após troca confirmada');
+  ok((await b.read('tasks')).revision===0,'partição B não recebe dados A');
+  await b.compareAndSet('tasks',0,'{"task":"B"}');
+  await b.transition('A');
+  await reject(a.read('tasks'),'A→B→A não revalida token antigo');
+  await a.adopt('A'); ok((await a.read('tasks')).revision===2,'A original preservada após A→B→A');
+  await reject(a.compareAndSet('tasks',1,'{}'),'revisão obsoleta não sobrescreve');
+  await reject(a.compareAndSet('tasks',2,'not json'),'JSON inválido rejeitado');
+  const old=a.read('tasks'); a.revoke(); await reject(old,'revogação local cancela leitura em voo');
+  await a.adopt('A'); await b.transition(null);
+  await reject(a.read('tasks'),'logout em outra aba invalida sessão antiga');
+  await reject(a.adopt('A'),'logout impede adoção de A');
+  await a.transition('A');
+  const firstQueued=a.transition('B'), lastQueued=a.transition('A');
+  await reject(firstQueued,'transição local substituída falha fechada'); await lastQueued;
+  ok((await a.read('tasks')).revision===2,'última transição preserva dados');
+  await b.adopt('A');
+  const write=a.compareAndSet('tasks',2,'{"task":"corrida"}'), switcher=b.transition('B');
+  const pair=await Promise.allSettled([write,switcher]);
+  ok(pair[1].status==='fulfilled','troca durante corrida confirma');
+  await reject(a.read('tasks'),'qualquer resultado da corrida não reativa sessão antiga');
+  await b.transition('A');
+  const final=await b.read('tasks');
+  ok(final.revision===(pair[0].status==='fulfilled'?3:2),'corrida é ordenada no IndexedDB; escrita prévia não é desfeita');
+  db1.close();db2.close();other.close();
+  out.textContent='ALL PASS '+lines.length+' verificações\n'+lines.join('\n');
+ }catch(e){try{db1?.close();db2?.close();other?.close()}catch{} out.textContent='FAIL '+(e.stack||e)+'\n'+lines.join('\n');}
+})();
+</script>
