@@ -1,0 +1,83 @@
+diff --git a/app.js b/app.js
+index 0dd4f68..3aee48c 100644
+--- a/app.js
++++ b/app.js
+@@ -517,7 +517,7 @@
+     const source=value&&typeof value==='object'?value:{};
+     const balanceRaw=source.accountBalance??source.account_balance,cashboxRaw=source.cashboxAmount??source.cashbox_amount;
+     const balanceNumber=balanceRaw===null||balanceRaw===undefined||balanceRaw===''?null:Number(balanceRaw),cashboxNumber=cashboxRaw===null||cashboxRaw===undefined||cashboxRaw===''?null:Number(cashboxRaw);
+-    return {accountBalance:Number.isFinite(balanceNumber)?Math.round(balanceNumber*100)/100:null,balanceUpdatedAt:String(source.balanceUpdatedAt||source.balance_updated_at||''),cashboxAmount:Number.isFinite(cashboxNumber)?Math.round(cashboxNumber*100)/100:null,cashboxUpdatedAt:String(source.cashboxUpdatedAt||source.cashbox_updated_at||''),updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z')};
++    return {accountBalance:Number.isFinite(balanceNumber)?Math.round(balanceNumber*100)/100:null,balanceUpdatedAt:String(source.balanceUpdatedAt||source.balance_updated_at||''),cashboxAmount:Number.isFinite(cashboxNumber)?Math.round(cashboxNumber*100)/100:null,cashboxUpdatedAt:String(source.cashboxUpdatedAt||source.cashbox_updated_at||''),updatedAt:String(source.updatedAt||source.updated_at||'1970-01-01T00:00:00.000Z'),cashboxOwner:String(source.cashboxOwner||''),cashboxRevision:String(source.cashboxRevision||'')};
+   }
+   function normalizeFinanceEntry(value) {
+     if(!value||typeof value!=='object'||!String(value.title||'').trim())return null;
+@@ -534,6 +534,10 @@
+       installmentCount=Number(rawRule.installmentCount??rawRule.installment_count??installmentCount)||null;
+       if(installmentCount)installmentCount=Math.min(240,Math.max(1,Math.floor(installmentCount)));
+       recurrence={frequency:'monthly',anchorDate:String(rawRule.anchorDate),installmentCount,seriesStopped:Boolean(rawRule.seriesStopped)};
++      const t=rawRule.template;
++      if(t&&typeof t==='object'&&String(t.title||'').trim()&&['income','expense'].includes(t.kind)&&Number.isFinite(Number(t.amount))&&Number(t.amount)>0&&isDateKey(t.anchorDate)&&Number.isSafeInteger(t.anchorNumber)&&t.anchorNumber>0&&Number.isSafeInteger(t.revision)&&t.revision>=0){
++        recurrence.template={title:String(t.title).trim().slice(0,180),kind:t.kind,amount:Math.round(Number(t.amount)*100)/100,anchorDate:t.anchorDate,anchorNumber:t.anchorNumber,revision:t.revision};
++      }
+       if(!seriesId)seriesId=String(rawRule.seriesId||value.id||'');
+     }
+     if(occurrenceNumber)occurrenceNumber=Math.max(1,Math.floor(occurrenceNumber));
+@@ -1483,10 +1487,7 @@
+     const month=householdBillCycleKey(),cycles=userSettings.householdBillCycles||{},current=cycles[month]||{};
+     userSettings.householdBillCycles={...cycles,[month]:{...current,[billId]:{paid:Boolean(state.paid),deductedAmount:Math.max(0,Math.round((Number(state.deductedAmount)||0)*100)/100),paidAt:String(state.paidAt||'')}}};saveUserSettings();
+   }
+-  function setHouseholdCashboxAmount(amount) {
+-    const now=nowISO(),value=Math.max(0,Math.round((Number(amount)||0)*100)/100);
+-    financeState=normalizeFinanceState({...financeState,cashboxAmount:value,cashboxUpdatedAt:now,updatedAt:now});localStorage.setItem(FINANCE_STATE_KEY,JSON.stringify(financeState));
+-  }
++  function setHouseholdCashboxAmount() { throw new Error('Saldo absoluto bloqueado no laboratório.'); }
+   function renderHouseholdBuckets() {
+     const grid=$('householdBucketsGrid'),monthNode=$('householdBucketsMonth');if(!grid||!monthNode)return;
+     const today=todayKey(),month=householdBillCycleKey(),monthDate=dateAtNoon(`${month}-01`),states=currentHouseholdBillStates(),s24Task=tasks.find(task=>!task.deletedAt&&String(task.title||'').toLocaleLowerCase('pt-BR').includes('s24')&&task.recurrence?.frequency==='monthly'),fallback=HOUSEHOLD_BILLS.find(bill=>bill.id==='s24').knownUntil,s24Until=isDateKey(s24Task?.recurrence?.until)?s24Task.recurrence.until:fallback;
+@@ -1505,8 +1506,10 @@
+     }).join('');
+     grid.insertAdjacentHTML('beforeend',goals.map(goal=>{const saved=Math.max(0,Number(goal.savedAmount)||0),missing=Math.max(0,goal.targetAmount-saved),percent=goal.targetAmount?Math.min(100,Math.round(saved/goal.targetAmount*100)):0;return `<article class="household-bucket savings-goal${missing===0?' complete':''}" data-savings-goal="${escapeHTML(goal.id)}"><div class="household-bucket-head"><div><h4>${escapeHTML(goal.name)}</h4><span>Meta de economia</span></div><strong>${escapeHTML(financeMoney(goal.targetAmount))}</strong></div><div class="household-bucket-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}" aria-label="${escapeHTML(goal.name)}: ${percent}% guardado"><span style="width:${percent}%"></span></div><div class="household-bucket-details"><span>${financeMoney(saved)} guardados</span><b>${missing?`Faltam ${financeMoney(missing)}`:'Meta atingida'}</b></div><form class="savings-goal-deposit" data-savings-goal-form="${escapeHTML(goal.id)}"><label class="sr-only" for="savingsDeposit-${escapeHTML(goal.id)}">Adicionar à meta ${escapeHTML(goal.name)}</label><input id="savingsDeposit-${escapeHTML(goal.id)}" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Valor do depósito" aria-label="Valor do depósito para ${escapeHTML(goal.name)}"><button class="household-bucket-toggle" type="button" data-savings-goal-deposit="${escapeHTML(goal.id)}">Guardar</button></form><form class="savings-goal-deposit savings-goal-withdraw" data-savings-goal-withdraw-form="${escapeHTML(goal.id)}"><label class="sr-only" for="savingsWithdraw-${escapeHTML(goal.id)}">Retirar da meta ${escapeHTML(goal.name)}</label><input id="savingsWithdraw-${escapeHTML(goal.id)}" name="amount" type="number" min="0.01" max="${saved.toFixed(2)}" step="0.01" inputmode="decimal" placeholder="Valor para retirar" aria-label="Valor para retirar da meta ${escapeHTML(goal.name)}"><button class="household-bucket-toggle" type="button" data-savings-goal-withdraw="${escapeHTML(goal.id)}">Retirar</button></form></article>`;}).join(''));
+   }
+-  async function saveSavingsGoalDeposit(form){if(!form)return;const goal=(userSettings.savingsGoals||[]).find(item=>item.id===form.dataset.savingsGoalForm),input=form.elements.namedItem('amount'),amount=Number(input?.value);if(!goal||!Number.isFinite(amount)||amount<=0){showToast('Informe um depósito maior que zero.');return;}const now=nowISO();goal.savedAmount=Math.round((goal.savedAmount+amount)*100)/100;goal.updatedAt=now;saveUserSettings(false);renderHouseholdBuckets();if(session?.user?.id&&CLOUD_READY){const ok=await syncCloudAndWait();showToast(ok?`${financeMoney(amount)} adicionados à meta “${goal.name}”. Total: ${financeMoney(goal.savedAmount)}.`:`Depósito salvo neste aparelho; sincronização pendente. Total: ${financeMoney(goal.savedAmount)}.`);}else showToast(`${financeMoney(amount)} adicionados à meta “${goal.name}”. Total: ${financeMoney(goal.savedAmount)}.`);}
+-  async function withdrawSavingsGoal(form){if(!form)return;const goal=(userSettings.savingsGoals||[]).find(item=>item.id===form.dataset.savingsGoalWithdrawForm),input=form.elements.namedItem('amount'),amount=Math.round(Number(input?.value)*100)/100,current=Math.round((Number(goal?.savedAmount)||0)*100)/100;if(!goal||!Number.isFinite(amount)||amount<=0){showToast('Informe um valor de retirada maior que zero.');return;}if(amount>current){showToast(`A retirada não pode passar do saldo guardado (${financeMoney(current)}).`);return;}goal.savedAmount=Math.round((current-amount)*100)/100;goal.updatedAt=nowISO();saveUserSettings(false);renderHouseholdBuckets();if(session?.user?.id&&CLOUD_READY){const ok=await syncCloudAndWait();showToast(ok?`${financeMoney(amount)} retirados da meta “${goal.name}”. Saldo: ${financeMoney(goal.savedAmount)}.`:`Retirada salva neste aparelho; sincronização pendente. Saldo: ${financeMoney(goal.savedAmount)}.`);}else showToast(`${financeMoney(amount)} retirados da meta “${goal.name}”. Saldo: ${financeMoney(goal.savedAmount)}.`);}
++  // Até uma API transacional específica existir, nunca alterar metas localmente.
++  async function saveSavingsGoalDeposit(){showToast('Metas bloqueadas até a conciliação segura.');}
++  async function withdrawSavingsGoal(){showToast('Metas bloqueadas até a conciliação segura.');}
++
+   function openHouseholdPaymentDialog(billId) {
+     const bill=HOUSEHOLD_BILLS.find(item=>item.id===String(billId)),dialog=$('householdPaymentDialog');if(!bill||!dialog)return;
+     const cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),deduct=Math.min(cashbox,bill.amount),button=$('householdPaymentDeductBtn');
+@@ -1514,26 +1517,9 @@
+     button.disabled=deduct<=0;button.textContent=deduct<=0?'Sem saldo para descontar':deduct<bill.amount?`Descontar ${financeMoney(deduct)} disponível`:`Sim, descontar ${financeMoney(deduct)}`;
+     showAppDialog(dialog);
+   }
+-  async function completeHouseholdBillPayment(deductCashbox) {
+-    const dialog=$('householdPaymentDialog'),bill=HOUSEHOLD_BILLS.find(item=>item.id===dialog.dataset.billId);if(!bill){if(dialog.open)dialog.close();return;}
+-    const prior=currentHouseholdBillStates()[bill.id];if(prior?.paid){dialog.close();return;}
+-    const cashbox=Math.max(0,Number(financeState.cashboxAmount)||0),deductedAmount=deductCashbox?Math.min(cashbox,bill.amount):0,now=nowISO();
+-    if(deductedAmount)setHouseholdCashboxAmount(cashbox-deductedAmount);
+-    saveHouseholdBillState(bill.id,{paid:true,deductedAmount,paidAt:now});dialog.close();delete dialog.dataset.billId;renderFinancePage();
+-    if(deductedAmount&&session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast(`${bill.title} paga; ${financeMoney(deductedAmount)} descontados da Caixinha.`);}catch{showToast('Pagamento salvo; sincronização da Caixinha pendente.');}}
+-    else showToast(deductedAmount?`${bill.title} paga; ${financeMoney(deductedAmount)} descontados da Caixinha.`:`${bill.title} marcada como paga; saldo da Caixinha mantido.`);
+-  }
+-  async function toggleHouseholdBillPaid(billId) {
+-    const bill=HOUSEHOLD_BILLS.find(item=>item.id===String(billId));if(!bill)return;
+-    const prior=currentHouseholdBillStates()[bill.id];
+-    if(!prior?.paid){openHouseholdPaymentDialog(bill.id);return;}
+-    const restore=Math.max(0,Number(prior.deductedAmount)||0),question=restore?`Marcar “${bill.title}” como não paga e devolver ${financeMoney(restore)} à Caixinha?`:`Marcar “${bill.title}” como não paga?`;
+-    if(!window.confirm(question))return;
+-    if(restore){const current=Math.max(0,Number(financeState.cashboxAmount)||0);setHouseholdCashboxAmount(current+restore);}
+-    saveHouseholdBillState(bill.id,{paid:false,deductedAmount:0,paidAt:''});renderFinancePage();
+-    if(restore&&session?.user?.id&&CLOUD_READY){try{await syncFinanceCashboxState();showToast(`${bill.title} reaberta; ${financeMoney(restore)} devolvidos à Caixinha.`);}catch{showToast('Conta reaberta; sincronização da Caixinha pendente.');}}
+-    else showToast(`${bill.title} marcada como não paga.`);
+-  }
++  async function completeHouseholdBillPayment(){showToast('Pagamentos bloqueados até a conciliação segura.');}
++  async function toggleHouseholdBillPaid(){showToast('Pagamentos e reaberturas bloqueados até a conciliação segura.');}
++
+   function renderFinanceBudget() {
+     const balance=$('financeAccountBalance'),balanceUpdated=$('financeBalanceUpdated'),cashboxInput=$('financeCashboxInput'),cashboxValue=$('financeCashboxValue'),daily=$('financeDailyAllowance'),nextLabel=$('financeNextIncomeLabel');
+     if(!balance||!balanceUpdated||!cashboxInput||!cashboxValue||!daily||!nextLabel)return;
+@@ -1548,23 +1534,50 @@
+     nextLabel.textContent=`Dividido até ${endLabel} · ${days} ${days===1?'dia':'dias'}${rawDays===0?' (hoje; considera 1 dia)':''}`;
+     daily.textContent=financeState.accountBalance===null?'—':financeMoney(financeState.accountBalance/days);
+   
