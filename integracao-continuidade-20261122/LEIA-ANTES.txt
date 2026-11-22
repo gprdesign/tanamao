@@ -1,0 +1,8 @@
+LABORATORIO INCOMPLETO. NAO PUBLICAR OU APLICAR EM BANCO REAL.
+Base dos patches: commit local 73e0afaaf0e5e33344ca9c50c6ea3a47bc846bfc, preservado em integracao-combinada-20261122. Primeiro aplicar aquele patch sobre 712ea0a; aplicar cada patch deste diretorio individualmente sobre 73e0afa. Nao aplicar patches entre si. config.js excluido.
+Integrada: finanças avulsas previstas com SQL e cerca de sessão; testes sintéticos. Nove falhas de recorrência, finanças incompletas e conteúdo anterior pode continuar visível ao trocar de conta.
+Recorrencia-isolada: prototipo SQL e testes históricos, NAO integrado ao app. Protecao-visual-isolada: bloqueia todo o app e NAO foi integrada.
+Browser real não validado; migração não validada para dados existentes; proibido publicar.
+integrada: commit local fc06bdf3ac92b6c5e34c5cdc38db1eefb3ba6440; partes 4; SHA256 do patch 157d474d7a69eda4eb659b8453ecee4a2ebc7a8c11c84ba61093e302667c1e4b.
+recorrencia-isolada: commit local d46357ccf4428cdef70cd1afcb71da29bb66f245; partes 2; SHA256 do patch 8aa20924b190b1111b870b7ff71a69cb4d8b3c8271780d377fcda7d4a7c2a0fa.
+protecao-visual-isolada: commit local 7b6d2143e5ad6a66694a3b2669fa2045ecca57d0; partes 5; SHA256 do patch 6645e20ba008844c3d7c2c53a0cf147625cf9975a0b3f5fa5be8c30c702f6c7e.
