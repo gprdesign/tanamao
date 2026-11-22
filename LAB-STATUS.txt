@@ -1,0 +1,1 @@
+Laboratório experimental: alterações integradas no commit local 2bf1462; não publicar sem validação.
