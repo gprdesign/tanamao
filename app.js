@@ -222,13 +222,19 @@
     if(rawEnd){if(allDay&&/^\d{4}-\d{2}-\d{2}$/.test(String(rawEnd)))endAt=String(rawEnd);else if(!allDay){const endDate=new Date(rawEnd);if(Number.isFinite(endDate.getTime()))endAt=endDate.toISOString();}}
     return {id:String(value.id||`${title}:${startAt}`),title,startAt,endAt,allDay,location:String(value.location||'').trim().slice(0,300),description:String(value.description||'').trim().slice(0,1000),url:normalizeLink(value.htmlLink||value.url||'')};
   }
-  function calendarEventIsPast(event){const today=todayKey();if(event.allDay)return event.endAt?event.endAt<=today:event.startAt<today;const end=Date.parse(event.endAt||event.startAt);return Number.isFinite(end)&&end<=Date.now();}
+  function calendarEventIsPast(event){const today=todayKey();if(event.allDay){const start=String(event.startAt||''),end=String(event.endAt||'');return isDateKey(end)&&end>start?end<=today:start<today;}const end=Date.parse(event.endAt||event.startAt);return Number.isFinite(end)&&end<=Date.now();}
   function calendarEventClass(event,date){return calendarEventIsPast(event)||(date&&date<todayKey())?' is-past':'';}
   function calendarEventOrder(a,b){return Number(calendarEventIsCompleted(a))-Number(calendarEventIsCompleted(b))||String(a.startAt).localeCompare(String(b.startAt))||String(a.title).localeCompare(String(b.title),'pt-BR');}
-  function getCalendarEventsForDate(date){return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>!calendarEventIsDismissed(event)&&(event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt)))===date).sort(calendarEventOrder);}
+  // Google Calendar all-day end dates are exclusive; absent/invalid ends represent just the start day.
+  function allDayEventIncludesDate(event,date){
+    const start=String(event.startAt||'').slice(0,10),end=String(event.endAt||'').slice(0,10);
+    if(!isDateKey(start)||!isDateKey(date))return false;
+    return date>=start&&(isDateKey(end)&&end>start?date<end:date===start);
+  }
+  function getCalendarEventsForDate(date){return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>!calendarEventIsDismissed(event)&&(event.allDay?allDayEventIncludesDate(event,date):dateKey(new Date(event.startAt))===date)).sort(calendarEventOrder);}
   function calendarEventTimeLabel(event){if(event.allDay)return '';const date=new Date(event.startAt);return Number.isFinite(date.getTime())?date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';}
   function googleCalendarDayUrl(dateKeyValue){if(!isDateKey(dateKeyValue))return '';const [year,month,day]=dateKeyValue.split('-').map(Number),path=`calendar/u/0/r/day/${year}/${month}/${day}`,ua=navigator.userAgent||'';return `https://calendar.google.com/${path}`;}
-  function getUpcomingCalendarEvents(){const today=todayKey(),now=Date.now();return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>!calendarEventIsDismissed(event)&&(event.allDay?event.startAt>=today:Date.parse(event.startAt)>=now)).sort(calendarEventOrder);}
+  function getUpcomingCalendarEvents(){const today=todayKey(),now=Date.now();return calendarEvents.map(normalizeCalendarEvent).filter(Boolean).filter(event=>!calendarEventIsDismissed(event)&&(event.allDay?(isDateKey(event.startAt)&&(event.startAt>=today||allDayEventIncludesDate(event,today))):Date.parse(event.startAt)>=now)).sort(calendarEventOrder);}
   function mergeCalendarEventStates(...sources){const merged={};for(const source of sources){if(!source||typeof source!=='object')continue;for(const [id,value] of Object.entries(source)){const state=value&&typeof value==='object'?value:{completed:Boolean(value),updatedAt:''},candidate={...state,updatedAt:String(state.updatedAt||'1970-01-01T00:00:00.000Z')},current=merged[id];if(!current||Date.parse(candidate.updatedAt)>Date.parse(current.updatedAt)||Date.parse(candidate.updatedAt)===Date.parse(current.updatedAt)&&(candidate.completed||candidate.dismissed))merged[id]=candidate;}}return Object.fromEntries(Object.entries(merged).sort(([a],[b])=>a.localeCompare(b)));}
   function mergeCalendarEventCompletions(...sources){return mergeCalendarEventStates(...sources);}
   function calendarEventIsCompleted(event){return Boolean(userSettings.calendarEventCompletions?.[String(event?.id||'')]?.completed);}
@@ -1322,7 +1328,7 @@
   }
   function dashboardCountdownLabel(event,now=Date.now()){
     const date=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));
-    if(event.allDay&&date===todayKey())return 'HOJE';
+    if(event.allDay&&allDayEventIncludesDate(event,dateKey(new Date(now))))return 'HOJE';
     const target=event.allDay?new Date(`${date}T00:00:00`).getTime():Date.parse(event.startAt);
     const remaining=Math.max(0,Math.floor((target-now)/1000)),days=Math.floor(remaining/86400),hours=Math.floor(remaining%86400/3600),minutes=Math.floor(remaining%3600/60),seconds=remaining%60;
     const pad=value=>String(value).padStart(2,'0');
@@ -1338,12 +1344,12 @@
   function dashboardEventStartTime(event){if(event.allDay)return 'DIA TODO';return new Date(event.startAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false});}
   function dashboardWeekEventsMarkup(){
     const today=todayKey(),days=Array.from({length:7},(_,i)=>addDays(today,i));
-    return days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder),current=day===today,previewLimit=viewMode==='mobile'?1:2,visibleEvents=dayEvents.slice(0,previewLimit),moreCount=Math.max(0,dayEvents.length-visibleEvents.length);return `<section class="dashboard-week-day dashboard-week-day-clickable${current?' is-current-day':''}" data-dashboard-week-day="${escapeHTML(day)}" role="button" tabindex="0" aria-label="Ver ${dayEvents.length} evento${dayEvents.length===1?'':'s'} de ${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}"><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?visibleEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong></div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}${moreCount?`<p class="dashboard-week-more">+${moreCount} evento${moreCount===1?'':'s'} · toque para ver todos</p>`:''}</section>`;}).join('');
+    return days.map(day=>{const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;return event.allDay?allDayEventIncludesDate(event,day):dateKey(new Date(event.startAt))===day;}).sort(calendarEventOrder),current=day===today,previewLimit=viewMode==='mobile'?1:2,visibleEvents=dayEvents.slice(0,previewLimit),moreCount=Math.max(0,dayEvents.length-visibleEvents.length);return `<section class="dashboard-week-day dashboard-week-day-clickable${current?' is-current-day':''}" data-dashboard-week-day="${escapeHTML(day)}" role="button" tabindex="0" aria-label="Ver ${dayEvents.length} evento${dayEvents.length===1?'':'s'} de ${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}"><h3>${escapeHTML(formatDate(day,{weekday:'long',day:'2-digit',month:'long'}))}</h3>${dayEvents.length?visibleEvents.map(event=>`<article class="dashboard-week-event"><time>${escapeHTML(dashboardEventStartTime(event))}</time><div><strong>${escapeHTML(event.title)}</strong></div></article>`).join(''):'<p class="dashboard-week-free">Tempo livre...</p>'}${moreCount?`<p class="dashboard-week-more">+${moreCount} evento${moreCount===1?'':'s'} · toque para ver todos</p>`:''}</section>`;}).join('');
   }
   function openDashboardDayEvents(day){
     if(!isDateKey(day))return;const dialog=$('dashboardDayEventsDialog'),title=$('dashboardDayEventsTitle'),list=$('dashboardDayEventsList');if(!dialog||!title||!list)return;
     title.textContent=formatDate(day,{weekday:'long',day:'2-digit',month:'long'});
-    const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;const eventDay=event.allDay?String(event.startAt).slice(0,10):dateKey(new Date(event.startAt));return eventDay===day;}).sort(calendarEventOrder);
+    const dayEvents=calendarEvents.map(normalizeCalendarEvent).filter(event=>{if(!event)return false;return event.allDay?allDayEventIncludesDate(event,day):dateKey(new Date(event.startAt))===day;}).sort(calendarEventOrder);
     list.innerHTML=dayEvents.length?dayEvents.map(event=>{const info=String(event.location||'').trim(),description=String(event.description||'').trim(),time=event.allDay?'Dia todo':`${dashboardEventStartTime(event)}${event.endAt?`–${new Date(event.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false})}`:''}`;return `<article class="dashboard-day-event" data-day-countdown-event="${escapeHTML(event.id)}"><div class="dashboard-day-event-heading"><time>${escapeHTML(time)}</time><strong>${escapeHTML(event.title)}</strong></div><div class="dashboard-day-event-countdown" data-day-event-countdown>${escapeHTML(dashboardCountdownLabel(event))}</div>${info?`<p><b>Local:</b> ${escapeHTML(info)}</p>`:''}${description?`<p><b>Descrição:</b> ${escapeHTML(description)}</p>`:''}</article>`;}).join(''):'<p class="dashboard-week-free">Tempo livre...</p>';
     showAppDialog(dialog);
   }
@@ -1369,11 +1375,13 @@
       if(dashboardClockTimer){clearInterval(dashboardClockTimer);dashboardClockTimer=null;}
       return;
     }
-    const now=Date.now(),today=todayKey();
+    const now=Date.now();
     const shouldAdvance=Array.from(document.querySelectorAll('[data-countdown-event]')).some(card=>{
       const raw=calendarEvents.find(item=>String(item.id)===card.dataset.countdownEvent),event=raw?normalizeCalendarEvent(raw):null;
       if(!event||calendarEventIsCompleted(event)||calendarEventIsDismissed(event))return false;
-      return event.allDay?String(event.startAt).slice(0,10)<today:Number.isFinite(Date.parse(event.startAt))&&Date.parse(event.startAt)<now;
+      // A pinned multi-day event stays visible until its exclusive end. Re-rendering
+      // while it is still pinned would recursively restart this timer.
+      return calendarEventIsPast(event);
     });
     if(shouldAdvance){renderDashboard();return;}
     document.querySelectorAll('[data-countdown-event]').forEach(card=>{const event=calendarEvents.find(item=>String(item.id)===card.dataset.countdownEvent),node=card.querySelector('[data-countdown-value]');if(event&&node)node.textContent=dashboardCountdownLabel(normalizeCalendarEvent(event),now);});
