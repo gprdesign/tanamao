@@ -709,8 +709,11 @@
       next=addDays(rule.anchorDate,steps*rule.interval);if(next<=baseDate)next=addDays(next,rule.interval);
     }else if(rule.frequency==='weekly'){
       const anchorWeek=startOfWeek(rule.anchorDate),limit=rule.interval*7+7;
+      // Weekly occurrences cannot precede the anchor; start near a distant anchor
+      // rather than scanning a bounded window from an earlier task date.
+      const scanFrom=baseDate<rule.anchorDate?addDays(rule.anchorDate,-1):baseDate;
       for(let offset=1;offset<=limit;offset++){
-        const candidate=addDays(baseDate,offset),weekDelta=(dateOrdinal(startOfWeek(candidate))-dateOrdinal(anchorWeek))/7;
+        const candidate=addDays(scanFrom,offset),weekDelta=(dateOrdinal(startOfWeek(candidate))-dateOrdinal(anchorWeek))/7;
         if(weekDelta>=0&&weekDelta%rule.interval===0&&rule.weekdays.includes(getIsoWeekday(candidate))){next=candidate;break;}
       }
     }else if(rule.frequency==='monthly'){
