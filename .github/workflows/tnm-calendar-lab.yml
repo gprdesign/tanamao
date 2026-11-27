@@ -1,0 +1,20 @@
+name: TNM isolated calendar validation
+on:
+  push:
+    branches:
+      - "zapia-lab/calendar-fix-*"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check app syntax
+        run: node --check app.js
+      - name: Run repository JavaScript tests
+        run: node --test tests/*.test.js
